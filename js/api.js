@@ -188,8 +188,25 @@ const FinanceAPI = {
       timestamp: new Date().toISOString()
     };
 
+    // Actualizar cache local en localStorage para persistencia instantánea
     try {
-      // Envío asíncrono para respuesta ultra rápida
+      const cached = localStorage.getItem(API_CONFIG.CACHE_KEY);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed && parsed.movimientos) {
+          parsed.movimientos.unshift({
+            id: movementData.id || "M-" + Math.floor(1000 + Math.random() * 9000),
+            fecha: new Date().toLocaleDateString("es-CO"),
+            hora: new Date().toLocaleTimeString("es-CO", { hour: '2-digit', minute: '2-digit' }),
+            ...movementData
+          });
+          localStorage.setItem(API_CONFIG.CACHE_KEY, JSON.stringify(parsed));
+        }
+      }
+    } catch (e) {}
+
+    try {
+      // Envío a Google Apps Script Web App
       fetch(webhookUrl, {
         method: "POST",
         mode: "no-cors",
@@ -197,7 +214,7 @@ const FinanceAPI = {
         body: JSON.stringify(payload)
       }).catch(e => console.warn("Background sync info:", e));
       
-      return { ok: true, status: "saved" };
+      return { ok: true, status: "saved", timestamp: new Date().toLocaleTimeString("es-CO") };
     } catch (err) {
       return { ok: true, status: "saved_local" };
     }

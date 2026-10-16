@@ -322,10 +322,57 @@ html, body {
   gap: 1.25rem;
 }
 
-.mobile-brand-pill {
+.mobile-user-profile {
+  display: none;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.mobile-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #2563EB 0%, #10B981 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 0.85rem;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+  flex-shrink: 0;
+}
+
+.mobile-user-meta {
+  display: flex;
+  flex-direction: column;
+}
+
+.mobile-user-title {
+  font-family: var(--font-heading);
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #FFFFFF;
+  line-height: 1.2;
+}
+
+.mobile-user-subtitle {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.desktop-brand-pill {
   display: none;
   align-items: center;
   gap: 0.6rem;
+}
+
+.desktop-brand-name {
+  font-family: var(--font-heading);
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #fff;
 }
 
 .breadcrumb-group {
@@ -535,6 +582,12 @@ html, body {
   box-shadow: 0 15px 30px -10px rgba(59, 7, 100, 0.6), 0 0 25px rgba(139, 92, 246, 0.2);
 }
 
+.card-savings-gold {
+  background: linear-gradient(135deg, #78350F 0%, #92400E 45%, #B45309 100%);
+  border-color: rgba(251, 191, 36, 0.4);
+  box-shadow: 0 15px 30px -10px rgba(120, 53, 15, 0.6), 0 0 25px rgba(245, 158, 11, 0.25);
+}
+
 .card-glass-glow {
   position: absolute;
   top: -50px;
@@ -703,6 +756,212 @@ html, body {
   font-size: 0.75rem;
   font-weight: 700;
   color: #93C5FD;
+}
+
+/* =========================================================
+   PAGINACIÓN / PUNTOS DEL CARRUSEL DE TARJETAS
+   ========================================================= */
+
+.carousel-dots-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 1rem;
+}
+
+.carousel-dots-indicator .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+}
+
+.carousel-dots-indicator .dot.active {
+  width: 24px;
+  background: linear-gradient(90deg, #2563EB 0%, #10B981 100%);
+  box-shadow: 0 0 10px rgba(37, 99, 235, 0.5);
+}
+
+/* =========================================================
+   FILA DE ACCIONES RÁPIDAS FINTECH (ESTILO NUBANK / REVOLUT)
+   ========================================================= */
+
+.quick-action-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.85rem;
+  margin: 1.5rem 0 1.25rem;
+}
+
+.qa-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem 0.2rem;
+  transition: var(--transition);
+  outline: none;
+}
+
+.qa-icon-bubble {
+  width: 54px;
+  height: 54px;
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  transition: var(--transition);
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35);
+}
+
+.qa-label {
+  font-family: var(--font-ui);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  letter-spacing: -0.01em;
+  transition: var(--transition);
+}
+
+.qa-item:hover .qa-icon-bubble,
+.qa-item:active .qa-icon-bubble {
+  transform: translateY(-3px) scale(1.05);
+}
+
+.qa-item:active {
+  transform: scale(0.95);
+}
+
+.qa-item:hover .qa-label {
+  color: #fff;
+}
+
+/* Variantes de Color de Acción Rápida */
+.qa-expense .qa-icon-bubble {
+  background: linear-gradient(135deg, rgba(244, 63, 94, 0.15) 0%, rgba(225, 29, 72, 0.3) 100%);
+  color: #FB7185;
+  border-color: rgba(244, 63, 94, 0.35);
+}
+.qa-expense:hover .qa-icon-bubble {
+  box-shadow: 0 10px 22px rgba(244, 63, 94, 0.4);
+}
+
+.qa-income .qa-icon-bubble {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(5, 150, 105, 0.3) 100%);
+  color: #34D399;
+  border-color: rgba(16, 185, 129, 0.35);
+}
+.qa-income:hover .qa-icon-bubble {
+  box-shadow: 0 10px 22px rgba(16, 185, 129, 0.4);
+}
+
+.qa-cfo .qa-icon-bubble {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(124, 58, 237, 0.3) 100%);
+  color: #C084FC;
+  border-color: rgba(139, 92, 246, 0.35);
+}
+.qa-cfo:hover .qa-icon-bubble {
+  box-shadow: 0 10px 22px rgba(139, 92, 246, 0.4);
+}
+
+.qa-sheets .qa-icon-bubble {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(37, 99, 235, 0.3) 100%);
+  color: #60A5FA;
+  border-color: rgba(59, 130, 246, 0.35);
+}
+.qa-sheets:hover .qa-icon-bubble {
+  box-shadow: 0 10px 22px rgba(59, 130, 246, 0.4);
+}
+
+/* =========================================================
+   TARJETA DE SINCRONIZACIÓN GOOGLE SHEETS
+   ========================================================= */
+
+.sheets-sync-status-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.9rem 1.25rem;
+  border-radius: 16px;
+  background: rgba(16, 185, 129, 0.06);
+  border: 1px solid rgba(16, 185, 129, 0.22);
+  margin-top: 1.15rem;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+  transition: var(--transition);
+}
+
+.sheets-sync-status-card:hover {
+  background: rgba(16, 185, 129, 0.09);
+  border-color: rgba(16, 185, 129, 0.35);
+}
+
+.ssc-left {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.ssc-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ssc-text-box {
+  display: flex;
+  flex-direction: column;
+}
+
+.ssc-title {
+  font-family: var(--font-heading);
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: #FFFFFF;
+}
+
+.ssc-sub {
+  font-size: 0.72rem;
+  color: #94A3B8;
+}
+
+.ssc-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.45rem 0.85rem;
+  border-radius: 10px;
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  color: #34D399;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: var(--transition);
+}
+
+.ssc-link:hover {
+  background: #10B981;
+  color: #FFFFFF;
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);
+}
+
+.section-badge-tiny {
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #10B981;
+  text-transform: uppercase;
+  margin-bottom: 0.2rem;
+  display: inline-block;
 }
 
 /* =========================================================
@@ -1830,25 +2089,11 @@ html, body {
   .app-main-wrapper {
     margin-left: 0;
   }
-  .mobile-brand-pill {
+  .mobile-user-profile {
     display: flex;
   }
-  .brand-gem-sm {
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
-    background: linear-gradient(135deg, #2563EB 0%, #10B981 100%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #fff;
-    font-size: 0.9rem;
-  }
-  .mobile-brand-name {
-    font-family: var(--font-heading);
-    font-size: 1.15rem;
-    font-weight: 800;
-    color: #fff;
+  .desktop-brand-pill {
+    display: none;
   }
   .btn-text-desktop {
     display: none;
@@ -1878,16 +2123,156 @@ html, body {
   }
 }
 
-@media (max-width: 600px) {
+@media (max-width: 768px) {
   .app-content-area {
-    padding: 1.25rem 1rem 6rem;
+    padding: 1rem 0.85rem 6.5rem;
   }
   .app-topbar {
-    padding: 0 1rem;
+    height: auto;
+    min-height: 58px;
+    padding: 0.6rem 0.85rem;
   }
+  .breadcrumb-group {
+    display: none; /* En celular el mes se muestra más limpio en perfil */
+  }
+  .topbar-right {
+    gap: 0.45rem;
+  }
+  .topbar-btn {
+    padding: 0.4rem 0.65rem;
+    font-size: 0.8rem;
+    border-radius: 8px;
+  }
+  .topbar-btn.btn-cta {
+    padding: 0.45rem 0.85rem;
+  }
+
+  /* Carrusel Horizontal Deslizable en Celular */
+  .wallet-hero-section {
+    margin-bottom: 1.25rem;
+  }
+  .section-title-row {
+    margin-bottom: 0.85rem;
+  }
+  .section-heading {
+    font-size: 1.25rem;
+  }
+  .section-subheading {
+    font-size: 0.78rem;
+  }
+
+  .cards-carousel {
+    display: flex !important;
+    flex-direction: row !important;
+    overflow-x: auto !important;
+    scroll-snap-type: x mandatory !important;
+    gap: 12px !important;
+    padding: 4px 4px 12px !important;
+    margin: 0 -0.85rem !important;
+    padding-left: 0.85rem !important;
+    padding-right: 0.85rem !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+  }
+  .cards-carousel::-webkit-scrollbar {
+    display: none;
+  }
+
+  .cards-carousel .fintech-card {
+    flex: 0 0 88% !important;
+    min-width: 275px !important;
+    max-width: 325px !important;
+    height: 180px !important;
+    padding: 1.15rem 1.25rem !important;
+    scroll-snap-align: center !important;
+    border-radius: 20px !important;
+    box-shadow: 0 10px 25px -8px rgba(0, 0, 0, 0.6) !important;
+  }
+
   .card-amount {
-    font-size: 1.75rem;
+    font-size: 1.65rem !important;
   }
+  .card-label {
+    font-size: 0.65rem !important;
+  }
+  .holder-name {
+    font-size: 0.78rem !important;
+  }
+  .card-amount-sm {
+    font-size: 1.05rem !important;
+  }
+
+  /* Paginación Dots */
+  .carousel-dots-indicator {
+    margin-top: 0.65rem;
+    margin-bottom: 0.75rem;
+  }
+
+  /* Acciones Rápidas en Móvil */
+  .quick-action-row {
+    margin: 0.85rem 0;
+    gap: 0.45rem;
+  }
+  .qa-icon-bubble {
+    width: 48px;
+    height: 48px;
+    border-radius: 15px;
+    font-size: 1.1rem;
+  }
+  .qa-label {
+    font-size: 0.7rem;
+  }
+
+  /* Tarjeta de Sincronización Google Sheets */
+  .sheets-sync-status-card {
+    padding: 0.75rem 0.95rem;
+    margin-top: 0.85rem;
+    border-radius: 14px;
+  }
+  .ssc-title {
+    font-size: 0.82rem;
+  }
+  .ssc-sub {
+    font-size: 0.68rem;
+  }
+  .ssc-link {
+    padding: 0.35rem 0.65rem;
+    font-size: 0.72rem;
+  }
+
+  /* KPI Grid en 2 Columnas Móviles (Alineado y Compacto) */
+  .kpi-banner-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.75rem !important;
+    margin-bottom: 1.5rem !important;
+  }
+  .kpi-widget {
+    padding: 0.95rem !important;
+    border-radius: 14px !important;
+    flex-direction: column !important;
+    gap: 0.6rem !important;
+  }
+  .widget-icon-box {
+    width: 34px !important;
+    height: 34px !important;
+    border-radius: 10px !important;
+    font-size: 0.88rem !important;
+  }
+  .widget-label {
+    font-size: 0.7rem !important;
+  }
+  .widget-val {
+    font-size: 1.25rem !important;
+  }
+  .widget-meta {
+    margin-top: 0.35rem !important;
+  }
+  .meta-tag {
+    font-size: 0.65rem !important;
+    padding: 0.15rem 0.45rem !important;
+  }
+
+  /* Tablas y Controles */
   .search-input-pill {
     width: 100%;
   }

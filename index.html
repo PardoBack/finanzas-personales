@@ -102,10 +102,21 @@
       <!-- TOPBAR HEADER -->
       <header class="app-topbar" id="app-topbar">
         <div class="topbar-left">
-          <div class="mobile-brand-pill">
-            <div class="brand-gem-sm"><i class="fa-solid fa-shapes"></i></div>
-            <span class="mobile-brand-name">PardoFinanzas</span>
+          <!-- Vista Móvil: Saludo y Perfil -->
+          <div class="mobile-user-profile">
+            <div class="mobile-avatar">MM</div>
+            <div class="mobile-user-meta">
+              <span class="mobile-user-title">Hola, Marlon 👋</span>
+              <span class="mobile-user-subtitle">Colanta • AyC</span>
+            </div>
           </div>
+
+          <!-- Vista Desktop: Logo Brand -->
+          <div class="desktop-brand-pill">
+            <div class="brand-gem-sm"><i class="fa-solid fa-shapes"></i></div>
+            <span class="desktop-brand-name">PardoFinanzas</span>
+          </div>
+
           <div class="breadcrumb-group">
             <span class="period-pill" id="header-period-tag">
               <i class="fa-regular fa-calendar"></i>
@@ -144,12 +155,13 @@
       <!-- CONTENEDOR DE VISTAS (Scrollable) -->
       <main class="app-content-area" id="main-content-scroll">
         
-        <!-- HERO WALLET: TARJETAS VIRTUALES DE CUENTAS (AyC Colanta, Nequi, Efectivo) -->
+        <!-- HERO WALLET: TARJETAS VIRTUALES DE CUENTAS (Deslizable en Celular) -->
         <section class="wallet-hero-section" id="section-wallet">
           <div class="section-title-row">
             <div>
-              <h2 class="section-heading">Billetera de Cuentas & Liquidez</h2>
-              <p class="section-subheading">Saldos reales auditados en AyC Colanta, Nequi y Efectivo</p>
+              <span class="section-badge-tiny">LIQUIDEZ EN TIEMPO REAL</span>
+              <h2 class="section-heading">Billetera & Cuentas</h2>
+              <p class="section-subheading">Desliza para ver tus cuentas y saldos auditados 👉</p>
             </div>
             <div class="balance-visibility-toggle" id="btn-toggle-balance-visibility" title="Ocultar/Mostrar saldo">
               <i class="fa-solid fa-eye" id="icon-eye-balance"></i>
@@ -157,9 +169,9 @@
             </div>
           </div>
 
-          <!-- Carrusel / Grid de Tarjetas Fintech -->
-          <div class="cards-carousel">
-            <!-- Tarjeta 1: Total Consolidado (Master Gold Card) -->
+          <!-- Carrusel Horizontal Deslizable con Snap Points -->
+          <div class="cards-carousel" id="cards-carousel-container">
+            <!-- Tarjeta 1: Total Consolidado (Master Emerald Card) -->
             <div class="fintech-card card-master-emerald">
               <div class="card-glass-glow"></div>
               <div class="card-top">
@@ -185,7 +197,7 @@
                 </div>
                 <div class="card-status-pill">
                   <i class="fa-solid fa-shield-check"></i>
-                  <span>Auditoría OK</span>
+                  <span>Auditado OK</span>
                 </div>
               </div>
             </div>
@@ -241,6 +253,72 @@
                 <span class="card-status-pill status-ready">Listo para transferir</span>
               </div>
             </div>
+
+            <!-- Tarjeta 4: Fondos Colanta (Ahorros Acumulados) -->
+            <div class="fintech-card card-savings-gold">
+              <div class="card-glass-glow"></div>
+              <div class="card-top">
+                <div class="card-badge-colanta" style="background: rgba(245, 158, 11, 0.25); border-color: rgba(245, 158, 11, 0.4);">
+                  <i class="fa-solid fa-piggy-bank" style="color: #FBBF24;"></i>
+                  <span style="color: #FBBF24;">FONDOS COLANTA</span>
+                </div>
+                <span class="card-type-tag" style="background: rgba(245, 158, 11, 0.15); color: #FCD34D;">Ahorro Nómina</span>
+              </div>
+              <div class="card-middle">
+                <span class="card-label">AHORRO TOTAL ACUMULADO</span>
+                <div class="card-amount-wrapper">
+                  <h3 class="card-amount" id="card-acc-savings">$3.931.299</h3>
+                  <span class="card-currency">COP</span>
+                </div>
+              </div>
+              <div class="card-bottom">
+                <span class="card-sub-info">Navideño ($2.16M) • Ordinario • Aportes</span>
+                <span class="card-status-pill" style="background: rgba(245, 158, 11, 0.2); color: #FCD34D;">1 Dic Entrega</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Indicador de Puntos del Carrusel -->
+          <div class="carousel-dots-indicator" id="carousel-dots">
+            <span class="dot active"></span>
+            <span class="dot"></span>
+            <span class="dot"></span>
+            <span class="dot"></span>
+          </div>
+
+          <!-- FILA DE ACCIONES RÁPIDAS (ESTILO NUBANK / REVOLUT) -->
+          <div class="quick-action-row">
+            <button class="qa-item qa-expense" id="btn-qa-gasto" title="Registrar Gasto Rápido">
+              <div class="qa-icon-bubble"><i class="fa-solid fa-arrow-down"></i></div>
+              <span class="qa-label">Gasto</span>
+            </button>
+            <button class="qa-item qa-income" id="btn-qa-ingreso" title="Registrar Ingreso">
+              <div class="qa-icon-bubble"><i class="fa-solid fa-arrow-up"></i></div>
+              <span class="qa-label">Ingreso</span>
+            </button>
+            <button class="qa-item qa-cfo" id="btn-qa-cfo" title="Asistente CFO AI por Voz">
+              <div class="qa-icon-bubble"><i class="fa-solid fa-microphone-lines"></i></div>
+              <span class="qa-label">CFO Voz</span>
+            </button>
+            <button class="qa-item qa-sheets" id="btn-qa-sheets" title="Abrir Google Sheets">
+              <div class="qa-icon-bubble"><i class="fa-solid fa-table"></i></div>
+              <span class="qa-label">Sheets</span>
+            </button>
+          </div>
+
+          <!-- TARJETA DE ESTADO DE SINCRONIZACIÓN GOOGLE SHEETS -->
+          <div class="sheets-sync-status-card" id="sheets-sync-card">
+            <div class="ssc-left">
+              <div class="ssc-indicator"><span class="pulse-indicator"></span></div>
+              <div class="ssc-text-box">
+                <strong class="ssc-title">Google Sheets Conectado</strong>
+                <span class="ssc-sub" id="sheets-last-sync-text">Sincronizado 1:1 con Panel_Finanzas.xlsx</span>
+              </div>
+            </div>
+            <a href="https://docs.google.com/spreadsheets/d/1C9ifm7U8IYGOdY4IwAji9Z3McSlNy3B-e_2Jo-zvBFk/edit" target="_blank" rel="noopener noreferrer" class="ssc-link" title="Abrir hoja de cálculo en Google Drive">
+              <span>Ver en Drive</span>
+              <i class="fa-solid fa-arrow-up-right-from-square"></i>
+            </a>
           </div>
         </section>
 

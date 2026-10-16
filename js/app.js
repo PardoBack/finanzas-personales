@@ -168,9 +168,62 @@ const FintechApp = {
     document.getElementById("btn-sync-now")?.addEventListener("click", () => this.refreshData());
     document.getElementById("btn-export-excel-top")?.addEventListener("click", () => this.exportToExcel());
     document.getElementById("btn-open-add-mov")?.addEventListener("click", () => {
+      this.haptic(15);
       document.getElementById("modal-add-movement")?.classList.add("open");
       document.getElementById("input-mov-valor")?.focus();
     });
+
+    // 6. Botones de Acción Rápida (Estilo Nubank / Revolut)
+    document.getElementById("btn-qa-gasto")?.addEventListener("click", () => {
+      this.haptic(15);
+      const rg = document.getElementById("radio-gasto");
+      if (rg) rg.checked = true;
+      document.getElementById("modal-add-movement")?.classList.add("open");
+      document.getElementById("input-mov-valor")?.focus();
+    });
+
+    document.getElementById("btn-qa-ingreso")?.addEventListener("click", () => {
+      this.haptic(15);
+      const ri = document.getElementById("radio-ingreso");
+      if (ri) ri.checked = true;
+      document.getElementById("modal-add-movement")?.classList.add("open");
+      document.getElementById("input-mov-valor")?.focus();
+    });
+
+    document.getElementById("btn-qa-cfo")?.addEventListener("click", () => {
+      this.haptic(15);
+      document.getElementById("chat-cfo-drawer")?.classList.add("open");
+      document.getElementById("chat-text-input")?.focus();
+    });
+
+    document.getElementById("btn-qa-sheets")?.addEventListener("click", () => {
+      this.haptic(15);
+      window.open(`https://docs.google.com/spreadsheets/d/${API_CONFIG.SPREADSHEET_ID}/edit`, "_blank");
+    });
+
+    // 7. Sincronización de Puntos del Carrusel al Deslizar
+    const carousel = document.getElementById("cards-carousel-container");
+    const dots = document.querySelectorAll("#carousel-dots .dot");
+    if (carousel && dots.length) {
+      carousel.addEventListener("scroll", () => {
+        const scrollLeft = carousel.scrollLeft;
+        const cardWidth = carousel.children[0]?.offsetWidth || 300;
+        const activeIdx = Math.min(dots.length - 1, Math.max(0, Math.round(scrollLeft / cardWidth)));
+        dots.forEach((dot, idx) => {
+          dot.classList.toggle("active", idx === activeIdx);
+        });
+      }, { passive: true });
+
+      dots.forEach((dot, idx) => {
+        dot.addEventListener("click", () => {
+          this.haptic(10);
+          const targetCard = carousel.children[idx];
+          if (targetCard) {
+            targetCard.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+          }
+        });
+      });
+    }
   },
 
   scrollToSection(sectionKey) {
@@ -789,10 +842,14 @@ const FintechApp = {
       this.renderMovementsTable();
     }
 
-    FinanceAPI.addMovement(payload);
+    FinanceAPI.addMovement(payload).then(res => {
+      const syncEl = document.getElementById("sheets-last-sync-text");
+      if (syncEl) syncEl.textContent = `Último registro enviado a las ${res.timestamp || 'recientemente'}`;
+    });
+
     document.getElementById("modal-add-movement")?.classList.remove("open");
     document.getElementById("form-add-movement")?.reset();
-    this.showToast(`✅ ${tipo} guardado en Google Sheets`, "success");
+    this.showToast(`✅ ${tipo} guardado: $${this.formatCOP(valor)} (Enviado a Google Sheets)`, "success");
   },
 
   exportToExcel() {
