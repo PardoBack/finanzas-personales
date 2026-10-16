@@ -81,7 +81,8 @@ function doPost(e) {
       let resDelete = null;
       if (id) {
         resDelete = borrarRegistroCompletoPorID(id);
-      } else {
+      }
+      if (!resDelete || resDelete.ok === false) {
         resDelete = borrarUltimoRegistro();
       }
       return ContentService.createTextOutput(JSON.stringify({

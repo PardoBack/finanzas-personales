@@ -79,6 +79,10 @@
           <i class="fa-solid fa-cookie-bite"></i>
           <span>Radar Antojos</span>
         </a>
+        <a href="#modal-upload-colilla" class="nav-item" id="nav-item-colilla" data-nav="colilla">
+          <i class="fa-solid fa-file-invoice-dollar" style="color:#FBBF24;"></i>
+          <span>Subir Colilla (Gemini)</span>
+        </a>
         <a href="#modal-settings" class="nav-item" id="nav-item-settings" data-nav="settings">
           <i class="fa-solid fa-gear" style="color:#FBBF24;"></i>
           <span>Ajustes & Script</span>
@@ -147,6 +151,11 @@
           <button class="topbar-btn btn-excel" id="btn-export-excel-top" title="Descargar Excel .xlsx">
             <i class="fa-solid fa-file-excel"></i>
             <span class="btn-text-desktop">Excel</span>
+          </button>
+
+          <button class="topbar-btn" id="btn-topbar-colilla" title="Subir Colilla de Pago (Gemini AI)" style="border-color:rgba(251,191,36,0.4); color:#FBBF24;">
+            <i class="fa-solid fa-file-invoice-dollar"></i>
+            <span class="btn-text-desktop">Colilla</span>
           </button>
 
           <button class="topbar-btn btn-settings" id="btn-topbar-settings" title="Ajustes de Conexión y Código Apps Script">
@@ -682,13 +691,17 @@
             <button class="chat-chip" data-text="Pagué EPM 177 mil este mes">💡 Pagué EPM 177 mil</button>
             <button class="chat-chip" data-text="¿Cuánto me queda disponible?">💵 ¿Cuánto me queda?</button>
             <button class="chat-chip" data-text="¿Cuáles son mis gastos hormiga?">🐜 Ver gastos hormiga</button>
+            <button type="button" class="chat-chip" id="chip-chat-colilla" style="border-color:rgba(251,191,36,0.6); color:#FBBF24; font-weight:700;"><i class="fa-solid fa-file-invoice-dollar"></i> 📄 Subir Colilla Colanta</button>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Input Bar con Micrófono -->
+    <!-- Input Bar con Micrófono y Botón de Subir Colilla -->
     <form class="drawer-input-form" id="chat-input-form">
+      <button type="button" class="btn-voice-round" id="btn-chat-upload-colilla" title="Subir Colilla de Pago Colanta (Gemini AI)">
+        <i class="fa-solid fa-file-invoice-dollar" style="color:#FBBF24;"></i>
+      </button>
       <button type="button" class="btn-voice-round" id="btn-voice-input" title="Dictar por voz">
         <i class="fa-solid fa-microphone" id="mic-icon"></i>
       </button>
@@ -731,6 +744,10 @@
             <span class="type-label type-income"><i class="fa-solid fa-arrow-up"></i> Ingreso</span>
           </label>
         </div>
+
+        <button type="button" id="btn-modal-goto-colilla" style="width:100%; margin-bottom:1.1rem; background:rgba(251,191,36,0.12); border:1px dashed rgba(251,191,36,0.4); color:#FBBF24; padding:0.6rem; border-radius:10px; font-weight:700; font-size:0.85rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:0.5rem;">
+          <i class="fa-solid fa-file-invoice-dollar"></i> ¿Es una Colilla de Pago? Auditar con Gemini AI
+        </button>
 
         <div class="field-block">
           <label for="input-mov-valor">Monto en Pesos ($ COP) *</label>

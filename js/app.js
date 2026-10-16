@@ -234,10 +234,19 @@ const FintechApp = {
       document.getElementById("input-mov-valor")?.focus();
     });
 
-    document.getElementById("btn-qa-colilla")?.addEventListener("click", () => {
+    const openColillaModal = (e) => {
+      if (e && e.preventDefault) e.preventDefault();
       this.haptic(15);
+      document.getElementById("modal-add-movement")?.classList.remove("open");
       document.getElementById("modal-upload-colilla")?.classList.add("open");
-    });
+    };
+
+    document.getElementById("btn-qa-colilla")?.addEventListener("click", openColillaModal);
+    document.getElementById("btn-topbar-colilla")?.addEventListener("click", openColillaModal);
+    document.getElementById("nav-item-colilla")?.addEventListener("click", openColillaModal);
+    document.getElementById("btn-chat-upload-colilla")?.addEventListener("click", openColillaModal);
+    document.getElementById("chip-chat-colilla")?.addEventListener("click", openColillaModal);
+    document.getElementById("btn-modal-goto-colilla")?.addEventListener("click", openColillaModal);
 
     document.getElementById("btn-qa-cfo")?.addEventListener("click", () => {
       this.haptic(15);
@@ -421,7 +430,19 @@ const FintechApp = {
     const cuentas = (this.state.data && this.state.data.cuentas) || {};
 
     if (intent.type === "RECORD_TRANSACTION") {
-      const nuevoId = "M-" + Math.floor(1000 + Math.random() * 9000);
+      // Calcular consecutivo real M-xxxx
+      let nextNum = 256;
+      const movs = (this.state.data && this.state.data.movimientos) || [];
+      if (movs.length > 0) {
+        for (const m of movs) {
+          const match = String(m.id || "").match(/^M-(\d+)$/);
+          if (match) {
+            nextNum = Math.max(nextNum, parseInt(match[1], 10) + 1);
+            break;
+          }
+        }
+      }
+      const nuevoId = "M-" + String(nextNum).padStart(4, "0");
       const fechaHoy = new Date().toLocaleDateString("es-CO");
       const horaHoy = new Date().toLocaleTimeString("es-CO", { hour: '2-digit', minute: '2-digit' });
 
@@ -798,13 +819,21 @@ const FintechApp = {
 
   deleteMovementById(id) {
     const movs = (this.state.data && this.state.data.movimientos) || [];
-    const movIndex = movs.findIndex(m => String(m.id).toUpperCase() === String(id).toUpperCase());
+    let movIndex = -1;
+    if (id) {
+      movIndex = movs.findIndex(m => String(m.id).toUpperCase() === String(id).toUpperCase());
+    }
+    // Si no encuentra por ID exacto, toma el primero (el más reciente)
+    if (movIndex === -1 && movs.length > 0) {
+      movIndex = 0;
+    }
     if (movIndex === -1) {
-      this.showToast("No se encontró el movimiento " + id, "error");
+      this.showToast("No hay movimientos para eliminar", "error");
       return;
     }
 
     const movToDelete = movs[movIndex];
+    const targetId = movToDelete.id || id;
     const val = Number(movToDelete.valor || 0);
     const isIngreso = String(movToDelete.tipo).toLowerCase().includes("ingreso");
 
