@@ -79,6 +79,10 @@
           <i class="fa-solid fa-cookie-bite"></i>
           <span>Radar Antojos</span>
         </a>
+        <a href="#modal-settings" class="nav-item" id="nav-item-settings" data-nav="settings">
+          <i class="fa-solid fa-gear" style="color:#FBBF24;"></i>
+          <span>Ajustes & Script</span>
+        </a>
       </nav>
 
       <!-- Perfil y Estado en la base del sidebar -->
@@ -143,6 +147,11 @@
           <button class="topbar-btn btn-excel" id="btn-export-excel-top" title="Descargar Excel .xlsx">
             <i class="fa-solid fa-file-excel"></i>
             <span class="btn-text-desktop">Excel</span>
+          </button>
+
+          <button class="topbar-btn btn-settings" id="btn-topbar-settings" title="Ajustes de Conexión y Código Apps Script">
+            <i class="fa-solid fa-gear" style="color:#FBBF24;"></i>
+            <span class="btn-text-desktop">Ajustes</span>
           </button>
 
           <button class="topbar-btn btn-cta" id="btn-open-add-mov">
@@ -319,10 +328,16 @@
                 <span class="ssc-sub" id="sheets-last-sync-text">Sincronizado 1:1 con Panel_Finanzas.xlsx</span>
               </div>
             </div>
-            <a href="https://docs.google.com/spreadsheets/d/1C9ifm7U8IYGOdY4IwAji9Z3McSlNy3B-e_2Jo-zvBFk/edit" target="_blank" rel="noopener noreferrer" class="ssc-link" title="Abrir hoja de cálculo en Google Drive">
-              <span>Ver en Drive</span>
-              <i class="fa-solid fa-arrow-up-right-from-square"></i>
-            </a>
+            <div style="display:flex; align-items:center; gap:0.6rem;">
+              <button type="button" class="ssc-link" id="btn-banner-settings" style="cursor:pointer; background:rgba(251,191,36,0.15); border:1px solid rgba(251,191,36,0.3); color:#FBBF24;" title="Configurar Webhook y Copiar Apps Script">
+                <i class="fa-solid fa-gear"></i>
+                <span>Ajustes & Script</span>
+              </button>
+              <a href="https://docs.google.com/spreadsheets/d/1C9ifm7U8IYGOdY4IwAji9Z3McSlNy3B-e_2Jo-zvBFk/edit" target="_blank" rel="noopener noreferrer" class="ssc-link" title="Abrir hoja de cálculo en Google Drive">
+                <span>Ver en Drive</span>
+                <i class="fa-solid fa-arrow-up-right-from-square"></i>
+              </a>
+            </div>
           </div>
         </section>
 

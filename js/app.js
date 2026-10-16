@@ -1019,10 +1019,17 @@ const FintechApp = {
     const btnTestConn = document.getElementById("btn-test-connection");
     const inputUrl = document.getElementById("input-webhook-url");
 
-    btnQuickSet?.addEventListener("click", () => {
+    const openSettings = (e) => {
+      if (e && e.preventDefault) e.preventDefault();
       if (inputUrl) inputUrl.value = FinanceAPI.getWebhookUrl();
       modalSet?.classList.add("open");
-    });
+      this.checkBackendHealth();
+    };
+
+    btnQuickSet?.addEventListener("click", openSettings);
+    document.getElementById("btn-topbar-settings")?.addEventListener("click", openSettings);
+    document.getElementById("btn-banner-settings")?.addEventListener("click", openSettings);
+    document.getElementById("nav-item-settings")?.addEventListener("click", openSettings);
 
     btnCloseSet?.addEventListener("click", () => modalSet?.classList.remove("open"));
 

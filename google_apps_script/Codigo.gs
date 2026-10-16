@@ -1,218 +1,29 @@
-function limpiarMontoCOP_(val) {
-
-  if (val === null || val === undefined) return 0;
-
-  if (typeof val === "number") return Math.abs(Math.round(val));
-
-  let str = String(val).trim().replace(/[$ \t\r\n]/g, "").replace(/-/g, "");
-
-  if (!str) return 0;
-
-  if (/\.\d{3},\d{2}$/.test(str)) {
-
-    str = str.replace(/\./g, "").replace(/,\d{2}$/, "");
-
-  } else if (/,\d{3}\.\d{2}$/.test(str)) {
-
-    str = str.replace(/,/g, "").replace(/\.\d{2}$/, "");
-
-  } else if (/,\d{2}$/.test(str)) {
-
-    str = str.replace(/,\d{2}$/, "");
-
-  } else if (/\.\d{2}$/.test(str)) {
-
-    str = str.replace(/\.\d{2}$/, "");
-
-  } else if (/\.\d{3}$/.test(str)) {
-
-    str = str.replace(/\./g, "");
-
-  } else if (/,\d{3}$/.test(str)) {
-
-    str = str.replace(/,/g, "");
-
-  } else {
-
-    str = str.replace(/[.,]/g, "");
-
-  }
-
-  const num = parseFloat(str);
-
-  return isNaN(num) ? 0 : Math.round(Math.abs(num));
-
-}
-
 /************************************************************
-
- * MIS FINANZAS - BOT DE FINANZAS PERSONALES
-
- * VERSIÓN V25.6 PRO AI - ARCHIVO OFICIAL DEFINITIVO
-
+ * MIS FINANZAS & PARDOFINANZAS DASHBOARD WEB
+ * VERSIÓN V26.9 PRO AI — ARCHIVO OFICIAL DEFINITIVO UNIFICADO
  * 
-
- * Este es el ÚNICO archivo oficial del sistema.
-
  * Contiene el 100% de la automatización para Google Apps Script:
-
- * - Procesamiento Inteligente de Colillas de Nómina Colanta y Ahorros
-
- * - Detección inmediata sin fallos por guiones bajos
-
- * - Extracción en 1 sola llamada (Single-Pass) y magic bytes
-
- * - Lectura de Facturas Físicas, Tickets y Facturación Electrónica DIAN (XML/ZIP)
-
- * - Transacciones Bancarias (PSE, ACH Colombia, Nequi, Bancolombia, Bre-B)
-
- * - Notas de Voz Multimodal con Gemini y /consejo financiero
-
- * - Control de Presupuesto, Quincenas, Gastos Fijos, Deudas y Cuentas por Cobrar
-
- * - Exclusión estricta de Clara Aidé y reglas de comercios
-
+ * 1. API Web en tiempo real para Dashboard (doGet & doPost)
+ * 2. Inserción directa en fila 5 de MOVIMIENTOS y fórmula Columna O
+ * 3. Opción de Borrar / Anular registros con 1 clic (deleteMovement)
+ * 4. Auditoría de Colillas de Nómina Colanta con Gemini Multimodal (PDF/Foto)
+ * 5. Bot de Telegram oficial (comandos, callbacks, notas de voz)
+ * 6. Escáner de Facturas Gmail (procesarCorreosFacturas)
  ************************************************************/
 
 /* =========================================================
-
    CONFIGURACIÓN Y ENTORNO
-
    ========================================================= */
-
 const TELEGRAM_TOKEN = String(PropertiesService.getScriptProperties().getProperty("TELEGRAM_TOKEN") || "").trim();
-
 const SPREADSHEET_ID = String(PropertiesService.getScriptProperties().getProperty("SPREADSHEET_ID") || "1C9ifm7U8IYGOdY4IwAji9Z3McSlNy3B-e_2Jo-zvBFk").trim();
-
 const WEBHOOK_URL = String(PropertiesService.getScriptProperties().getProperty("WEBHOOK_URL") || "https://script.google.com/macros/s/AKfycbxfGcLK2UtQUpLYTOmD6o7PO-cCD_MmUnGul0F7MlfLbPebKYNy8HLV8XM3amI8a_BQ/exec").trim();
-
 const GEMINI_API_KEY = String(PropertiesService.getScriptProperties().getProperty("GEMINI_API_KEY") || "").trim();
-
 const GMAIL_FACTURAS_REMITENTE = String(PropertiesService.getScriptProperties().getProperty("GMAIL_FACTURAS_REMITENTE") || "marlonmunozpardo5@gmail.com").trim();
-
 const USUARIO_NOMBRE_COMPLETO = String(PropertiesService.getScriptProperties().getProperty("USUARIO_NOMBRE_COMPLETO") || "MARLON MUNOZ PARDO").trim();
-
 const ZONA_HORARIA = "America/Bogota";
-
 const GMAIL_MAX_BODY_CHARS = 30000;
-
 const GMAIL_MAX_ATTACHMENT_BYTES = 6 * 1024 * 1024;
 
-function obtenerLibro_() {
-
-  let ss = null;
-
-  if (SPREADSHEET_ID && SPREADSHEET_ID.trim().length > 10) {
-
-    try {
-
-      ss = SpreadsheetApp.openById(SPREADSHEET_ID.trim());
-
-    } catch (e) {}
-
-  }
-
-  if (!ss) {
-
-    try {
-
-      ss = SpreadsheetApp.getActiveSpreadsheet();
-
-    } catch (e) {}
-
-  }
-
-  if (!ss) {
-
-    throw new Error("No se pudo conectar con el libro de cálculo. Vincula el script al Google Sheet o configura la propiedad SPREADSHEET_ID en Propiedades del Script.");
-
-  }
-
-
-
-  // Envoltorio universal: permite encontrar cualquier hoja con espacios o con guiones bajos automáticamente
-
-  try {
-
-    const originalGetSheet = ss.getSheetByName.bind(ss);
-
-    ss.getSheetByName = function(nombre) {
-
-      if (!nombre) return null;
-
-      let sh = originalGetSheet(nombre);
-
-      if (sh) return sh;
-
-      const conEspacio = String(nombre).replace(/_/g, " ");
-
-      sh = originalGetSheet(conEspacio);
-
-      if (sh) return sh;
-
-      const conGuion = String(nombre).replace(/\s+/g, "_");
-
-      sh = originalGetSheet(conGuion);
-
-      if (sh) return sh;
-
-      const norm = (s) => String(s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[\s_]+/g, "");
-
-      const target = norm(nombre);
-
-      const all = ss.getSheets();
-
-      for (let i = 0; i < all.length; i++) {
-
-        if (norm(all[i].getName()) === target) return all[i];
-
-      }
-
-      return null;
-
-    };
-
-  } catch (e) {}
-
-
-
-  return ss;
-
-}
-
-function verificarVariables() {
-
-  const faltantes = [];
-
-  if (!TELEGRAM_TOKEN) faltantes.push("TELEGRAM_TOKEN");
-
-  let tieneLibro = false;
-
-  if (SPREADSHEET_ID && SPREADSHEET_ID.trim().length > 10) tieneLibro = true;
-
-  else {
-
-    try { if (SpreadsheetApp.getActiveSpreadsheet()) tieneLibro = true; } catch(e) {}
-
-  }
-
-  if (!tieneLibro) faltantes.push("SPREADSHEET_ID (o vincular script al libro)");
-
-  if (faltantes.length > 0) throw new Error("Faltan propiedades críticas: " + faltantes.join(", "));
-
-  if (!GEMINI_API_KEY) {
-
-    console.warn("GEMINI_API_KEY no configurada. Las funciones de IA usarán el motor semántico de contingencia.");
-
-  }
-
-}
-
-/**
-
- * Receptor Webhook de Telegram: Procesa actualizaciones en tiempo real si el usuario configuró Webhook
-
- */
 
 /* =========================================================
    API WEB (doGet & doPost) — CONEXIÓN DASHBOARD & TELEGRAM V26.9
@@ -679,6 +490,173 @@ function obtenerDatosCompletosDashboard_() {
     movimientos: ultimosMovs
   };
 }
+
+/* =========================================================
+   FUNCIONES AUXILIARES DEL BOT Y PROCESAMIENTO
+   ========================================================= */
+
+function limpiarMontoCOP_(val) {
+
+  if (val === null || val === undefined) return 0;
+
+  if (typeof val === "number") return Math.abs(Math.round(val));
+
+  let str = String(val).trim().replace(/[$ \t\r\n]/g, "").replace(/-/g, "");
+
+  if (!str) return 0;
+
+  if (/\.\d{3},\d{2}$/.test(str)) {
+
+    str = str.replace(/\./g, "").replace(/,\d{2}$/, "");
+
+  } else if (/,\d{3}\.\d{2}$/.test(str)) {
+
+    str = str.replace(/,/g, "").replace(/\.\d{2}$/, "");
+
+  } else if (/,\d{2}$/.test(str)) {
+
+    str = str.replace(/,\d{2}$/, "");
+
+  } else if (/\.\d{2}$/.test(str)) {
+
+    str = str.replace(/\.\d{2}$/, "");
+
+  } else if (/\.\d{3}$/.test(str)) {
+
+    str = str.replace(/\./g, "");
+
+  } else if (/,\d{3}$/.test(str)) {
+
+    str = str.replace(/,/g, "");
+
+  } else {
+
+    str = str.replace(/[.,]/g, "");
+
+  }
+
+  const num = parseFloat(str);
+
+  return isNaN(num) ? 0 : Math.round(Math.abs(num));
+
+}
+
+function obtenerLibro_() {
+
+  let ss = null;
+
+  if (SPREADSHEET_ID && SPREADSHEET_ID.trim().length > 10) {
+
+    try {
+
+      ss = SpreadsheetApp.openById(SPREADSHEET_ID.trim());
+
+    } catch (e) {}
+
+  }
+
+  if (!ss) {
+
+    try {
+
+      ss = SpreadsheetApp.getActiveSpreadsheet();
+
+    } catch (e) {}
+
+  }
+
+  if (!ss) {
+
+    throw new Error("No se pudo conectar con el libro de cálculo. Vincula el script al Google Sheet o configura la propiedad SPREADSHEET_ID en Propiedades del Script.");
+
+  }
+
+
+
+  // Envoltorio universal: permite encontrar cualquier hoja con espacios o con guiones bajos automáticamente
+
+  try {
+
+    const originalGetSheet = ss.getSheetByName.bind(ss);
+
+    ss.getSheetByName = function(nombre) {
+
+      if (!nombre) return null;
+
+      let sh = originalGetSheet(nombre);
+
+      if (sh) return sh;
+
+      const conEspacio = String(nombre).replace(/_/g, " ");
+
+      sh = originalGetSheet(conEspacio);
+
+      if (sh) return sh;
+
+      const conGuion = String(nombre).replace(/\s+/g, "_");
+
+      sh = originalGetSheet(conGuion);
+
+      if (sh) return sh;
+
+      const norm = (s) => String(s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[\s_]+/g, "");
+
+      const target = norm(nombre);
+
+      const all = ss.getSheets();
+
+      for (let i = 0; i < all.length; i++) {
+
+        if (norm(all[i].getName()) === target) return all[i];
+
+      }
+
+      return null;
+
+    };
+
+  } catch (e) {}
+
+
+
+  return ss;
+
+}
+
+function verificarVariables() {
+
+  const faltantes = [];
+
+  if (!TELEGRAM_TOKEN) faltantes.push("TELEGRAM_TOKEN");
+
+  let tieneLibro = false;
+
+  if (SPREADSHEET_ID && SPREADSHEET_ID.trim().length > 10) tieneLibro = true;
+
+  else {
+
+    try { if (SpreadsheetApp.getActiveSpreadsheet()) tieneLibro = true; } catch(e) {}
+
+  }
+
+  if (!tieneLibro) faltantes.push("SPREADSHEET_ID (o vincular script al libro)");
+
+  if (faltantes.length > 0) throw new Error("Faltan propiedades críticas: " + faltantes.join(", "));
+
+  if (!GEMINI_API_KEY) {
+
+    console.warn("GEMINI_API_KEY no configurada. Las funciones de IA usarán el motor semántico de contingencia.");
+
+  }
+
+}
+
+/**
+
+ * Receptor Webhook de Telegram: Procesa actualizaciones en tiempo real si el usuario configuró Webhook
+
+ */
+
 /* =========================================================
 
    ACTIVADORES GLOBALES
