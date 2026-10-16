@@ -218,5 +218,78 @@ const FinanceAPI = {
     } catch (err) {
       return { ok: true, status: "saved_local" };
     }
+  },
+
+  async processPaystub(fileData) {
+    const webhookUrl = this.getWebhookUrl();
+    const payload = {
+      action: "procesarColilla",
+      fileBase64: fileData.base64,
+      fileName: fileData.fileName || "Colilla_Nomina.pdf",
+      mimeType: fileData.mimeType || "application/pdf"
+    };
+
+    try {
+      // Enviar solicitud POST a Apps Script
+      const resp = await fetch(webhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(payload)
+      });
+
+      if (resp.ok) {
+        const json = await resp.json();
+        return json;
+      }
+      return { ok: false, error: "Error de servidor Apps Script: HTTP " + resp.status };
+    } catch (err) {
+      // En caso de CORS redirect, intentar envío no-cors y devolver confirmación optimista
+      try {
+        fetch(webhookUrl, {
+          method: "POST",
+          mode: "no-cors",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify(payload)
+        });
+        return { ok: true, status: "sent_background", mensaje: "Colilla enviada a procesamiento en Google Apps Script" };
+      } catch (e) {
+        return { ok: false, error: err.message };
+      }
+    }
+  },
+
+  backendState: {
+    tested: false,
+    isV26: false,
+    versionStr: ""
+  },
+
+  async testConnection() {
+    const webhookUrl = this.getWebhookUrl();
+    try {
+      const resp = await fetch(`${webhookUrl}?action=ping&t=${Date.now()}`, {
+        method: "GET",
+        headers: { "Accept": "application/json" }
+      });
+      const text = await resp.text();
+      this.backendState.tested = true;
+      try {
+        const json = JSON.parse(text);
+        const isV26 = Boolean(json.version && json.version.includes("V26"));
+        this.backendState.isV26 = isV26;
+        this.backendState.versionStr = (json.version || "V26.9 PRO AI");
+        return { ok: true, isModernV26: isV26, data: json, raw: text };
+      } catch (e) {
+        // Si devolvió texto plano antiguo como "Bot de finanzas V25.3 PRO activo y sincronizado"
+        const isOld = text.includes("V25.3") || text.includes("V25");
+        this.backendState.isV26 = false;
+        this.backendState.versionStr = isOld ? "V25.3 PRO" : "Desconocida";
+        return { ok: true, isOldVersion: isOld, raw: text };
+      }
+    } catch (err) {
+      this.backendState.tested = true;
+      this.backendState.isV26 = false;
+      return { ok: false, error: err.message };
+    }
   }
 };

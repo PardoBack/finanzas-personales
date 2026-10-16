@@ -296,6 +296,10 @@
               <div class="qa-icon-bubble"><i class="fa-solid fa-arrow-up"></i></div>
               <span class="qa-label">Ingreso</span>
             </button>
+            <button class="qa-item qa-colilla" id="btn-qa-colilla" title="Subir Colilla de Pago Colanta (Gemini AI)">
+              <div class="qa-icon-bubble"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+              <span class="qa-label">Colilla</span>
+            </button>
             <button class="qa-item qa-cfo" id="btn-qa-cfo" title="Asistente CFO AI por Voz">
               <div class="qa-icon-bubble"><i class="fa-solid fa-microphone-lines"></i></div>
               <span class="qa-label">CFO Voz</span>
@@ -762,6 +766,78 @@
     </div>
   </div>
 
+  <!-- MODAL: SUBIR COLILLA DE PAGO COLANTA (GEMINI AI MULTIMODAL) -->
+  <div class="modal-overlay" id="modal-upload-colilla">
+    <div class="modal-sheet">
+      <div class="modal-sheet-header">
+        <div class="sheet-handle-bar"></div>
+        <div class="sheet-title-row">
+          <h3><i class="fa-solid fa-file-invoice-dollar" style="color:#FBBF24;"></i> Auditar Colilla Colanta</h3>
+          <button class="btn-close-sheet" id="btn-close-modal-colilla">&times;</button>
+        </div>
+      </div>
+
+      <div class="sheet-form">
+        <p class="field-hint" style="margin-bottom: 1.1rem; line-height: 1.5;">
+          Sube tu colilla en <strong>PDF o foto clara</strong>. Gemini AI extraerá automáticamente el devengado, descuentos (salud, pensión, fondo AyC), ahorros y registrará el neto en <strong>AyC Colanta</strong>.
+        </p>
+
+        <!-- Dropzone de archivo -->
+        <div class="file-dropzone" id="colilla-dropzone">
+          <input type="file" id="input-colilla-file" accept=".pdf,image/png,image/jpeg,image/webp" style="display:none;">
+          <div class="dropzone-inner" id="dropzone-click-area">
+            <i class="fa-solid fa-cloud-arrow-up dropzone-icon"></i>
+            <span class="dropzone-title">Toca para seleccionar archivo (PDF o Foto)</span>
+            <span class="dropzone-sub" id="dropzone-file-name">Formatos soportados: PDF, JPG, PNG</span>
+          </div>
+        </div>
+
+        <!-- Estado de análisis con Gemini -->
+        <div class="gemini-loading-box" id="colilla-loading-box" style="display: none;">
+          <div class="gemini-spinner"></div>
+          <div>
+            <strong>Gemini AI auditando colilla de pago...</strong>
+            <p>Calculando neto, devengados y retenciones Colanta</p>
+          </div>
+        </div>
+
+        <!-- Vista previa de resultados extraídos -->
+        <div class="colilla-preview-card" id="colilla-preview-card" style="display: none;">
+          <div class="preview-header">
+            <span class="badge-audit"><i class="fa-solid fa-shield-check"></i> Auditoría Gemini OK</span>
+            <span id="preview-colilla-id" class="preview-id">CP-0019</span>
+          </div>
+          <div class="preview-grid">
+            <div class="pg-item">
+              <span class="pg-label">Período</span>
+              <strong id="prev-periodo">-</strong>
+            </div>
+            <div class="pg-item">
+              <span class="pg-label">Devengado</span>
+              <strong id="prev-devengado" style="color:#60A5FA;">$0</strong>
+            </div>
+            <div class="pg-item">
+              <span class="pg-label">Fondo AyC</span>
+              <strong id="prev-fondo" style="color:#FBBF24;">$0</strong>
+            </div>
+            <div class="pg-item">
+              <span class="pg-label">Neto a Consignar</span>
+              <strong id="prev-neto" style="color:#34D399;">$0</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="sheet-actions">
+          <button type="button" class="btn-sheet-cancel" id="btn-cancel-modal-colilla">Cancelar</button>
+          <button type="button" class="btn-sheet-submit" id="btn-submit-colilla" disabled>
+            <i class="fa-solid fa-wand-magic-sparkles"></i>
+            <span id="btn-colilla-label">Analizar con Gemini AI</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL: CONFIGURACIÓN RÁPIDA -->
   <div class="modal-overlay" id="modal-settings">
     <div class="modal-sheet modal-sheet-sm">
@@ -772,6 +848,23 @@
         </div>
       </div>
       <div class="sheet-form">
+        <!-- Estado de Conexión del Backend -->
+        <div class="backend-status-card" id="settings-backend-status" style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 12px; padding: 0.85rem; margin-bottom: 1rem;">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 0.4rem;">
+            <strong style="font-size:0.85rem; color:#FBBF24;" id="settings-status-title"><i class="fa-solid fa-circle-exclamation"></i> Sincronización Google Sheets</strong>
+            <span class="badge-audit" id="settings-status-badge" style="background:#F59E0B; color:#0F172A; font-size:0.65rem;">V25.3 DETECTADO</span>
+          </div>
+          <p style="font-size:0.75rem; color:#CBD5E1; margin:0; line-height: 1.4;" id="settings-status-desc">
+            Para que los gastos e ingresos se guarden en tu Google Sheet en la fila 5, debes actualizar el código en Apps Script a <strong>V26.9 PRO</strong>.
+          </p>
+          <div style="margin-top: 0.75rem;">
+            <button type="button" class="btn-copy-script" id="btn-copy-gas-script" style="width:100%; background:linear-gradient(135deg, #2563EB, #1D4ED8); color:#fff; border:none; padding:0.6rem 0.8rem; border-radius:8px; font-weight:700; font-size:0.8rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:0.5rem;">
+              <i class="fa-solid fa-copy"></i>
+              <span>Copiar Código Apps Script V26.9</span>
+            </button>
+          </div>
+        </div>
+
         <div class="field-block">
           <label for="input-webhook-url">URL de Apps Script Web App (/exec)</label>
           <input type="url" id="input-webhook-url" class="custom-input" placeholder="https://script.google.com/macros/s/.../exec">
@@ -782,7 +875,7 @@
           <input type="text" class="custom-input" value="1C9ifm7U8IYGOdY4IwAji9Z3McSlNy3B-e_2Jo-zvBFk" readonly>
         </div>
         <div class="sheet-actions">
-          <button type="button" class="btn-sheet-cancel" id="btn-test-connection">Probar</button>
+          <button type="button" class="btn-sheet-cancel" id="btn-test-connection">Probar Conexión</button>
           <button type="button" class="btn-sheet-submit" id="btn-save-settings">Guardar</button>
         </div>
       </div>

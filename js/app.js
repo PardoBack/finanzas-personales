@@ -32,11 +32,55 @@ const FintechApp = {
     this.bindModals();
     this.setupDateContext();
     this.loadData();
+    this.checkBackendHealth();
   },
 
   haptic(ms = 12) {
     if (window.navigator && window.navigator.vibrate) {
       try { window.navigator.vibrate(ms); } catch (e) {}
+    }
+  },
+
+  async checkBackendHealth() {
+    try {
+      const res = await FinanceAPI.testConnection();
+      this.updateBackendStatusUI(res);
+    } catch (e) {}
+  },
+
+  updateBackendStatusUI(res) {
+    const isV26 = res && res.isModernV26;
+    const isOld = res && res.isOldVersion;
+
+    const statusTitle = document.getElementById("settings-status-title");
+    const statusBadge = document.getElementById("settings-status-badge");
+    const statusDesc = document.getElementById("settings-status-desc");
+    const backendCard = document.getElementById("settings-backend-status");
+
+    if (isV26) {
+      if (statusTitle) statusTitle.innerHTML = '<i class="fa-solid fa-circle-check" style="color:#10B981;"></i> Google Sheets Conectado';
+      if (statusBadge) {
+        statusBadge.textContent = "V26.9 ONLINE";
+        statusBadge.style.background = "#10B981";
+        statusBadge.style.color = "#022C22";
+      }
+      if (statusDesc) statusDesc.innerHTML = '¡Excelente! Los movimientos de la app y colillas se insertan en la <strong>fila 5 de MOVIMIENTOS</strong> en tiempo real.';
+      if (backendCard) {
+        backendCard.style.background = "rgba(16, 185, 129, 0.1)";
+        backendCard.style.borderColor = "rgba(16, 185, 129, 0.3)";
+      }
+    } else {
+      if (statusTitle) statusTitle.innerHTML = '<i class="fa-solid fa-triangle-exclamation" style="color:#F59E0B;"></i> Apps Script Requiere Actualización';
+      if (statusBadge) {
+        statusBadge.textContent = isOld ? "V25.3 DETECTADO" : "REQUIERE V26.9";
+        statusBadge.style.background = "#F59E0B";
+        statusBadge.style.color = "#0F172A";
+      }
+      if (statusDesc) statusDesc.innerHTML = 'Tu Webhook responde, pero aún tiene el script antiguo (V25.3) que no inserta registros web. Haz clic abajo en <strong>Copiar Código</strong> y pégalo en Google Sheets (Apps Script).';
+      if (backendCard) {
+        backendCard.style.background = "rgba(245, 158, 11, 0.1)";
+        backendCard.style.borderColor = "rgba(245, 158, 11, 0.3)";
+      }
     }
   },
 
@@ -188,6 +232,11 @@ const FintechApp = {
       if (ri) ri.checked = true;
       document.getElementById("modal-add-movement")?.classList.add("open");
       document.getElementById("input-mov-valor")?.focus();
+    });
+
+    document.getElementById("btn-qa-colilla")?.addEventListener("click", () => {
+      this.haptic(15);
+      document.getElementById("modal-upload-colilla")?.classList.add("open");
     });
 
     document.getElementById("btn-qa-cfo")?.addEventListener("click", () => {
@@ -410,15 +459,23 @@ const FintechApp = {
 
       FinanceAPI.addMovement(nuevoMov);
 
+      const isV26 = FinanceAPI.backendState.isV26;
+      const syncStatusHtml = isV26 
+        ? `<p style="font-size:0.75rem; color:#34D399; margin-top:0.4rem;">
+             <i class="fa-solid fa-cloud-arrow-up"></i> Sincronizado en tiempo real con Google Sheets (Fila 5).
+           </p>`
+        : `<p style="font-size:0.75rem; color:#FBBF24; margin-top:0.4rem; line-height: 1.4;">
+             <i class="fa-solid fa-triangle-exclamation"></i> Guardado en la app. Tu Google Apps Script está en <strong>V25.3</strong>.<br>
+             👉 Para que aparezca en tu Google Sheet, actualiza a <strong>V26.9</strong> desde Ajustes ⚙️ (solo toma 30 segundos).
+           </p>`;
+
       this.appendBotMsg(`
         <p>✅ <strong>${intent.transactionType.toUpperCase()} REGISTRADO EN 0.05s</strong></p>
         <p>🏷️ <strong>${intent.description}</strong><br>
         💰 <strong>$${this.formatCOP(intent.amount)} COP</strong><br>
         📂 Categoría: <em>${intent.category}</em><br>
         💳 Cuenta: <em>${intent.account}</em></p>
-        <p style="font-size:0.75rem; color:#34D399; margin-top:0.4rem;">
-          <i class="fa-solid fa-cloud-arrow-up"></i> Sincronizado en tiempo real con Google Sheets.
-        </p>
+        ${syncStatusHtml}
       `);
       this.showToast(`✅ ${intent.description} guardado ($${this.formatCOP(intent.amount)})`, "success");
       return;
@@ -773,11 +830,103 @@ const FintechApp = {
       this.handleCreateMovement();
     });
 
+    // Modal de Subir Colilla de Pago (Gemini AI)
+    const modalColilla = document.getElementById("modal-upload-colilla");
+    const btnCloseCol = document.getElementById("btn-close-modal-colilla");
+    const btnCancelCol = document.getElementById("btn-cancel-modal-colilla");
+    const dropzone = document.getElementById("colilla-dropzone");
+    const inputFile = document.getElementById("input-colilla-file");
+    const dropFileName = document.getElementById("dropzone-file-name");
+    const btnSubmitCol = document.getElementById("btn-submit-colilla");
+    const loadingBox = document.getElementById("colilla-loading-box");
+    const previewCard = document.getElementById("colilla-preview-card");
+
+    let selectedColillaData = null;
+
+    const closeColilla = () => {
+      modalColilla?.classList.remove("open");
+      if (inputFile) inputFile.value = "";
+      selectedColillaData = null;
+      if (dropFileName) dropFileName.textContent = "Formatos soportados: PDF, JPG, PNG";
+      if (btnSubmitCol) {
+        btnSubmitCol.disabled = true;
+        document.getElementById("btn-colilla-label").textContent = "Analizar con Gemini AI";
+      }
+      if (loadingBox) loadingBox.style.display = "none";
+      if (previewCard) previewCard.style.display = "none";
+    };
+
+    btnCloseCol?.addEventListener("click", closeColilla);
+    btnCancelCol?.addEventListener("click", closeColilla);
+
+    dropzone?.addEventListener("click", () => inputFile?.click());
+
+    inputFile?.addEventListener("change", (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+
+      if (dropFileName) dropFileName.textContent = `📄 ${file.name} (${Math.round(file.size / 1024)} KB)`;
+      
+      const reader = new FileReader();
+      reader.onload = (loadEvt) => {
+        const fullBase64 = loadEvt.target.result;
+        const cleanBase64 = fullBase64.split(",")[1] || fullBase64;
+        selectedColillaData = {
+          base64: cleanBase64,
+          fileName: file.name,
+          mimeType: file.type || (file.name.endsWith(".pdf") ? "application/pdf" : "image/jpeg")
+        };
+        if (btnSubmitCol) btnSubmitCol.disabled = false;
+        this.haptic(15);
+      };
+      reader.readAsDataURL(file);
+    });
+
+    btnSubmitCol?.addEventListener("click", async () => {
+      if (!selectedColillaData) return;
+
+      this.haptic(20);
+      btnSubmitCol.disabled = true;
+      if (loadingBox) loadingBox.style.display = "flex";
+      if (previewCard) previewCard.style.display = "none";
+
+      try {
+        const res = await FinanceAPI.processPaystub(selectedColillaData);
+
+        if (loadingBox) loadingBox.style.display = "none";
+
+        if (res && res.ok && res.datosExtraidos) {
+          const d = res.datosExtraidos;
+          if (previewCard) previewCard.style.display = "block";
+          document.getElementById("preview-colilla-id").textContent = res.idColilla || "CP-0019";
+          document.getElementById("prev-periodo").textContent = d.periodoLiquidado || `${d.quincena || ''} ${d.mes || ''}`;
+          document.getElementById("prev-devengado").textContent = `$${this.formatCOP(d.totalDevengado || 0)}`;
+          document.getElementById("prev-fondo").textContent = `$${this.formatCOP(d.fondoEmpleados || 0)}`;
+          document.getElementById("prev-neto").textContent = `$${this.formatCOP(d.netoACobrar || 0)}`;
+
+          this.showToast(`🎉 ¡Colilla auditada e insertada en Sheets! Neto: $${this.formatCOP(d.netoACobrar || 0)}`, "success");
+          this.refreshData();
+
+          setTimeout(() => {
+            closeColilla();
+          }, 3500);
+        } else {
+          this.showToast("⚠️ Colilla enviada al Webhook. Revisa Google Sheets en unos momentos.", "success");
+          closeColilla();
+        }
+      } catch (err) {
+        if (loadingBox) loadingBox.style.display = "none";
+        btnSubmitCol.disabled = false;
+        this.showToast("Error procesando colilla: " + err.message, "error");
+      }
+    });
+
     // Settings Modal
     const modalSet = document.getElementById("modal-settings");
     const btnCloseSet = document.getElementById("btn-close-modal-settings");
     const btnQuickSet = document.getElementById("btn-quick-settings");
     const btnSaveSet = document.getElementById("btn-save-settings");
+    const btnTestConn = document.getElementById("btn-test-connection");
     const inputUrl = document.getElementById("input-webhook-url");
 
     btnQuickSet?.addEventListener("click", () => {
@@ -786,6 +935,36 @@ const FintechApp = {
     });
 
     btnCloseSet?.addEventListener("click", () => modalSet?.classList.remove("open"));
+
+    btnTestConn?.addEventListener("click", async () => {
+      this.haptic(15);
+      btnTestConn.textContent = "Probando...";
+      const res = await FinanceAPI.testConnection();
+      btnTestConn.textContent = "Probar Conexión";
+      this.updateBackendStatusUI(res);
+
+      if (res.ok && res.isModernV26) {
+        alert("✅ ¡CONEXIÓN PERFECTA!\n\nTu Google Apps Script está ejecutando la versión moderna V26.9 PRO.\nLos registros de gastos, ingresos y colillas se insertan en Sheets en tiempo real.");
+      } else if (res.ok && res.isOldVersion) {
+        alert("⚠️ ATENCIÓN: DETECTADA VERSIÓN ANTIGUA (V25.3)\n\nEl Webhook responde, pero tu Google Apps Script en Google Drive aún tiene la versión antigua que NO inserta registros desde la Web.\n\n👉 SOLUCIÓN FÁCIL:\n1. Presiona el botón 'Copiar Código Apps Script V26.9'.\n2. Abre tu Google Sheet 'Panel_Finanzas' > Extensiones > Apps Script.\n3. Presiona Ctrl + A, pega (Ctrl + V) y guarda (Ctrl + S).\n4. Clic en 'Implementar' > 'Nueva versión' > 'Implementar'.");
+      } else {
+        alert("⚠️ RESPUESTA DE CONEXIÓN:\n\n" + (res.raw || res.error || "No se pudo conectar con el Webhook. Revisa tu conexión."));
+      }
+    });
+
+    const btnCopyGas = document.getElementById("btn-copy-gas-script");
+    btnCopyGas?.addEventListener("click", async () => {
+      this.haptic(20);
+      try {
+        const resp = await fetch("google_apps_script/Codigo.gs");
+        if (!resp.ok) throw new Error("No se pudo leer el archivo local");
+        const code = await resp.text();
+        await navigator.clipboard.writeText(code);
+        alert("✅ ¡CÓDIGO APPS SCRIPT V26.9 COPIADO AL PORTAPAPELES!\n\nSigue estos pasos en tu Google Sheet:\n1. Abre tu Google Sheet 'Panel_Finanzas'.\n2. En el menú superior ve a: Extensiones > Apps Script.\n3. Presiona Ctrl + A (seleccionar todo), pega (Ctrl + V) y guarda (Ctrl + S).\n4. Clic arriba a la derecha en: Implementar > Administrar implementaciones.\n5. Haz clic en el lápiz (Editar) > Versión: 'Nueva versión' > Clic en Implementar.\n\n¡Listo! Cuando termines, presiona 'Probar Conexión' y verás el estado en verde.");
+      } catch (err) {
+        alert("No se pudo copiar automáticamente: " + err.message + "\nPuedes copiar el archivo 'google_apps_script/Codigo.gs' directamente desde la carpeta de tu proyecto.");
+      }
+    });
 
     btnSaveSet?.addEventListener("click", () => {
       const v = inputUrl.value.trim();
@@ -797,6 +976,7 @@ const FintechApp = {
 
     window.addEventListener("click", (e) => {
       if (e.target === modalAdd) closeAdd();
+      if (e.target === modalColilla) closeColilla();
       if (e.target === modalSet) modalSet?.classList.remove("open");
     });
   },
