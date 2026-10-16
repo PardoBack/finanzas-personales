@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PardoFinanzas PRO — Dashboard Financiero</title>
+  <meta name="description" content="Dashboard moderno de finanzas personales conectado en tiempo real con Google Sheets y Telegram.">
+  
+  <!-- Google Fonts: Outfit & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="dark-theme">
+  <!-- Fondo con efectos de gradientes y partículas -->
+  <div class="bg-glow bg-glow-1"></div>
+  <div class="bg-glow bg-glow-2"></div>
+  <div class="bg-glow bg-glow-3"></div>
+
+  <!-- Header / Barra de Navegación -->
+  <header class="navbar" id="main-navbar">
+    <div class="nav-brand">
+      <div class="brand-logo">
+        <i class="fa-solid fa-vault"></i>
+      </div>
+      <div class="brand-info">
+        <h1 class="brand-title">PardoFinanzas <span class="badge-pro">PRO V26</span></h1>
+        <p class="brand-subtitle">Control Financiero Personal & Nómina Colanta</p>
+      </div>
+    </div>
+
+    <div class="nav-actions">
+      <div class="connection-status" id="connection-status-badge">
+        <span class="status-dot pulsing"></span>
+        <span class="status-text" id="status-text-label">Conectado a Sheets</span>
+      </div>
+
+      <button class="btn btn-secondary" id="btn-sync-data" title="Actualizar datos desde Google Sheets">
+        <i class="fa-solid fa-arrows-rotate" id="sync-icon"></i>
+        <span>Sincronizar</span>
+      </button>
+
+      <button class="btn btn-secondary" id="btn-export-excel" title="Descargar como archivo Excel">
+        <i class="fa-solid fa-file-excel"></i>
+        <span>Exportar Excel</span>
+      </button>
+
+      <button class="btn btn-primary" id="btn-open-modal-add" title="Registrar nuevo gasto o ingreso">
+        <i class="fa-solid fa-plus"></i>
+        <span>Nuevo Movimiento</span>
+      </button>
+
+      <button class="btn btn-icon" id="btn-open-settings" title="Configurar conexión">
+        <i class="fa-solid fa-gear"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- Contenedor Principal -->
+  <main class="dashboard-container" id="dashboard-main-container">
+    
+    <!-- Barra superior de contexto (Fecha y Selector de Mes) -->
+    <section class="period-bar" id="period-context-bar">
+      <div class="period-greeting">
+        <h2 id="greeting-title">Bienvenido, Marlon 👋</h2>
+        <p id="period-summary-subtitle">Monitoreo de liquidez, nómina Colanta y gastos fijos en Medellín</p>
+      </div>
+
+      <div class="period-controls">
+        <div class="period-badge">
+          <i class="fa-regular fa-calendar"></i>
+          <span id="current-month-label">OCTUBRE 2026</span>
+        </div>
+        <div class="safe-spend-badge" id="daily-spend-badge">
+          <i class="fa-solid fa-shield-halved"></i>
+          <span>Ritmo Seguro: <strong id="safe-daily-spend">$42.500 COP/día</strong></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- KPI Cards (Métricas Clave) -->
+    <section class="kpi-grid" id="kpi-summary-grid">
+      <!-- Tarjeta 1: Ingresos -->
+      <div class="kpi-card card-income" id="kpi-card-income">
+        <div class="kpi-header">
+          <span class="kpi-title">Ingreso Mensual (Quincenas)</span>
+          <div class="kpi-icon"><i class="fa-solid fa-arrow-trend-up"></i></div>
+        </div>
+        <div class="kpi-value" id="kpi-income-val">$0</div>
+        <div class="kpi-footer">
+          <span class="kpi-tag tag-success"><i class="fa-solid fa-circle-check"></i> Nómina Colanta</span>
+          <span class="kpi-subtext" id="kpi-income-sub">Quincena 15 y 30</span>
+        </div>
+      </div>
+
+      <!-- Tarjeta 2: Gastos -->
+      <div class="kpi-card card-expense" id="kpi-card-expense">
+        <div class="kpi-header">
+          <span class="kpi-title">Gastos Ejecutados</span>
+          <div class="kpi-icon"><i class="fa-solid fa-arrow-trend-down"></i></div>
+        </div>
+        <div class="kpi-value" id="kpi-expense-val">$0</div>
+        <div class="kpi-footer">
+          <span class="kpi-tag tag-warning" id="kpi-expense-percent">0% del ingreso</span>
+          <span class="kpi-subtext" id="kpi-expense-sub">Variables y fijos</span>
+        </div>
+      </div>
+
+      <!-- Tarjeta 3: Ahorro Nómina -->
+      <div class="kpi-card card-savings" id="kpi-card-savings">
+        <div class="kpi-header">
+          <span class="kpi-title">Ahorro Retenido Colanta</span>
+          <div class="kpi-icon"><i class="fa-solid fa-piggy-bank"></i></div>
+        </div>
+        <div class="kpi-value" id="kpi-savings-val">$0</div>
+        <div class="kpi-footer">
+          <span class="kpi-tag tag-info"><i class="fa-solid fa-tree"></i> Navideño + Ord.</span>
+          <span class="kpi-subtext" id="kpi-savings-sub">Entrega en Dic</span>
+        </div>
+      </div>
+
+      <!-- Tarjeta 4: Disponible Real en Caja (Destacada) -->
+      <div class="kpi-card card-available glow-primary" id="kpi-card-available">
+        <div class="kpi-header">
+          <span class="kpi-title">Disponible Real en Caja</span>
+          <div class="kpi-icon"><i class="fa-solid fa-gem"></i></div>
+        </div>
+        <div class="kpi-value highlight-green" id="kpi-available-val">$0</div>
+        <div class="kpi-footer">
+          <span class="kpi-tag tag-emerald" id="kpi-available-state">🟢 Saludable</span>
+          <span class="kpi-subtext" id="kpi-available-sub">Caja libre real</span>
+        </div>
+      </div>
+
+      <!-- Tarjeta 5: Compromisos Fijos Abiertos -->
+      <div class="kpi-card card-fixed" id="kpi-card-fixed">
+        <div class="kpi-header">
+          <span class="kpi-title">Fijos Pendientes Mes</span>
+          <div class="kpi-icon"><i class="fa-solid fa-clock-rotate-left"></i></div>
+        </div>
+        <div class="kpi-value highlight-orange" id="kpi-fixed-val">$0</div>
+        <div class="kpi-footer">
+          <span class="kpi-tag tag-alert" id="kpi-fixed-count">0 obligaciones</span>
+          <span class="kpi-subtext">Por liquidar</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Gráficos Interactivos -->
+    <section class="charts-grid" id="charts-interactive-section">
+      <!-- Gráfico 1: Gastos por Categoría -->
+      <div class="chart-card glass-panel" id="chart-card-categories">
+        <div class="card-header">
+          <div class="card-title-group">
+            <i class="fa-solid fa-chart-pie chart-icon"></i>
+            <h3>Distribución de Gastos por Categoría</h3>
+          </div>
+          <span class="badge-sub">Este Mes</span>
+        </div>
+        <div class="chart-wrapper">
+          <canvas id="categoriesDoughnutChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Gráfico 2: Flujo Quincenal y Estado de Presupuesto -->
+      <div class="chart-card glass-panel" id="chart-card-quincena">
+        <div class="card-header">
+          <div class="card-title-group">
+            <i class="fa-solid fa-chart-column chart-icon"></i>
+            <h3>Balanza y Presupuesto por Quincena</h3>
+          </div>
+          <span class="badge-sub">Q1 vs Q2</span>
+        </div>
+        <div class="chart-wrapper">
+          <canvas id="quincenaBarChart"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- Sección de Pestañas / Tablas de Datos -->
+    <section class="data-tabs-section glass-panel" id="data-tabs-container">
+      <div class="tabs-header" id="tabs-header-nav">
+        <button class="tab-btn active" data-tab="tab-movements" id="btn-tab-movements">
+          <i class="fa-solid fa-list-check"></i>
+          <span>Movimientos Recientes</span>
+        </button>
+        <button class="tab-btn" data-tab="tab-fixed" id="btn-tab-fixed">
+          <i class="fa-solid fa-thumbtack"></i>
+          <span>Compromisos Fijos</span>
+        </button>
+        <button class="tab-btn" data-tab="tab-accounts" id="btn-tab-accounts">
+          <i class="fa-solid fa-building-columns"></i>
+          <span>Arqueo de Cuentas</span>
+        </button>
+        <button class="tab-btn" data-tab="tab-fugas" id="btn-tab-fugas">
+          <i class="fa-solid fa-bug"></i>
+          <span>Radar de Fugas</span>
+        </button>
+      </div>
+
+      <!-- Tab 1: Movimientos Recientes -->
+      <div class="tab-content active" id="tab-movements">
+        <div class="table-toolbar">
+          <div class="search-box">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="search-movements-input" placeholder="Buscar por comercio, concepto o categoría...">
+          </div>
+          <div class="filters-group">
+            <select id="filter-category-select" class="form-select">
+              <option value="ALL">Todas las Categorías</option>
+              <option value="Alimentación">Alimentación</option>
+              <option value="Moto">Moto</option>
+              <option value="Servicios">Servicios</option>
+              <option value="Compras">Compras</option>
+              <option value="Gastos Hormiga / Dulces">Gastos Hormiga</option>
+              <option value="Transporte">Transporte</option>
+              <option value="Otros">Otros</option>
+            </select>
+            <select id="filter-account-select" class="form-select">
+              <option value="ALL">Todas las Cuentas</option>
+              <option value="Nequi">Nequi</option>
+              <option value="AyC Colanta">AyC Colanta</option>
+              <option value="Efectivo">Efectivo</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table" id="movements-data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Fecha</th>
+                <th>Tipo</th>
+                <th>Categoría</th>
+                <th>Descripción</th>
+                <th>Valor COP</th>
+                <th>Cuenta</th>
+              </tr>
+            </thead>
+            <tbody id="movements-tbody">
+              <!-- Renderizado dinámicamente -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab 2: Gastos Fijos -->
+      <div class="tab-content" id="tab-fixed">
+        <div class="fixed-summary-bar">
+          <div class="fixed-info-tag">
+            <span>Quincena 1 (Día 1 a 15)</span>
+            <strong id="q1-fixed-total">$0 COP</strong>
+          </div>
+          <div class="fixed-info-tag">
+            <span>Quincena 2 (Día 16 a 31)</span>
+            <strong id="q2-fixed-total">$0 COP</strong>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table" id="fixed-data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Obligación / Concepto</th>
+                <th>Categoría</th>
+                <th>Día Cobro</th>
+                <th>Cuota Base</th>
+                <th>Abonado</th>
+                <th>Saldo Pendiente</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody id="fixed-tbody">
+              <!-- Renderizado dinámicamente -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab 3: Arqueo de Cuentas -->
+      <div class="tab-content" id="tab-accounts">
+        <div class="accounts-grid" id="accounts-cards-grid">
+          <div class="account-card" id="account-colanta">
+            <div class="acc-icon"><i class="fa-solid fa-cow"></i></div>
+            <div class="acc-details">
+              <h4>AyC Colanta (Nómina)</h4>
+              <p class="acc-balance" id="acc-colanta-val">$0</p>
+              <span class="acc-note">Cuenta principal de sueldo</span>
+            </div>
+          </div>
+
+          <div class="account-card" id="account-nequi">
+            <div class="acc-icon"><i class="fa-solid fa-mobile-screen"></i></div>
+            <div class="acc-details">
+              <h4>Nequi</h4>
+              <p class="acc-balance" id="acc-nequi-val">$0</p>
+              <span class="acc-note">Transacciones diarias y pagos</span>
+            </div>
+          </div>
+
+          <div class="account-card" id="account-cash">
+            <div class="acc-icon"><i class="fa-solid fa-money-bill-wave"></i></div>
+            <div class="acc-details">
+              <h4>Efectivo en Mano</h4>
+              <p class="acc-balance" id="acc-cash-val">$0</p>
+              <span class="acc-note">Monedas y billetes físicos</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 4: Radar de Fugas -->
+      <div class="tab-content" id="tab-fugas">
+        <div class="fugas-banner">
+          <div class="fugas-icon"><i class="fa-solid fa-cookie-bite"></i></div>
+          <div class="fugas-info">
+            <h4>Control de Gastos Hormiga & Mecatos</h4>
+            <p>Monitoreo de micropagos (dulces, antojos, chucherías, pasabocas) que drenan tu disponible.</p>
+          </div>
+          <div class="fugas-stat">
+            <span class="stat-label">Total Fugas Acumuladas</span>
+            <span class="stat-val" id="fugas-total-val">$0 COP</span>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table" id="fugas-data-table">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Concepto / Antojo</th>
+                <th>Valor COP</th>
+                <th>Cuenta</th>
+                <th>Impacto</th>
+              </tr>
+            </thead>
+            <tbody id="fugas-tbody">
+              <!-- Renderizado dinámicamente -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Modal: Registrar Nuevo Movimiento -->
+  <div class="modal-backdrop" id="modal-add-movement">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-receipt"></i> Nuevo Movimiento</h3>
+        <button class="btn-close" id="btn-close-modal-add">&times;</button>
+      </div>
+      <form id="form-add-movement" class="modal-form">
+        <div class="form-group-toggle">
+          <label class="toggle-option">
+            <input type="radio" name="mov-tipo" value="Gasto" checked id="radio-gasto">
+            <span class="toggle-pill pill-expense">💸 Gasto</span>
+          </label>
+          <label class="toggle-option">
+            <input type="radio" name="mov-tipo" value="Ingreso" id="radio-ingreso">
+            <span class="toggle-pill pill-income">💰 Ingreso</span>
+          </label>
+        </div>
+
+        <div class="form-group">
+          <label for="input-mov-valor">Valor en Pesos (COP) *</label>
+          <div class="input-money-wrapper">
+            <span class="currency-symbol">$</span>
+            <input type="number" id="input-mov-valor" placeholder="Ej: 25000" min="100" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="input-mov-desc">Descripción / Comercio *</label>
+          <input type="text" id="input-mov-desc" placeholder="Ej: Gasolina Moto, Almuerzo, Greenfit..." required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="select-mov-cat">Categoría</label>
+            <select id="select-mov-cat" class="form-select">
+              <option value="Alimentación">Alimentación</option>
+              <option value="Moto">Moto</option>
+              <option value="Servicios">Servicios</option>
+              <option value="Compras">Compras</option>
+              <option value="Gastos Hormiga / Dulces">Gastos Hormiga / Dulces</option>
+              <option value="Transporte">Transporte</option>
+              <option value="Salud">Salud</option>
+              <option value="Entretenimiento">Entretenimiento</option>
+              <option value="Vivienda">Vivienda</option>
+              <option value="Otros">Otros</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="select-mov-cuenta">Cuenta Origen</label>
+            <select id="select-mov-cuenta" class="form-select">
+              <option value="Nequi">Nequi</option>
+              <option value="AyC Colanta">AyC Colanta</option>
+              <option value="Efectivo">Efectivo</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" id="btn-cancel-modal-add">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="btn-submit-movement">
+            <i class="fa-solid fa-cloud-arrow-up"></i>
+            <span>Guardar en Google Sheets</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Configuración de Conexión -->
+  <div class="modal-backdrop" id="modal-settings">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-sliders"></i> Configuración de Conexión</h3>
+        <button class="btn-close" id="btn-close-modal-settings">&times;</button>
+      </div>
+      <div class="modal-form">
+        <div class="form-group">
+          <label for="input-webhook-url">URL de Google Apps Script Webhook (exec)</label>
+          <input type="url" id="input-webhook-url" placeholder="https://script.google.com/macros/s/.../exec">
+          <small class="form-help">Pega la URL de tu Web App desplegada en Google Apps Script.</small>
+        </div>
+
+        <div class="form-group">
+          <label for="input-sheet-id">ID de Google Sheet</label>
+          <input type="text" id="input-sheet-id" value="1C9ifm7U8IYGOdY4IwAji9Z3McSlNy3B-e_2Jo-zvBFk" readonly>
+        </div>
+
+        <div class="form-group-checkbox">
+          <label>
+            <input type="checkbox" id="check-demo-mode">
+            <span>Usar datos de demostración si la API no responde</span>
+          </label>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" id="btn-test-connection">Probar Conexión</button>
+          <button type="button" class="btn btn-primary" id="btn-save-settings">Guardar Cambios</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast de Notificaciones -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- Scripts -->
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
