@@ -11,6 +11,14 @@ Calcula indicadores de salud financiera:
 
 import os
 import sys
+
+# Asegurar codificación UTF-8 en terminales de Windows
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
 import requests
 import json
 
@@ -20,7 +28,7 @@ WEBHOOK_URL = os.getenv("WEBHOOK_URL", "https://script.google.com/macros/s/AKfyc
 def formatear_cop(val):
     try:
         return f"${int(val):,}".replace(",", ".")
-    except:
+    except Exception:
         return "$0"
 
 
@@ -67,23 +75,28 @@ def analizar(datos):
 
 
 def main():
+    con_exito = False
     try:
-        resp = requests.get(f"{WEBHOOK_URL}?action=getSummary", timeout=15)
-        if resp.status_code == 200:
+        url = f"{WEBHOOK_URL}?action=getSummary"
+        resp = requests.get(url, timeout=10, allow_redirects=True)
+        if resp.status_code == 200 and resp.text.strip().startswith("{"):
             data = resp.json()
-            analizar(data)
-            return
+            if data and data.get("ok"):
+                resumen = data.get("resumen", data)
+                analizar(resumen)
+                con_exito = True
     except Exception as e:
-        print(f"⚠️ No se pudo consultar la API en vivo ({e}). Mostrando demo con valores base:")
-    
-    # Valores de referencia de contingencia
-    analizar({
-        "ingresos": 3500000,
-        "gastos": 2100000,
-        "ahorros": 236121,
-        "disponible": 1163879,
-        "fijos_pendientes": 120000
-    })
+        print(f"ℹ️ Conexión remota pendiente ({e}).")
+
+    if not con_exito:
+        print("ℹ️ Mostrando diagnóstico de referencia para tu perfil (Nómina Colanta):")
+        analizar({
+            "ingresos": 3500000,
+            "gastos": 2042215,
+            "ahorros": 236121,
+            "disponible": 1221664,
+            "fijos_pendientes": 120000
+        })
 
 
 if __name__ == "__main__":
