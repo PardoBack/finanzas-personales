@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0E1424"/>
+      <stop offset="50%" stop-color="#080C15"/>
+      <stop offset="100%" stop-color="#04060B"/>
+    </linearGradient>
+    <linearGradient id="neonBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3B82F6"/>
+      <stop offset="100%" stop-color="#1D4ED8"/>
+    </linearGradient>
+    <linearGradient id="neonGreen" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34D399"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="16" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Background rounded squircle (Apple/Android icon style) -->
+  <rect width="512" height="512" rx="115" fill="url(#bgGrad)"/>
+  <rect width="506" height="506" x="3" y="3" rx="112" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="4"/>
+
+  <!-- Glowing background orb -->
+  <circle cx="256" cy="256" r="140" fill="#2563EB" opacity="0.25" filter="url(#glow)"/>
+
+  <!-- Logo Shape: Stylized Vault Gem & Diamond -->
+  <g transform="translate(106, 106)">
+    <!-- Shield / Vault Base -->
+    <path d="M150 20 L270 70 L270 200 C270 260 150 295 150 295 C150 295 30 260 30 200 L30 70 Z" 
+          fill="none" stroke="url(#neonBlue)" stroke-width="18" stroke-linejoin="round"/>
+    
+    <!-- Central Pardo Diamond Gem -->
+    <polygon points="150,75 220,135 150,230 80,135" fill="url(#neonGreen)"/>
+    <polygon points="150,75 220,135 150,155" fill="rgba(255,255,255,0.3)"/>
+    <polygon points="80,135 150,75 150,155" fill="rgba(255,255,255,0.15)"/>
+    
+    <!-- Pulse Ring Sparkle -->
+    <circle cx="150" cy="75" r="8" fill="#FDE047"/>
+    <circle cx="220" cy="135" r="6" fill="#FDE047"/>
+    <circle cx="80" cy="135" r="6" fill="#FDE047"/>
+  </g>
+</svg>

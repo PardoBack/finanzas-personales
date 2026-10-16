@@ -18,10 +18,13 @@ const FintechApp = {
     balancesHidden: false,
     activeTab: "tab-all-movements",
     isRecording: false,
-    speechRecognition: null
+    speechRecognition: null,
+    deferredInstallPrompt: null
   },
 
   init() {
+    this.initServiceWorker();
+    this.bindPWAInstall();
     this.bindNavigation();
     this.bindPrivacyToggle();
     this.bindChatCFO();
@@ -29,6 +32,72 @@ const FintechApp = {
     this.bindModals();
     this.setupDateContext();
     this.loadData();
+  },
+
+  haptic(ms = 12) {
+    if (window.navigator && window.navigator.vibrate) {
+      try { window.navigator.vibrate(ms); } catch (e) {}
+    }
+  },
+
+  initServiceWorker() {
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("./sw.js")
+          .then(reg => console.log("✅ PWA Service Worker registrado:", reg.scope))
+          .catch(err => console.warn("Service Worker:", err));
+      });
+    }
+  },
+
+  bindPWAInstall() {
+    const btnTopInstall = document.getElementById("btn-install-app");
+    const modalInstall = document.getElementById("modal-install-app");
+    const btnCloseInstall = document.getElementById("btn-close-modal-install");
+    const btnCancelInstall = document.getElementById("btn-cancel-modal-install");
+    const btnTriggerInstall = document.getElementById("btn-trigger-pwa-install");
+
+    // Capturar evento de instalación nativa en Android/Chrome
+    window.addEventListener("beforeinstallprompt", (e) => {
+      e.preventDefault();
+      this.state.deferredInstallPrompt = e;
+      if (btnTopInstall) {
+        btnTopInstall.style.display = "inline-flex";
+        btnTopInstall.classList.add("pulsing-btn");
+      }
+    });
+
+    // Abrir modal de instrucciones de instalación
+    btnTopInstall?.addEventListener("click", () => {
+      this.haptic(15);
+      modalInstall?.classList.add("open");
+    });
+
+    const closeInstallModal = () => modalInstall?.classList.remove("open");
+    btnCloseInstall?.addEventListener("click", closeInstallModal);
+    btnCancelInstall?.addEventListener("click", closeInstallModal);
+
+    btnTriggerInstall?.addEventListener("click", async () => {
+      this.haptic(20);
+      if (this.state.deferredInstallPrompt) {
+        this.state.deferredInstallPrompt.prompt();
+        const choice = await this.state.deferredInstallPrompt.userChoice;
+        if (choice.outcome === "accepted") {
+          this.showToast("🎉 ¡App instalada con éxito en tu celular!", "success");
+        }
+        this.state.deferredInstallPrompt = null;
+        closeInstallModal();
+      } else {
+        // En iOS Safari o navegador ya instalado
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        if (isIOS) {
+          alert("📲 En tu iPhone:\nToca el botón 'Compartir' (cuadrado con flecha) abajo en Safari y elige 'Agregar a pantalla de inicio'.");
+        } else {
+          alert("📲 En tu navegador:\nAbre el menú de opciones (3 puntos arriba) y selecciona 'Instalar aplicación' o 'Agregar a pantalla principal'.");
+        }
+        closeInstallModal();
+      }
+    });
   },
 
   setupDateContext() {
@@ -42,6 +111,7 @@ const FintechApp = {
     // 1. Sidebar Links (Desktop)
     document.querySelectorAll(".sidebar-nav .nav-item").forEach(link => {
       link.addEventListener("click", (e) => {
+        this.haptic(10);
         document.querySelectorAll(".sidebar-nav .nav-item").forEach(l => l.classList.remove("active"));
         link.classList.add("active");
         const navTarget = link.getAttribute("data-nav");
@@ -52,6 +122,7 @@ const FintechApp = {
     // 2. Mobile Bottom Bar Buttons (Celular)
     document.querySelectorAll(".mobile-nav-btn").forEach(btn => {
       btn.addEventListener("click", () => {
+        this.haptic(12);
         const target = btn.getAttribute("data-target");
         if (target) {
           document.querySelectorAll(".mobile-nav-btn").forEach(b => b.classList.remove("active"));
@@ -63,12 +134,14 @@ const FintechApp = {
 
     // Mobile Center Add Button
     document.getElementById("btn-m-add")?.addEventListener("click", () => {
+      this.haptic(15);
       document.getElementById("modal-add-movement")?.classList.add("open");
       document.getElementById("input-mov-valor")?.focus();
     });
 
     // Mobile Chat Button
     document.getElementById("btn-m-chat")?.addEventListener("click", () => {
+      this.haptic(15);
       const drawer = document.getElementById("chat-cfo-drawer");
       drawer?.classList.toggle("open");
     });

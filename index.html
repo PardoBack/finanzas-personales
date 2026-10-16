@@ -7,6 +7,15 @@
   <meta name="description" content="Dashboard financiero ultra-moderno para Marlon Muñoz. Conectado en tiempo real con Google Sheets, Colanta y Telegram.">
   <meta name="theme-color" content="#090D16">
 
+  <!-- PWA & Mobile Native App Support -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.png">
+  <link rel="apple-touch-icon" href="assets/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="PardoFinanzas">
+  <meta name="mobile-web-app-capable" content="yes">
+
   <!-- Tipografía Ultra-Premium: Outfit (Headings/Cifras) & Plus Jakarta Sans (UI) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -110,6 +119,11 @@
         </div>
 
         <div class="topbar-right">
+          <button class="topbar-btn btn-install" id="btn-install-app" title="Instalar App en tu Celular">
+            <i class="fa-solid fa-mobile-screen-button"></i>
+            <span class="btn-text-desktop">Instalar App</span>
+          </button>
+
           <button class="topbar-btn" id="btn-sync-now" title="Sincronizar en tiempo real">
             <i class="fa-solid fa-rotate" id="topbar-sync-icon"></i>
             <span class="btn-text-desktop">Sincronizar</span>
@@ -692,6 +706,52 @@
         <div class="sheet-actions">
           <button type="button" class="btn-sheet-cancel" id="btn-test-connection">Probar</button>
           <button type="button" class="btn-sheet-submit" id="btn-save-settings">Guardar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: INSTALAR APP EN CELULAR (PWA) -->
+  <div class="modal-overlay" id="modal-install-app">
+    <div class="modal-sheet">
+      <div class="modal-sheet-header">
+        <div class="sheet-title-row">
+          <h3><i class="fa-solid fa-mobile-screen-button"></i> Instalar en tu Celular</h3>
+          <button class="btn-close-sheet" id="btn-close-modal-install">&times;</button>
+        </div>
+      </div>
+      <div class="sheet-form">
+        <div class="install-card-preview">
+          <img src="assets/icon-192.png" alt="PardoFinanzas App Icon" class="install-preview-icon">
+          <div>
+            <h4>PardoFinanzas PRO</h4>
+            <p>App financiera nativa • Pantalla completa sin barra de navegación</p>
+          </div>
+        </div>
+
+        <div class="install-instructions">
+          <div class="inst-step">
+            <span class="step-num">📱</span>
+            <div>
+              <strong>En Android (Google Chrome):</strong>
+              <p>Toca el botón <em>"Instalar Ahora"</em> abajo o en los 3 puntos de Chrome elige <em>"Instalar aplicación"</em>.</p>
+            </div>
+          </div>
+          <div class="inst-step">
+            <span class="step-num">🍏</span>
+            <div>
+              <strong>En iPhone (Safari):</strong>
+              <p>Toca el botón <em>Compartir</em> (ícono del cuadrado con flecha arriba) y selecciona <em>"Agregar a pantalla de inicio"</em>.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="sheet-actions">
+          <button type="button" class="btn-sheet-cancel" id="btn-cancel-modal-install">Cerrar</button>
+          <button type="button" class="btn-sheet-submit" id="btn-trigger-pwa-install">
+            <i class="fa-solid fa-download"></i>
+            <span>Instalar Ahora</span>
+          </button>
         </div>
       </div>
     </div>
