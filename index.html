@@ -463,6 +463,73 @@
 
   <!-- Scripts -->
   <script src="js/api.js"></script>
+  <script src="js/nlp_parser.js"></script>
   <script src="js/app.js"></script>
+
+  <!-- Widget de Chat Flotante: PardoFinanzas CFO AI -->
+  <div class="chat-widget-wrapper" id="chat-widget-wrapper">
+    <!-- Botón Flotante para Abrir Chat -->
+    <button class="chat-toggle-btn" id="btn-toggle-chat" title="Abrir Asistente Financiero IA">
+      <div class="chat-btn-icon">
+        <i class="fa-solid fa-robot"></i>
+      </div>
+      <span class="chat-btn-label">CFO AI Chat</span>
+      <span class="chat-pulse-dot"></span>
+    </button>
+
+    <!-- Ventana / Drawer del Chat -->
+    <div class="chat-window" id="chat-window">
+      <div class="chat-header">
+        <div class="chat-header-info">
+          <div class="chat-avatar">
+            <i class="fa-solid fa-brain"></i>
+            <span class="chat-online-badge"></span>
+          </div>
+          <div>
+            <h4>PardoFinanzas CFO AI</h4>
+            <span class="chat-status-text">⚡ En línea • Respuesta inmediata</span>
+          </div>
+        </div>
+        <div class="chat-header-actions">
+          <button class="chat-btn-tool" id="btn-chat-clear" title="Limpiar conversación">
+            <i class="fa-solid fa-trash-can"></i>
+          </button>
+          <button class="chat-btn-tool" id="btn-chat-close" title="Minimizar">
+            <i class="fa-solid fa-chevron-down"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Mensajes del Chat -->
+      <div class="chat-messages" id="chat-messages-container">
+        <div class="chat-message msg-bot">
+          <div class="msg-avatar"><i class="fa-solid fa-robot"></i></div>
+          <div class="msg-bubble">
+            <p>¡Hola Marlon! 👋 Soy tu <strong>Director Financiero (CFO AI)</strong>.</p>
+            <p>Escribe o presiona el micrófono 🎙️ para registrar un gasto o consultar tus cuentas. Respondo en menos de <strong>0.1 segundos</strong>:</p>
+            
+            <div class="chat-chips-container">
+              <button class="chat-chip" data-text="Pagué 35 mil gasolina moto con Nequi">⛽ 35 mil gasolina moto</button>
+              <button class="chat-chip" data-text="Pagué 18 mil almuerzo Nequi">🍽️ 18 mil almuerzo</button>
+              <button class="chat-chip" data-text="Pagué EPM 120 mil este mes">💡 Pagué EPM 120 mil</button>
+              <button class="chat-chip" data-text="¿Cuánto me queda disponible?">💵 ¿Cuánto me queda?</button>
+              <button class="chat-chip" data-text="¿Cuáles son mis gastos hormiga?">🐜 Ver gastos hormiga</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Barra de Entrada y Micrófono -->
+      <form class="chat-input-bar" id="chat-input-form">
+        <button type="button" class="btn-chat-action" id="btn-voice-input" title="Hablar por voz (Micrófono)">
+          <i class="fa-solid fa-microphone" id="mic-icon"></i>
+        </button>
+        <input type="text" id="chat-text-input" placeholder="Escribe un gasto o pregunta... (ej. '25 mil moto Nequi')" autocomplete="off">
+        <button type="submit" class="btn-chat-send" id="btn-chat-send" title="Enviar">
+          <i class="fa-solid fa-paper-plane"></i>
+        </button>
+      </form>
+    </div>
+  </div>
 </body>
 </html>

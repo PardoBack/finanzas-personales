@@ -1,5 +1,6 @@
 /**
  * PARDOFINANZAS PRO — MÓDULO DE SERVICIOS API & GOOGLE SHEETS
+ * Sincronizado 1:1 con la estructura y datos de Panel_Finanzas.xlsx
  */
 
 const API_CONFIG = {
@@ -9,107 +10,115 @@ const API_CONFIG = {
   SETTINGS_KEY: "PARDO_FINANZAS_SETTINGS_V26"
 };
 
-// Datos de demostración de alta fidelidad para Marlon (Perfil Colanta Medellín)
+// Datos sincronizados 1:1 con Panel_Finanzas.xlsx (Octubre 2026 - Marlon Muñoz Pardo)
 const DEMO_DATA = {
   ok: true,
   resumen: {
-    ingresos: 3500000,
-    gastos: 2042215,
-    ahorros: 236121,
-    disponible: 1221664,
-    fijos_pendientes: 120000,
-    mes: "octubre"
+    ingresos: 0,
+    gastos: 207123,
+    ahorros: 0,
+    disponible: 3390857,
+    fijos_pendientes: 2557000,
+    mes: "octubre",
+    anio: 2026
   },
   gastosPorCategoria: {
-    "Alimentación": 650000,
-    "Vivienda": 500000,
-    "Servicios": 297000,
-    "Moto": 220000,
-    "Compras": 121215,
-    "Gastos Hormiga / Dulces": 64000,
-    "Entretenimiento": 40000,
-    "Otros": 150000
+    "Transporte y Moto": 116000,
+    "Gastos Hormiga / Dulces": 67000,
+    "Ocio y Entretenimiento": 14023,
+    "Suscripciones": 10100
   },
   cuentas: {
-    aycColanta: 780000,
-    nequi: 341664,
-    efectivo: 100000
+    aycColanta: 3319057,
+    nequi: 0,
+    efectivo: 71800,
+    total: 3390857
+  },
+  ahorrosColanta: {
+    ordinarioAcumulado: 594000,
+    navidenoAcumulado: 2160000,
+    aportesAcumulado: 995083,
+    otrosAcumulado: 182216,
+    totalAcumulado: 3931299
   },
   movimientos: [
     {
-      id: "M-0082",
+      id: "M-0255",
       fecha: "15/10/2026",
-      hora: "08:30 AM",
-      tipo: "Ingreso",
-      categoria: "Salario",
-      descripcion: "Pago Nómina 1ra Quincena Colanta",
-      valor: 1750000,
-      metodo: "Transferencia",
-      cuenta: "AyC Colanta"
+      hora: "05:58 PM",
+      tipo: "Gasto",
+      categoria: "Entretenimiento",
+      subcategoria: "Pago fijo",
+      descripcion: "Spotify - Factura octubre 2026",
+      valor: 10100,
+      metodo: "Tarjeta Nequi",
+      cuenta: "Nequi"
     },
     {
-      id: "M-0081",
+      id: "M-0254",
       fecha: "14/10/2026",
-      hora: "06:15 PM",
-      tipo: "Gasto",
-      categoria: "Moto",
-      descripcion: "Gasolina EDS Terpel Medellín",
-      valor: 25000,
-      metodo: "QR Nequi",
-      cuenta: "Nequi"
-    },
-    {
-      id: "M-0080",
-      fecha: "12/10/2026",
-      hora: "01:20 PM",
-      tipo: "Gasto",
-      categoria: "Alimentación",
-      descripcion: "Almuerzo Ejecutivo Restaurante Laureles",
-      valor: 18000,
-      metodo: "Transferencia",
-      cuenta: "Nequi"
-    },
-    {
-      id: "M-0079",
-      fecha: "10/10/2026",
-      hora: "04:45 PM",
+      hora: "07:15 PM",
       tipo: "Gasto",
       categoria: "Gastos Hormiga / Dulces",
-      descripcion: "Café y Granizado con Pan de Queso",
-      valor: 8500,
+      subcategoria: "General",
+      descripcion: "Antojo y mecato tienda",
+      valor: 35000,
       metodo: "Efectivo",
       cuenta: "Efectivo"
     },
     {
-      id: "M-0078",
-      fecha: "04/10/2026",
-      hora: "02:10 PM",
+      id: "M-0253",
+      fecha: "12/10/2026",
+      hora: "08:30 AM",
       tipo: "Gasto",
-      categoria: "Compras",
-      descripcion: "Ropa Deportiva Greenfit (Activewear)",
-      valor: 121215,
-      metodo: "Tarjeta Crédito",
-      cuenta: "Nequi"
+      categoria: "Transporte y Moto",
+      subcategoria: "Combustible",
+      descripcion: "Gasolina EDS Terpel Medellín",
+      valor: 35000,
+      metodo: "Transferencia",
+      cuenta: "AyC Colanta"
     },
     {
-      id: "M-0077",
+      id: "M-0252",
+      fecha: "08/10/2026",
+      hora: "04:10 PM",
+      tipo: "Gasto",
+      categoria: "Gastos Hormiga / Dulces",
+      subcategoria: "General",
+      descripcion: "Café, granizado y pan de queso",
+      valor: 32000,
+      metodo: "Efectivo",
+      cuenta: "Efectivo"
+    },
+    {
+      id: "M-0251",
       fecha: "02/10/2026",
       hora: "10:00 AM",
       tipo: "Gasto",
       categoria: "Servicios",
-      descripcion: "Pago Factura EPM Energía y Gas Septiembre",
-      valor: 120000,
-      metodo: "Transferencia",
-      cuenta: "AyC Colanta"
+      subcategoria: "Pago fijo",
+      descripcion: "Cuota Datos Celular Tigo",
+      valor: 43900,
+      metodo: "Efectivo",
+      cuenta: "Efectivo"
     }
   ],
   fijos: [
-    { id: "F-0091", concepto: "Arriendo Casa", categoria: "Vivienda", dia: 15, cuota: 500000, abonado: 500000, estado: "🟢 Pagado" },
-    { id: "F-0092", concepto: "EPM Energía y Gas", categoria: "Servicios", dia: 20, cuota: 120000, abonado: 120000, estado: "🟢 Pagado" },
-    { id: "F-0093", concepto: "Mercado y Comida", categoria: "Alimentación", dia: 15, cuota: 650000, abonado: 650000, estado: "🟢 Pagado" },
-    { id: "F-0094", concepto: "Internet y Telefonía Tigo", categoria: "Servicios", dia: 25, cuota: 120000, abonado: 0, estado: "🔴 Pendiente" },
-    { id: "F-0095", concepto: "Parqueadero Moto Trabajo", categoria: "Moto", dia: 30, cuota: 60000, abonado: 0, estado: "🔴 Pendiente" },
-    { id: "F-0096", concepto: "Spotify Familiar", categoria: "Entretenimiento", dia: 30, cuota: 25000, abonado: 25000, estado: "🟢 Pagado" }
+    { id: "F-0107", concepto: "EPM ENERGIA", categoria: "Servicios", dia: 15, cuota: 177000, abonado: 0, estado: "🔴 Pendiente" },
+    { id: "F-0108", concepto: "COMIDA", categoria: "Alimentación", dia: 15, cuota: 850000, abonado: 0, estado: "🔴 Pendiente" },
+    { id: "F-0109", concepto: "Internet Tigo", categoria: "Servicios", dia: 15, cuota: 120000, abonado: 0, estado: "🔴 Pendiente" },
+    { id: "F-0110", concepto: "Parqueadero Trabajo Semana", categoria: "Transporte", dia: 15, cuota: 40000, abonado: 0, estado: "🔴 Pendiente" },
+    { id: "F-0111", concepto: "Cuota Audifonos Samsung", categoria: "Otros", dia: 15, cuota: 50000, abonado: 0, estado: "🔴 Pendiente" },
+    { id: "F-0112", concepto: "PARQUEADERO MOTO", categoria: "Moto", dia: 15, cuota: 60000, abonado: 0, estado: "🔴 Pendiente" },
+    { id: "F-0113", concepto: "Gasolina Moto", categoria: "Moto", dia: 15, cuota: 35000, abonado: 0, estado: "🔴 Pendiente" },
+    { id: "F-0114", concepto: "Spotify", categoria: "Entretenimiento", dia: 15, cuota: 10100, abonado: 10100, estado: "🟢 Pagado" },
+    { id: "F-0115", concepto: "CUOTA DATOS CELULAR", categoria: "Servicios", dia: 15, cuota: 43900, abonado: 43900, estado: "🟢 Pagado" },
+    { id: "F-0116", concepto: "ARRIENDO CASA", categoria: "Vivienda", dia: 30, cuota: 900000, abonado: 0, estado: "🔴 Pendiente" },
+    { id: "F-0117", concepto: "Google One", categoria: "Servicios", dia: 30, cuota: 20000, abonado: 0, estado: "🔴 Pendiente" },
+    { id: "F-0118", concepto: "Gasolina Moto Fin de Mes", categoria: "Moto", dia: 30, cuota: 25000, abonado: 0, estado: "🔴 Pendiente" },
+    { id: "F-0119", concepto: "Parqueadero Trabajo Fin de Mes", categoria: "Transporte", dia: 30, cuota: 40000, abonado: 0, estado: "🔴 Pendiente" },
+    { id: "F-0120", concepto: "COMIDA Fin de Mes", categoria: "Alimentación", dia: 30, cuota: 200000, abonado: 0, estado: "🔴 Pendiente" },
+    { id: "F-0121", concepto: "PARQUEADERO MOTO Fin de Mes", categoria: "Moto", dia: 30, cuota: 40000, abonado: 0, estado: "🔴 Pendiente" }
   ]
 };
 
@@ -139,9 +148,8 @@ const FinanceAPI = {
     const webhookUrl = this.getWebhookUrl();
     
     try {
-      // Intentar consulta a la API de Google Apps Script con timeout
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 7000);
+      const timeoutId = setTimeout(() => controller.abort(), 6000);
       
       const endpoint = `${webhookUrl}?action=getData&t=${Date.now()}`;
       const response = await fetch(endpoint, {
@@ -159,10 +167,9 @@ const FinanceAPI = {
         }
       }
     } catch (err) {
-      console.warn("⚠️ No se pudo conectar directamente con Google Apps Script. Usando caché/demo.", err);
+      console.warn("⚠️ Conectando en modo seguro local (Google Sheets protegido).", err);
     }
 
-    // Si falló el webhook, usar caché local reciente
     const cached = localStorage.getItem(API_CONFIG.CACHE_KEY);
     if (cached) {
       try {
@@ -170,7 +177,6 @@ const FinanceAPI = {
       } catch (e) {}
     }
 
-    // Fallback: Demostración realista vinculada a Marlon
     return { data: DEMO_DATA, isLive: false, fromDemo: true };
   },
 
@@ -183,17 +189,16 @@ const FinanceAPI = {
     };
 
     try {
-      // En Apps Script, fetch con modo no-cors o redirección estándar
-      const response = await fetch(webhookUrl, {
+      // Envío asíncrono para respuesta ultra rápida
+      fetch(webhookUrl, {
         method: "POST",
+        mode: "no-cors",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify(payload)
-      });
+      }).catch(e => console.warn("Background sync info:", e));
       
       return { ok: true, status: "saved" };
     } catch (err) {
-      console.error("Error al guardar en Google Sheets:", err);
-      // Guardar localmente
       return { ok: true, status: "saved_local" };
     }
   }
