@@ -87,6 +87,15 @@ const FinancialNLP = {
     if (/\b(resumen|balance|mes|estado)\b/i.test(t)) {
       return { type: "QUERY_SUMMARY" };
     }
+    // Borrado / Anulación / Deshacer
+    if (/\b(borrar|eliminar|deshacer|quitar|anular|\/borrar|\/deshacer)\b/i.test(t)) {
+      const matchId = t.match(/\b(m-\d{3,4}|cp-\d{3,4}|a-\d{3,4})\b/i);
+      return {
+        type: "DELETE_TRANSACTION",
+        targetId: matchId ? matchId[1].toUpperCase() : null
+      };
+    }
+
     if (/\b(hola|buenos dias|buenas tardes|buenas noches|hey|que tal)\b/i.test(t)) {
       return { type: "GREETING" };
     }

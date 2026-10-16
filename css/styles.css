@@ -2506,3 +2506,34 @@ html, body {
   line-height: 1.4;
 }
 
+/* BOTONES DE ELIMINAR / ANULAR */
+.btn-table-delete-row {
+  background: rgba(239, 68, 68, 0.1);
+  color: #F87171;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 6px;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.75rem;
+  transition: all 0.2s ease;
+}
+.btn-table-delete-row:hover {
+  background: #EF4444;
+  color: #FFFFFF;
+  transform: scale(1.08);
+}
+
+.btn-chat-delete-mov {
+  transition: all 0.2s ease;
+}
+.btn-chat-delete-mov:hover {
+  background: rgba(239, 68, 68, 0.25) !important;
+  color: #FFFFFF !important;
+  transform: translateY(-1px);
+}
+
+

@@ -220,6 +220,40 @@ const FinanceAPI = {
     }
   },
 
+  async deleteMovement(id) {
+    const webhookUrl = this.getWebhookUrl();
+    const payload = {
+      action: "deleteMovement",
+      id: id,
+      timestamp: new Date().toISOString()
+    };
+
+    // Actualizar cache local
+    try {
+      const cached = localStorage.getItem(API_CONFIG.CACHE_KEY);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed && parsed.movimientos) {
+          parsed.movimientos = parsed.movimientos.filter(m => m.id !== id);
+          localStorage.setItem(API_CONFIG.CACHE_KEY, JSON.stringify(parsed));
+        }
+      }
+    } catch (e) {}
+
+    try {
+      fetch(webhookUrl, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(payload)
+      }).catch(e => console.warn("Background delete sync info:", e));
+
+      return { ok: true, status: "deleted", id: id };
+    } catch (err) {
+      return { ok: true, status: "deleted_local", id: id };
+    }
+  },
+
   async processPaystub(fileData) {
     const webhookUrl = this.getWebhookUrl();
     const payload = {

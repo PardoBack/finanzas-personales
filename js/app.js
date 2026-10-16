@@ -476,8 +476,57 @@ const FintechApp = {
         📂 Categoría: <em>${intent.category}</em><br>
         💳 Cuenta: <em>${intent.account}</em></p>
         ${syncStatusHtml}
+        <div style="margin-top:0.45rem;">
+          <button type="button" class="btn-chat-delete-mov" data-id="${nuevoId}" data-val="${intent.amount}" data-tipo="${intent.transactionType}" style="background:rgba(239, 68, 68, 0.12); color:#FCA5A5; border:1px solid rgba(239, 68, 68, 0.25); border-radius:6px; padding:0.25rem 0.55rem; font-size:0.75rem; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:0.35rem;">
+            <i class="fa-solid fa-trash-can"></i> Deshacer / Borrar este gasto
+          </button>
+        </div>
       `);
       this.showToast(`✅ ${intent.description} guardado ($${this.formatCOP(intent.amount)})`, "success");
+      return;
+    }
+
+    if (intent.type === "DELETE_TRANSACTION") {
+      const targetId = intent.targetId;
+      const movs = (this.state.data && this.state.data.movimientos) || [];
+
+      let movToDelete = null;
+      let movIndex = -1;
+
+      if (targetId) {
+        movIndex = movs.findIndex(m => String(m.id).toUpperCase() === targetId.toUpperCase());
+        if (movIndex !== -1) movToDelete = movs[movIndex];
+      } else if (movs.length > 0) {
+        movIndex = 0;
+        movToDelete = movs[0];
+      }
+
+      if (!movToDelete) {
+        this.appendBotMsg(`
+          <p>⚠️ <strong>NO SE ENCONTRÓ MOVIMIENTO PARA ELIMINAR</strong></p>
+          <p>No hay movimientos registrados recientemente o el ID indicado no existe.</p>
+        `);
+        return;
+      }
+
+      const idEliminado = movToDelete.id;
+      const descEliminado = movToDelete.descripcion;
+      const valorEliminado = movToDelete.valor;
+      const catEliminado = movToDelete.categoria;
+      const cuentaEliminada = movToDelete.cuenta;
+
+      this.deleteMovementById(idEliminado);
+
+      this.appendBotMsg(`
+        <p>🗑️ <strong>REGISTRO ELIMINADO / ANULADO</strong></p>
+        <p>Se eliminó <code>${idEliminado}</code>: <strong>${descEliminado}</strong><br>
+        💰 Monto restituido: <strong>$${this.formatCOP(valorEliminado)} COP</strong><br>
+        📂 Categoría: <em>${catEliminado}</em><br>
+        💳 Cuenta: <em>${cuentaEliminada}</em></p>
+        <p style="font-size:0.75rem; color:#34D399; margin-top:0.4rem;">
+          <i class="fa-solid fa-cloud-arrow-up"></i> Sincronizado: eliminado de Google Sheets y saldos recalculados.
+        </p>
+      `);
       return;
     }
 
@@ -721,7 +770,7 @@ const FintechApp = {
 
     const items = filteredItems || (this.state.data && this.state.data.movimientos) || [];
     if (!items.length) {
-      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:2rem; color:#64748B;">No hay movimientos.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:2rem; color:#64748B;">No hay movimientos.</td></tr>`;
       return;
     }
 
@@ -737,9 +786,50 @@ const FintechApp = {
           <td class="text-right" style="font-weight:800; color:${isIngreso ? '#34D399' : '#FFFFFF'};">
             ${isIngreso ? '+' : '-'} $${this.formatCOP(m.valor)}
           </td>
+          <td class="text-center">
+            <button class="btn-table-delete-row" data-id="${m.id}" title="Eliminar ${m.id} de Google Sheets">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>
+          </td>
         </tr>
       `;
     }).join("");
+  },
+
+  deleteMovementById(id) {
+    const movs = (this.state.data && this.state.data.movimientos) || [];
+    const movIndex = movs.findIndex(m => String(m.id).toUpperCase() === String(id).toUpperCase());
+    if (movIndex === -1) {
+      this.showToast("No se encontró el movimiento " + id, "error");
+      return;
+    }
+
+    const movToDelete = movs[movIndex];
+    const val = Number(movToDelete.valor || 0);
+    const isIngreso = String(movToDelete.tipo).toLowerCase().includes("ingreso");
+
+    if (this.state.data && this.state.data.resumen) {
+      if (isIngreso) {
+        this.state.data.resumen.ingresos = Math.max(0, (this.state.data.resumen.ingresos || 0) - val);
+        this.state.data.resumen.disponible = Math.max(0, (this.state.data.resumen.disponible || 0) - val);
+      } else {
+        this.state.data.resumen.gastos = Math.max(0, (this.state.data.resumen.gastos || 0) - val);
+        this.state.data.resumen.disponible = (this.state.data.resumen.disponible || 0) + val;
+        if (this.state.data.gastosPorCategoria && movToDelete.categoria) {
+          this.state.data.gastosPorCategoria[movToDelete.categoria] = Math.max(0, (this.state.data.gastosPorCategoria[movToDelete.categoria] || 0) - val);
+        }
+      }
+    }
+
+    movs.splice(movIndex, 1);
+
+    this.renderBalances();
+    this.renderCharts();
+    this.renderMovementsTable();
+    this.renderFugasTable();
+
+    FinanceAPI.deleteMovement(id);
+    this.showToast(`🗑️ ${id} eliminado de Google Sheets`, "success");
   },
 
   filterMovements() {
@@ -978,6 +1068,30 @@ const FintechApp = {
       if (e.target === modalAdd) closeAdd();
       if (e.target === modalColilla) closeColilla();
       if (e.target === modalSet) modalSet?.classList.remove("open");
+    });
+
+    // Delegación global de eventos de eliminación
+    document.addEventListener("click", (e) => {
+      const btnDelChat = e.target.closest(".btn-chat-delete-mov");
+      if (btnDelChat) {
+        const id = btnDelChat.getAttribute("data-id");
+        if (id) {
+          this.haptic(20);
+          btnDelChat.disabled = true;
+          btnDelChat.innerHTML = '<i class="fa-solid fa-check"></i> Eliminado';
+          btnDelChat.style.opacity = "0.5";
+          this.deleteMovementById(id);
+        }
+      }
+
+      const btnDelTable = e.target.closest(".btn-table-delete-row");
+      if (btnDelTable) {
+        const id = btnDelTable.getAttribute("data-id");
+        if (id && confirm(`¿Deseas eliminar el registro ${id} de Google Sheets?`)) {
+          this.haptic(20);
+          this.deleteMovementById(id);
+        }
+      }
     });
   },
 

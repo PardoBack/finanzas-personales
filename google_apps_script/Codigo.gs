@@ -265,6 +265,22 @@ function doPost(e) {
       return procesarColillaDashboard_(data);
     }
 
+    if (data.action === "deleteMovement" || data.action === "borrarRegistro") {
+      const id = data.id || data.idRegistro;
+      let resDelete = null;
+      if (id) {
+        resDelete = borrarRegistroCompletoPorID(id);
+      } else {
+        resDelete = borrarUltimoRegistro();
+      }
+      return ContentService.createTextOutput(JSON.stringify({
+        ok: resDelete && resDelete.ok !== false,
+        resultado: resDelete,
+        id: id,
+        mensaje: resDelete && resDelete.ok !== false ? "Registro eliminado exitosamente de Google Sheets." : "No se encontró el registro para eliminar."
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+
     if (data.action === "testConnection") {
       const ss = obtenerLibro_();
       const shMov = ss.getSheetByName("MOVIMIENTOS");
