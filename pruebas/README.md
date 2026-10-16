@@ -21,6 +21,7 @@ Verás un menú con las siguientes opciones:
 4. **Analizador 50/30/20**: Diagnóstico financiero de tus ahorros y gastos.
 5. **Generar Exportación Excel**: Crea un archivo formateado en `exports/`.
 6. **Ver Estado de Git**: Muestra si hay cambios pendientes o sincronizados.
+7. **Sincronizar y Subir Cambios a GitHub**: Hace `git add`, `git commit` y `git push` a `origin/main` con un solo clic.
 
 ---
 
