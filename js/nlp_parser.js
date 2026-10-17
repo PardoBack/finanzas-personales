@@ -1,6 +1,6 @@
 /**
  * PARDOFINANZAS PRO — MOTOR DE PROCESAMIENTO DE LENGUAJE NATURAL (NLP LOCAL)
- * Responde y procesa en < 0.05 segundos directamente en el navegador.
+ * Motor inteligente ultrarrápido ejecutado directamente en el navegador.
  * Compatible con modismos colombianos y variaciones flexibles de lenguaje.
  */
 

@@ -518,20 +518,6 @@ function registrarCompromisoFijo_(data) {
   const mesActual = data.mes ? normalizarTexto(String(data.mes)) : meses[d.getMonth()];
   const anioActual = Number(data.anio || d.getFullYear());
 
-  // Generar ID consecutivo F-xxxx si no viene dado
-  let nuevoId = data.id || null;
-  let maxNum = 121;
-  if (shFijos.getLastRow() >= 10) {
-    const ids = shFijos.getRange(10, 1, shFijos.getLastRow() - 9, 1).getValues();
-    ids.forEach(r => {
-      const m = String(r[0] || "").match(/^F-0?(\d+)$/);
-      if (m) maxNum = Math.max(maxNum, parseInt(m[1], 10));
-    });
-  }
-  if (!nuevoId) {
-    nuevoId = "F-" + String(maxNum + 1).padStart(4, "0");
-  }
-
   const concepto = String(data.concepto || "Nuevo Compromiso").trim();
   const categoria = String(data.categoria || "Servicios").trim();
   const diaCobro = Number(data.dia || 15);
@@ -544,16 +530,34 @@ function registrarCompromisoFijo_(data) {
   const medioPago = String(data.medioPago || "Transferencia").trim();
   const notas = String(data.notas || "Creado desde PardoFinanzas Web").trim();
 
-  // Comprobar si ya existe por ID o Concepto exacto
+  // Escanear filas 10 a 60 para ubicar la última fila con ID F- y si ya existe
+  let nuevoId = data.id || null;
+  let maxNum = 121;
   let filaExistente = 0;
+  let ultimaConFijo = 9;
+
   if (shFijos.getLastRow() >= 10) {
-    const rows = shFijos.getRange(10, 1, shFijos.getLastRow() - 9, 2).getValues();
+    const maxScan = Math.min(60, Math.max(20, shFijos.getLastRow() - 9));
+    const rows = shFijos.getRange(10, 1, maxScan, 2).getValues();
     for (let i = 0; i < rows.length; i++) {
-      if (String(rows[i][0]).toUpperCase() === nuevoId.toUpperCase() || String(rows[i][1]).toLowerCase() === concepto.toLowerCase()) {
-        filaExistente = i + 10;
-        break;
+      const curRow = 10 + i;
+      const rId = String(rows[i][0] || "").trim().toUpperCase();
+      const rConc = String(rows[i][1] || "").trim().toLowerCase();
+      if (rId.startsWith("F-")) {
+        if (curRow <= 40) {
+          ultimaConFijo = Math.max(ultimaConFijo, curRow);
+        }
+        const m = rId.match(/^F-0?(\d+)$/);
+        if (m) maxNum = Math.max(maxNum, parseInt(m[1], 10));
+      }
+      if ((nuevoId && rId === nuevoId.toUpperCase()) || (concepto && rConc === concepto.toLowerCase())) {
+        filaExistente = curRow;
       }
     }
+  }
+
+  if (!nuevoId) {
+    nuevoId = "F-" + String(maxNum + 1).padStart(4, "0");
   }
 
   // Columnas CONTROL FIJOS: 0:ID, 1:Concepto, 2:Categoría, 3:Día Cobro, 4:Cuota Base, 5:Abonado Mes, 6:Estado, 7:Fecha Último Pago, 8:Saldo Pendiente, 9:Prioridad, 10:Medio Pago, 11:Notas
@@ -575,14 +579,16 @@ function registrarCompromisoFijo_(data) {
   if (filaExistente > 0) {
     shFijos.getRange(filaExistente, 1, 1, filaFijos.length).setValues([filaFijos]);
   } else {
-    const targetRowFijos = shFijos.getLastRow() + 1;
+    // Ubicar exactamente en la fila continua (ej. fila 25 inmediatamente después de F-0121 en fila 24)
+    const targetRowFijos = (ultimaConFijo >= 10 && ultimaConFijo < 40) ? (ultimaConFijo + 1) : 25;
     shFijos.getRange(targetRowFijos, 1, 1, filaFijos.length).setValues([filaFijos]);
   }
 
   // Sincronizar en HISTORICO FIJOS para el mes activo
   if (shHist && shHist.getLastRow() >= 4) {
     let histExistente = 0;
-    const hRows = shHist.getRange(4, 1, shHist.getLastRow() - 3, 11).getValues();
+    const maxHistScan = Math.min(200, shHist.getLastRow() - 3);
+    const hRows = shHist.getRange(4, 1, maxHistScan, 11).getValues();
     for (let h = 0; h < hRows.length; h++) {
       const hId = String(hRows[h][0]).toUpperCase();
       const hMes = normalizarTexto(String(hRows[h][9]));
@@ -712,7 +718,7 @@ function sincronizarFijosOctubreDefinitivo() {
 
   // 1. Sincronizar F-0108 (COMIDA) a $650.000 exactos en CONTROL FIJOS
   if (shFijos && shFijos.getLastRow() >= 10) {
-    const numRows = shFijos.getLastRow() - 9;
+    const numRows = Math.min(80, shFijos.getLastRow() - 9);
     const rows = shFijos.getRange(10, 1, numRows, 9).getValues();
 
     for (let i = 0; i < rows.length; i++) {
@@ -729,34 +735,41 @@ function sincronizarFijosOctubreDefinitivo() {
       }
     }
 
-    // 2. Comprobar si F-0122 (Agua) ya existe en CONTROL FIJOS
-    const f122Exists = rows.some(r => String(r[0] || "").toUpperCase() === "F-0122" || String(r[1] || "").toLowerCase().includes("agua"));
-    if (!f122Exists) {
-      const targetRow = shFijos.getLastRow() + 1;
-      const filaAgua = [
-        "F-0122",
-        "Agua",
-        "Servicios",
-        15,
-        60000,
-        "",
-        "🔴 Pendiente",
-        "",
-        60000,
-        "Media",
-        "Transferencia",
-        "Servicio de Agua Domiciliaria"
-      ];
-      shFijos.getRange(targetRow, 1, 1, filaAgua.length).setValues([filaAgua]);
-      logs.push("F-0122 (Agua - $60.000) insertado en CONTROL FIJOS fila " + targetRow);
+    // 2. Colocar F-0122 (Agua) de forma continua en fila 25 de CONTROL FIJOS
+    // Si existía en otra fila (ej. fila 50+ por getLastRow), limpiarla
+    for (let i = 0; i < rows.length; i++) {
+      const curRow = i + 10;
+      const id = String(rows[i][0] || "").trim().toUpperCase();
+      const concepto = String(rows[i][1] || "").trim().toLowerCase();
+      if ((id === "F-0122" || concepto.includes("agua")) && curRow !== 25) {
+        shFijos.getRange(curRow, 1, 1, 12).clearContent();
+        logs.push("Limpiada fila previa de Agua en fila " + curRow);
+      }
     }
+
+    const filaAgua = [
+      "F-0122",
+      "Agua",
+      "Servicios",
+      15,
+      60000,
+      "",
+      "🔴 Pendiente",
+      "",
+      60000,
+      "Media",
+      "Transferencia",
+      "Servicio de Agua Domiciliaria"
+    ];
+    shFijos.getRange(25, 1, 1, filaAgua.length).setValues([filaAgua]);
+    logs.push("F-0122 (Agua - $60.000) ubicado en fila continua 25 de CONTROL FIJOS");
   }
 
   // 3. Sincronizar en HISTORICO FIJOS para Octubre 2026
   if (shHist && shHist.getLastRow() >= 4) {
-    const numH = shHist.getLastRow() - 3;
+    const numH = Math.min(200, shHist.getLastRow() - 3);
     const hRows = shHist.getRange(4, 1, numH, 14).getValues();
-    let f122HistExists = false;
+    let f122HistRow = 0;
 
     for (let h = 0; h < hRows.length; h++) {
       const hId = String(hRows[h][0] || "").trim().toUpperCase();
@@ -774,28 +787,32 @@ function sincronizarFijosOctubreDefinitivo() {
           logs.push("F-0108 sincronizado a $650.000 en HISTORICO FIJOS fila " + rIdx);
         }
         if (hId === "F-0122" || String(hRows[h][1] || "").toLowerCase().includes("agua")) {
-          f122HistExists = true;
+          f122HistRow = h + 4;
         }
       }
     }
 
-    if (!f122HistExists) {
-      const filaHistAgua = [
-        "F-0122",
-        "Agua",
-        "Servicios",
-        15,
-        60000,
-        0,
-        "",
-        "🔴 Pendiente",
-        "Media",
-        "octubre",
-        2026,
-        "Transferencia",
-        "Servicio de Agua Domiciliaria",
-        60000
-      ];
+    const filaHistAgua = [
+      "F-0122",
+      "Agua",
+      "Servicios",
+      15,
+      60000,
+      0,
+      "",
+      "🔴 Pendiente",
+      "Media",
+      "octubre",
+      2026,
+      "Transferencia",
+      "Servicio de Agua Domiciliaria",
+      60000
+    ];
+
+    if (f122HistRow > 0) {
+      shHist.getRange(f122HistRow, 1, 1, filaHistAgua.length).setValues([filaHistAgua]);
+      logs.push("F-0122 (Agua) actualizado en HISTORICO FIJOS fila " + f122HistRow);
+    } else {
       shHist.getRange(shHist.getLastRow() + 1, 1, 1, filaHistAgua.length).setValues([filaHistAgua]);
       logs.push("F-0122 (Agua) añadido a HISTORICO FIJOS");
     }
@@ -806,7 +823,7 @@ function sincronizarFijosOctubreDefinitivo() {
     CacheService.getScriptCache().remove("CTX_FIN_IA_octubre_2026");
   } catch (e) {}
 
-  return { ok: true, logs: logs, mensaje: "Compromisos fijos de Octubre 2026 sincronizados: F-0108 a $650.000 y F-0122 (Agua $60.000) incorporado." };
+  return { ok: true, logs: logs, mensaje: "Compromisos fijos de Octubre 2026 sincronizados: F-0108 a $650.000 y F-0122 (Agua $60.000) en fila continua 25." };
 }
 
 function autoReconciliarFijosDesdeMovimientos_(ss, mes, anio) {
@@ -1439,6 +1456,52 @@ function obtenerDatosCompletosDashboard_(mesFiltro, anioFiltro) {
   let ingreso = 0, gasto = 0, ahorro = 0, disponible = 0, fijosPendientes = 0;
   let saldoColanta = 0, saldoNequi = 0, saldoEfectivo = 0, totalLiquidez = 0;
 
+  // Leer compromisos fijos directamente de CONTROL FIJOS (filas 10 en adelante)
+  const fijosArray = [];
+  if (shFijos && shFijos.getLastRow() >= 10) {
+    const numRowsFijos = Math.min(60, Math.max(1, shFijos.getLastRow() - 9));
+    const fData = shFijos.getRange(10, 1, numRowsFijos, 12).getValues();
+    for (let f = 0; f < fData.length; f++) {
+      const row = fData[f];
+      const id = String(row[0] || "").trim();
+      if (!id || !/^F-/i.test(id)) continue;
+      const concepto = String(row[1] || "").trim();
+      const categoria = String(row[2] || "Servicios").trim();
+      const dia = Number(row[3] || 15);
+      const cuota = Number(row[4] || 0);
+      const abonado = Number(row[5] || 0);
+      const estado = String(row[6] || (abonado >= cuota && cuota > 0 ? "🟢 Pagado" : "🔴 Pendiente"));
+      const fechaPago = row[7] instanceof Date ? Utilities.formatDate(row[7], ZONA_HORARIA, "yyyy-MM-dd") : String(row[7] || "");
+      const saldo = typeof row[8] === "number" ? Number(row[8]) : Math.max(0, cuota - abonado);
+      const prioridad = String(row[9] || "Media").trim();
+      const medioPago = String(row[10] || "Transferencia").trim();
+      const notas = String(row[11] || "").trim();
+
+      fijosArray.push({
+        id: id,
+        concepto: concepto,
+        categoria: categoria,
+        dia: dia,
+        cuota: cuota,
+        abonado: abonado,
+        estado: estado,
+        fechaPago: fechaPago,
+        saldo: saldo,
+        prioridad: prioridad,
+        medioPago: medioPago,
+        notas: notas
+      });
+    }
+  }
+
+  // Si hay compromisos fijos leídos, calcular fijosPendientes exactos
+  if (fijosArray.length > 0) {
+    fijosPendientes = fijosArray.reduce((acc, f) => {
+      if (String(f.estado).includes("Pagado")) return acc;
+      return acc + Math.max(0, Number(f.cuota || 0) - Number(f.abonado || 0));
+    }, 0);
+  }
+
   if (shPanel) {
     if (!mesFiltro) mesActivo = String(shPanel.getRange("L2").getValue() || "octubre").toLowerCase();
     if (!anioFiltro) anioActivo = Number(shPanel.getRange("I2").getValue() || 2026);
@@ -1647,6 +1710,7 @@ function obtenerDatosCompletosDashboard_(mesFiltro, anioFiltro) {
       otrosAcumulado: otrosAcum,
       totalAcumulado: totalFondos
     },
+    fijos: fijosArray,
     gastosPorCategoria: gastosPorCategoria,
     movimientos: todosMovs,
     resumenAnual: resumenAnualArray,

@@ -1573,15 +1573,16 @@ const FintechApp = {
       this.renderFixedTable();
       this.renderBalances();
 
-      const quincenaStr = nuevoFijo.dia <= 15 ? "Quincena 1 (Día 1-15)" : "Quincena 2 (Día 16-31)";
+      const quincenaNum = nuevoFijo.dia <= 15 ? 1 : 2;
+      const quincenaStr = quincenaNum === 1 ? "Quincena 1 (Día 1 al 15)" : "Quincena 2 (Día 16 al 31)";
       this.appendBotMsg(`
         <p>✨ <strong>NUEVO GASTO FIJO CREADO CON ÉXITO</strong></p>
         <p>🏷️ <strong>${nuevoFijo.concepto}</strong> (<code>${nuevoFijo.id}</code>)<br>
-        📅 Día de cobro: <strong>Día ${nuevoFijo.dia} (${quincenaStr})</strong><br>
+        📅 Fecha de cobro: <strong>Día ${nuevoFijo.dia} (${quincenaStr})</strong><br>
         📁 Categoría: <em>${nuevoFijo.categoria}</em><br>
         💰 Cuota base: <strong>${nuevoFijo.cuota > 0 ? '$' + this.formatCOP(nuevoFijo.cuota) + ' COP' : 'Variable / Por definir'}</strong></p>
         <p style="font-size:0.8rem; color:#94A3B8;">
-          ✅ Se ha incorporado a tu tabla de <strong>Gastos Fijos</strong>. Cada vez que digas <em>"pagué ${nuevoFijo.concepto.toLowerCase()}"</em>, el asistente lo marcará como pagado y ajustará tus saldos automáticamente.
+          ✅ Se incorporó a tu <strong>Quincena ${quincenaNum}</strong>. Cada vez que realices el pago, simplemente di o escribe: <em>"Pagué ${nuevoFijo.concepto.toLowerCase()}"</em> o <em>"Pagué ${nuevoFijo.cuota > 0 ? '$' + this.formatCOP(nuevoFijo.cuota) : ''} de ${nuevoFijo.concepto.toLowerCase()}"</em> para marcarlo como pagado y descontarlo de tus pendientes.
         </p>
         <p style="font-size:0.75rem; color:#34D399; margin-top:0.4rem;">
           <i class="fa-solid fa-cloud-arrow-up"></i> Sincronizado en tiempo real con Google Sheets (Hoja CONTROL FIJOS).
@@ -1871,7 +1872,7 @@ const FintechApp = {
 
       if (fixedReconciled) {
         this.appendBotMsg(`
-          <p>⚡ <strong>COMPROMISO FIJO RECONCILIADO EN 0.05s</strong></p>
+          <p>⚡ <strong>COMPROMISO FIJO CONCILIADO</strong></p>
           <p>🟢 <strong>${fixedReconciled.concepto} (${fixedReconciled.id})</strong> quedó registrado y marcado como <strong>PAGADO</strong>.<br>
           💰 <strong>$${this.formatCOP(intent.amount)} COP</strong> abonados (Factura Variable).<br>
           📂 Categoría: <em>${intent.category}</em> | 💳 Cuenta: <em>${intent.account}</em></p>
@@ -1886,7 +1887,7 @@ const FintechApp = {
         this.showToast(`🟢 ${fixedReconciled.concepto} marcado como Pagado ($${this.formatCOP(intent.amount)})`, "success");
       } else {
         this.appendBotMsg(`
-          <p>✅ <strong>${intent.transactionType.toUpperCase()} REGISTRADO EN 0.05s</strong></p>
+          <p>✅ <strong>${intent.transactionType.toUpperCase()} REGISTRADO CON ÉXITO</strong></p>
           <p>🏷️ <strong>${intent.description}</strong> (<code>${nuevoId}</code>)<br>
           💰 <strong>$${this.formatCOP(intent.amount)} COP</strong><br>
           📂 Categoría: <em>${intent.category}</em><br>
