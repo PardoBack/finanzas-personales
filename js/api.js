@@ -6,7 +6,7 @@
 const API_CONFIG = {
   DEFAULT_WEBHOOK: "https://script.google.com/macros/s/AKfycbxfGcLK2UtQUpLYTOmD6o7PO-cCD_MmUnGul0F7MlfLbPebKYNy8HLV8XM3amI8a_BQ/exec",
   SPREADSHEET_ID: "1C9ifm7U8IYGOdY4IwAji9Z3McSlNy3B-e_2Jo-zvBFk",
-  CACHE_KEY: "PARDO_FINANZAS_CACHE_V30",
+  CACHE_KEY: "PARDO_FINANZAS_CACHE_V31",
   SETTINGS_KEY: "PARDO_FINANZAS_SETTINGS_V26",
   SECURITY_KEY: "PARDO_FINANZAS_SECURITY_V26"
 };
@@ -16,25 +16,25 @@ const DEMO_DATA = {
   "ok": true,
   "resumen": {
     "ingresos": 1700605.0,
-    "gastos": 1485239.0,
+    "gastos": 1285239.0,
     "ahorros": 236121.0,
-    "disponible": 215366.0,
-    "fijos_pendientes": 1330000,
+    "disponible": 415366.0,
+    "fijos_pendientes": 1530000,
     "mes": "octubre",
     "anio": 2026
   },
   "gastosPorCategoria": {
-    "Alimentación": 862116.0,
+    "Alimentación": 662116.0,
     "Servicios": 397000.0,
     "Moto": 116000.0,
     "Gastos Hormiga / Dulces": 86000.0,
     "Entretenimiento": 24123.0
   },
   "cuentas": {
-    "aycColanta": 143566.0,
+    "aycColanta": 343566.0,
     "nequi": 0,
     "efectivo": 71800,
-    "total": 215366.0
+    "total": 415366.0
   },
   "ahorrosColanta": {
     "ordinarioAcumulado": 627000,
@@ -120,8 +120,8 @@ const DEMO_DATA = {
       "mes": "octubre",
       "nombre": "Octubre",
       "ingresos": 1700605.0,
-      "gastos": 1485239.0,
-      "ahorro": 215366.0,
+      "gastos": 1285239.0,
+      "ahorro": 415366.0,
       "transacciones": 14
     },
     {
@@ -143,9 +143,9 @@ const DEMO_DATA = {
   ],
   "kpisAnuales": {
     "totalIngresos": 34152478.0,
-    "totalGastos": 24228605.0,
-    "superavit": 9923873.0,
-    "tasaAhorro": 29.1,
+    "totalGastos": 24028605.0,
+    "superavit": 10123873.0,
+    "tasaAhorro": 29.6,
     "mesMayorAhorro": {
       "nombre": "Enero",
       "monto": 2483094.0
@@ -164,7 +164,7 @@ const DEMO_DATA = {
       "categoria": "Alimentación",
       "subcategoria": "Pago fijo",
       "descripcion": "Pago Fijo: COMIDA",
-      "valor": 850000.0,
+      "valor": 650000.0,
       "metodo": "Transferencia",
       "cuenta": "AyC Colanta",
       "mes": "octubre",
@@ -3437,8 +3437,8 @@ const DEMO_DATA = {
       "concepto": "COMIDA",
       "categoria": "Alimentación",
       "dia": 15,
-      "cuota": 850000,
-      "abonado": 850000,
+      "cuota": 650000,
+      "abonado": 650000,
       "estado": "🟢 Pagado"
     },
     {

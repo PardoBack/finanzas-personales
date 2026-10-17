@@ -475,6 +475,7 @@ function autoReconciliarFijosDesdeMovimientos_(ss, mes, anio) {
     else if (desc.includes("spotify")) targetId = "F-0114";
     else if (desc.includes("datos") || desc.includes("celular")) targetId = "F-0115";
     else if (desc.includes("google")) targetId = "F-0117";
+    else if (desc.includes("comida") || subcat.includes("comida") || desc.includes("mercado")) targetId = "F-0108";
 
     if (targetId && valor > 0) {
       const res = actualizarHistoricoFijos_(ss, targetId, valor, mesNorm, anioNum, fecha);
@@ -1208,7 +1209,7 @@ function obtenerDatosCompletosDashboard_(mesFiltro, anioFiltro) {
   // Octubre en curso: consolidar con los movimientos reales auditados
   if (resumenAnualMap["octubre"]) {
     resumenAnualMap["octubre"].ingresos = ingresoMesCalculado > 0 ? ingresoMesCalculado : 1700605;
-    resumenAnualMap["octubre"].gastos = gastoMesCalculado > 0 ? gastoMesCalculado : 1485239;
+    resumenAnualMap["octubre"].gastos = gastoMesCalculado > 0 ? gastoMesCalculado : 1285239;
     resumenAnualMap["octubre"].ahorro = resumenAnualMap["octubre"].ingresos - resumenAnualMap["octubre"].gastos;
   }
 
