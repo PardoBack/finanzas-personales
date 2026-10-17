@@ -432,6 +432,17 @@ function actualizarHistoricoFijos_(ss, idFijo, valor, mes, anio, fechaOpt) {
   return { ok: true, reconciliado: reconciliado, idFijo: idBuscado, concepto: conceptoFijo, valor: valor };
 }
 
+/**
+ * Función pública ejecutable con 1 clic desde el editor de Google Apps Script
+ * Reconcilia EPM ($197.000 M-0259) y todos los compromisos fijos de Octubre 2026
+ */
+function reconciliarGastosFijosOctubre() {
+  const ss = obtenerLibro_();
+  const res = autoReconciliarFijosDesdeMovimientos_(ss, "octubre", 2026);
+  Logger.log("Resultado de conciliación: " + JSON.stringify(res));
+  return res;
+}
+
 function autoReconciliarFijosDesdeMovimientos_(ss, mes, anio) {
   if (!ss) ss = obtenerLibro_();
   const shMov = ss.getSheetByName("MOVIMIENTOS");
