@@ -15,10 +15,10 @@ const API_CONFIG = {
 const DEMO_DATA = {
   "ok": true,
   "resumen": {
-    "ingresos": 0,
-    "gastos": 207123.0,
+    "ingresos": 1700605.0,
+    "gastos": 238239.0,
     "ahorros": 0,
-    "disponible": 71800,
+    "disponible": 1462366.0,
     "fijos_pendientes": 2557000,
     "mes": "octubre",
     "anio": 2026
@@ -26,13 +26,14 @@ const DEMO_DATA = {
   "gastosPorCategoria": {
     "Entretenimiento": 24123.0,
     "Moto": 116000.0,
-    "Gastos Hormiga / Dulces": 67000.0
+    "Gastos Hormiga / Dulces": 67000.0,
+    "Otros": 31116.0
   },
   "cuentas": {
-    "aycColanta": 0,
+    "aycColanta": 1390566.0,
     "nequi": 0,
     "efectivo": 71800,
-    "total": 71800
+    "total": 1462366.0
   },
   "ahorrosColanta": {
     "ordinarioAcumulado": 594000,
@@ -3576,6 +3577,19 @@ const FinanceAPI = {
           if (!data.movimientos || data.movimientos.length < 15) {
             data.movimientos = DEMO_DATA.movimientos;
           }
+          // Calibración estricta de liquidez: si el saldo de caja o de cuentas supera el ingreso del mes
+          const ingLive = Number((data.resumen && data.resumen.ingresos) || 0);
+          const gasLive = Number((data.resumen && data.resumen.gastos) || 0);
+          if (ingLive > 0 && data.cuentas && (data.cuentas.total > ingLive || data.cuentas.aycColanta > ingLive)) {
+            const netoReal = Math.max(0, ingLive - gasLive);
+            const eff = Number(data.cuentas.efectivo !== undefined ? data.cuentas.efectivo : 71800);
+            const neq = Number(data.cuentas.nequi || 0);
+            data.cuentas.total = netoReal;
+            data.cuentas.aycColanta = Math.max(0, netoReal - eff - neq);
+            if (data.resumen) {
+              data.resumen.disponible = netoReal;
+            }
+          }
           localStorage.setItem(API_CONFIG.CACHE_KEY, JSON.stringify(data));
           return { data: data, isLive: true };
         }
@@ -3591,6 +3605,20 @@ const FinanceAPI = {
         if (!parsed.resumenAnual) parsed.resumenAnual = DEMO_DATA.resumenAnual;
         if (!parsed.kpisAnuales) parsed.kpisAnuales = DEMO_DATA.kpisAnuales;
         if (!parsed.fijos || !parsed.fijos.length) parsed.fijos = DEMO_DATA.fijos;
+        // Calibración estricta de caché
+        const ingCache = Number((parsed.resumen && parsed.resumen.ingresos) || 0);
+        const gasCache = Number((parsed.resumen && parsed.resumen.gastos) || 0);
+        if (ingCache > 0 && parsed.cuentas && (parsed.cuentas.total > ingCache || parsed.cuentas.aycColanta > ingCache)) {
+          const netoReal = Math.max(0, ingCache - gasCache);
+          const eff = Number(parsed.cuentas.efectivo !== undefined ? parsed.cuentas.efectivo : 71800);
+          const neq = Number(parsed.cuentas.nequi || 0);
+          parsed.cuentas.total = netoReal;
+          parsed.cuentas.aycColanta = Math.max(0, netoReal - eff - neq);
+          if (parsed.resumen) {
+            parsed.resumen.disponible = netoReal;
+          }
+          try { localStorage.setItem(API_CONFIG.CACHE_KEY, JSON.stringify(parsed)); } catch (e) {}
+        }
         return { data: parsed, isLive: false, fromCache: true };
       } catch (e) {}
     }

@@ -1492,11 +1492,25 @@ const FintechApp = {
         this.state.data.resumenAnual = DEMO_DATA.resumenAnual;
         this.state.data.kpisAnuales = DEMO_DATA.kpisAnuales;
       }
-      if (this.state.data.cuentas && this.state.data.cuentas.aycColanta > 1000000 && (!this.state.data.resumen || this.state.data.resumen.ingresos === 0)) {
-        this.state.data.cuentas = DEMO_DATA.cuentas;
-        if (this.state.data.resumen) {
-          this.state.data.resumen.disponible = DEMO_DATA.resumen.disponible;
-          this.state.data.resumen.ingresos = DEMO_DATA.resumen.ingresos;
+      // Reconciliación estricta de liquidez: si el saldo de caja o de cuentas supera el ingreso real del mes
+      const ingOctActual = Number((this.state.data.resumen && this.state.data.resumen.ingresos) || 0);
+      const gasOctActual = Number((this.state.data.resumen && this.state.data.resumen.gastos) || 0);
+      if (this.state.data.cuentas) {
+        if (ingOctActual > 0 && (this.state.data.cuentas.total > ingOctActual || this.state.data.cuentas.aycColanta > ingOctActual)) {
+          const netoReal = Math.max(0, ingOctActual - gasOctActual);
+          const eff = Number(this.state.data.cuentas.efectivo !== undefined ? this.state.data.cuentas.efectivo : 71800);
+          const neq = Number(this.state.data.cuentas.nequi || 0);
+          this.state.data.cuentas.total = netoReal;
+          this.state.data.cuentas.aycColanta = Math.max(0, netoReal - eff - neq);
+          if (this.state.data.resumen) {
+            this.state.data.resumen.disponible = netoReal;
+          }
+        } else if (this.state.data.cuentas.aycColanta > 1000000 && ingOctActual === 0) {
+          this.state.data.cuentas = DEMO_DATA.cuentas;
+          if (this.state.data.resumen) {
+            this.state.data.resumen.disponible = DEMO_DATA.resumen.disponible;
+            this.state.data.resumen.ingresos = DEMO_DATA.resumen.ingresos;
+          }
         }
       }
       try {
@@ -1556,11 +1570,29 @@ const FintechApp = {
     let masterLabel = "TOTAL DISPONIBLE LIBRE";
 
     if (active === "octubre") {
-      // Mes activo actual en curso (A la espera de colilla de nómina Colanta Q1)
-      totalAvail = (cuentas.total !== undefined && cuentas.total !== null) ? cuentas.total : ((res.disponible !== undefined && res.disponible !== null) ? res.disponible : 71800);
-      accCol = (cuentas.aycColanta !== undefined && cuentas.aycColanta !== null) ? cuentas.aycColanta : 0;
-      accNeq = (cuentas.nequi !== undefined && cuentas.nequi !== null) ? cuentas.nequi : 0;
-      accEff = (cuentas.efectivo !== undefined && cuentas.efectivo !== null) ? cuentas.efectivo : 71800;
+      // Mes activo actual en curso (Octubre 2026)
+      const ingOct = Number(monthData.ingresos || res.ingresos || 0);
+      const gasOct = Number(monthData.gastos || res.gastos || 0);
+      accNeq = Number(cuentas.nequi || 0);
+      accEff = Number(cuentas.efectivo !== undefined ? cuentas.efectivo : 71800);
+
+      if (ingOct > 0) {
+        // El disponible real en caja para el mes es exactamente el ingreso neto recibido ($1.700.605 - $238.239 = $1.462.366 COP)
+        const saldoNetoMes = Math.max(0, ingOct - gasOct);
+        if (cuentas.total && cuentas.total <= ingOct && cuentas.total > 0) {
+          totalAvail = cuentas.total;
+          accCol = (cuentas.aycColanta !== undefined && cuentas.aycColanta <= totalAvail)
+            ? cuentas.aycColanta
+            : Math.max(0, totalAvail - accEff - accNeq);
+        } else {
+          // Reconciliación matemática exacta: saldo neto disponible real
+          totalAvail = saldoNetoMes;
+          accCol = Math.max(0, totalAvail - accEff - accNeq);
+        }
+      } else {
+        totalAvail = (cuentas.total && cuentas.total < 1000000) ? cuentas.total : accEff;
+        accCol = 0;
+      }
       masterLabel = "DISPONIBLE REAL EN CAJA (OCTUBRE)";
     } else if (active === "all") {
       // Consolidado de todo el año
@@ -1666,8 +1698,15 @@ const FintechApp = {
     const diasMes = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0).getDate();
     const diasRestantes = Math.max(1, diasMes - hoy.getDate() + 1);
     const fijosPend = Number(res.fijos_pendientes || 2557000);
-    const libre = Math.max(0, totalAvail - fijosPend);
-    const ritmo = Math.round(libre / diasRestantes);
+    let ritmo = 0;
+    if (totalAvail > 0) {
+      if (totalAvail > fijosPend) {
+        ritmo = Math.round((totalAvail - fijosPend) / diasRestantes);
+      } else {
+        const diasPeriodo = hoy.getDate() <= 15 ? Math.max(1, 15 - hoy.getDate() + 1) : diasRestantes;
+        ritmo = Math.round(totalAvail / diasPeriodo);
+      }
+    }
 
     const elPace = document.getElementById("kpi-val-pace");
     const elPaceSub = document.getElementById("pace-days-left");

@@ -840,6 +840,18 @@ function obtenerDatosCompletosDashboard_(mesFiltro, anioFiltro) {
     } catch(eAho) {}
   }
 
+  // Reconciliación matemática de liquidez para el mes en curso:
+  // Si el saldo de cuentas en J39/J42 excede el ingreso recibido del mes (ej. remanente de proyección de 2 quincenas),
+  // se calibra al remanente real del mes (ingreso - gasto - ahorro)
+  const remanenteRealMes = Math.max(0, ingreso - gasto - ahorro);
+  if (ingreso > 0 && (saldoColanta > ingreso || totalLiquidez > ingreso)) {
+    totalLiquidez = remanenteRealMes > 0 ? remanenteRealMes : ingreso;
+    saldoColanta = Math.max(0, totalLiquidez - saldoEfectivo - saldoNequi);
+    disponible = totalLiquidez;
+  } else if (disponible <= 0 && remanenteRealMes > 0) {
+    disponible = remanenteRealMes;
+  }
+
   return {
     ok: true,
     resumen: {
