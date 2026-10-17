@@ -6,7 +6,7 @@
 const API_CONFIG = {
   DEFAULT_WEBHOOK: "https://script.google.com/macros/s/AKfycbxfGcLK2UtQUpLYTOmD6o7PO-cCD_MmUnGul0F7MlfLbPebKYNy8HLV8XM3amI8a_BQ/exec",
   SPREADSHEET_ID: "1C9ifm7U8IYGOdY4IwAji9Z3McSlNy3B-e_2Jo-zvBFk",
-  CACHE_KEY: "PARDO_FINANZAS_CACHE_V28",
+  CACHE_KEY: "PARDO_FINANZAS_CACHE_V29",
   SETTINGS_KEY: "PARDO_FINANZAS_SETTINGS_V26",
   SECURITY_KEY: "PARDO_FINANZAS_SECURITY_V26"
 };
@@ -3431,9 +3431,9 @@ const DEMO_DATA = {
       "concepto": "Internet Tigo",
       "categoria": "Servicios",
       "dia": 15,
-      "cuota": 120000,
-      "abonado": 0,
-      "estado": "🔴 Pendiente"
+      "cuota": 200000,
+      "abonado": 200000,
+      "estado": "🟢 Pagado"
     },
     {
       "id": "F-0110",

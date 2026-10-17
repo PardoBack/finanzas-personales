@@ -1572,6 +1572,84 @@ const FintechApp = {
       return;
     }
 
+    if (intent.type === "CREATE_INSTALLMENT_LOAN") {
+      if (!this.state.data) this.state.data = {};
+      if (!Array.isArray(this.state.data.fijos) || !this.state.data.fijos.length) {
+        this.state.data.fijos = (typeof DEMO_DATA !== "undefined" && DEMO_DATA.fijos)
+          ? JSON.parse(JSON.stringify(DEMO_DATA.fijos))
+          : [];
+      }
+
+      // Generar nuevo ID F-XXXX consecutivo
+      let maxFijoNum = 121;
+      this.state.data.fijos.forEach(f => {
+        const m = String(f.id || "").match(/^F-0?(\d+)$/);
+        if (m) maxFijoNum = Math.max(maxFijoNum, parseInt(m[1], 10));
+      });
+      const nuevoFijoId = "F-" + String(maxFijoNum + 1).padStart(4, "0");
+
+      const quincenaStr = intent.dia <= 15 ? "Quincena 1 (Día 1-15)" : "Quincena 2 (Día 16-31)";
+      const conceptoLabel = `${intent.concepto} [Cuota 1/${intent.numCuotas}]`;
+
+      const nuevoFijo = {
+        id: nuevoFijoId,
+        concepto: conceptoLabel,
+        categoria: intent.categoria || "Compras / Créditos",
+        dia: intent.dia,
+        cuota: intent.cuotaMensual,
+        abonado: 0,
+        estado: "🔴 Pendiente",
+        saldo: intent.totalMonto,
+        prioridad: "Alta",
+        medioPago: "Transferencia",
+        creditoInfo: {
+          entidad: intent.entidad,
+          total: intent.totalMonto,
+          cuotasTotales: intent.numCuotas,
+          cuotaActual: 1,
+          cuotaValor: intent.cuotaMensual
+        }
+      };
+
+      this.state.data.fijos.push(nuevoFijo);
+
+      // Recalcular saldo total de fijos pendientes
+      const totalPendiente = this.state.data.fijos.reduce((acc, f) => {
+        if (String(f.estado).includes("Pagado")) return acc;
+        return acc + Math.max(0, Number(f.cuota || 0) - Number(f.abonado || 0));
+      }, 0);
+
+      if (this.state.data.resumen) {
+        this.state.data.resumen.fijos_pendientes = totalPendiente;
+      }
+
+      try {
+        localStorage.setItem(API_CONFIG.CACHE_KEY, JSON.stringify(this.state.data));
+      } catch (e) {}
+
+      this.renderFixedTable();
+      this.renderBalances();
+
+      this.appendBotMsg(`
+        <div style="background: rgba(14, 165, 233, 0.08); border-left: 4px solid #0EA5E9; padding: 0.85rem; border-radius: 8px;">
+          <p style="margin: 0 0 0.5rem 0; font-weight: 700; color: #38BDF8;">💳 CRÉDITO / PRÉSTAMO REGISTRADO CON ÉXITO</p>
+          <p style="margin: 0 0 0.4rem 0;">🏷️ <strong>${conceptoLabel}</strong> (<code>${nuevoFijo.id}</code>)</p>
+          <ul style="margin: 0 0 0.5rem 0; padding-left: 1.2rem; font-size: 0.88rem; line-height: 1.5;">
+            <li>🏦 <strong>Entidad:</strong> ${intent.entidad}</li>
+            <li>💰 <strong>Monto total financiado:</strong> $${this.formatCOP(intent.totalMonto)} COP</li>
+            <li>🗓️ <strong>Plan de pagos:</strong> ${intent.numCuotas} cuotas de <strong>$${this.formatCOP(intent.cuotaMensual)} COP/mes</strong></li>
+            <li>📅 <strong>Día de cobro/cuota:</strong> Día ${intent.dia} (${quincenaStr})</li>
+            <li>📉 <strong>Saldo pendiente total:</strong> $${this.formatCOP(intent.totalMonto)} COP</li>
+          </ul>
+          <p style="margin: 0; font-size: 0.8rem; color: #94A3B8;">
+            ✅ Se añadió a tu tabla de <strong>Compromisos Fijos</strong>. Cada mes que digas <em>"pagué la cuota de ${intent.entidad.toLowerCase()}"</em>, el asistente marcará la cuota pagada y descontará del saldo total.
+          </p>
+        </div>
+      `);
+      this.showToast(`💳 Crédito ${intent.entidad} registrado ($${this.formatCOP(intent.cuotaMensual)}/mes)`, "success");
+      return;
+    }
+
     if (intent.type === "RECORD_TRANSACTION") {
       const nuevoId = this.getNextMovementId();
       const fechaHoy = new Date().toLocaleDateString("es-CO");
@@ -2693,20 +2771,20 @@ const FintechApp = {
     const cuLower = cuenta.toLowerCase();
     const sLower = subcat.toLowerCase();
 
-    // 1. EPM (Empresas Públicas de Medellín)
-    if (dLower.includes("epm") || cLower.includes("servicios") || dLower.includes("empresas publicas") || dLower.includes("servicios publicos") || sLower.includes("epm") || sLower.includes("energia") || sLower.includes("agua")) {
-      title = desc.includes("EPM") ? desc : "EPM — Servicios Públicos Medellín";
-      subline = "Empresas Públicas de Medellín • Factura DIAN";
-      avatar = this.getBrandBadgeSVG("epm");
-      avatarClass = "avatar-epm";
-      isDian = true;
-    }
-    // 2. Tigo Telecomunicaciones
-    else if (dLower.includes("tigo") || dLower.includes("telecom") || sLower.includes("tigo") || dLower.includes("celular")) {
-      title = desc.includes("Tigo") ? desc : "Tigo — Telecomunicaciones & Móvil";
+    // 1. Tigo Telecomunicaciones & Internet (evaluar ANTES para no ser absorbido por Servicios generales)
+    if (dLower.includes("tigo") || dLower.includes("telecom") || sLower.includes("tigo") || dLower.includes("internet") || dLower.includes("wifi") || sLower.includes("internet") || (dLower.includes("celular") && !dLower.includes("epm"))) {
+      title = desc.includes("Tigo") || desc.includes("Internet") ? desc : "Tigo — Internet & Telecomunicaciones";
       subline = "Tigo Colombia UNE • Factura Electrónica";
       avatar = this.getBrandBadgeSVG("tigo");
       avatarClass = "avatar-tigo";
+      isDian = true;
+    }
+    // 2. EPM (Empresas Públicas de Medellín)
+    else if (dLower.includes("epm") || dLower.includes("empresas publicas") || dLower.includes("servicios publicos") || sLower.includes("epm") || sLower.includes("energia") || sLower.includes("agua") || sLower.includes("gas") || (cLower.includes("servicios") && !dLower.includes("tigo") && !dLower.includes("claro"))) {
+      title = desc.includes("EPM") ? desc : (desc || "EPM — Servicios Públicos Medellín");
+      subline = "Empresas Públicas de Medellín • Factura DIAN";
+      avatar = this.getBrandBadgeSVG("epm");
+      avatarClass = "avatar-epm";
       isDian = true;
     }
     // 3. Restaurante / Cafetería Planta Medellín (Colanta)

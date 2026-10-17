@@ -249,7 +249,7 @@ const FinancialNLP = {
     }
 
     // 2. Creación / Adición de un nuevo Gasto Fijo o Compromiso
-    const isCreateFixed = /\b(a[ñn]ad[ae]|a[ñn]adir|agreg[ae]|agregar|crear?|poner|meter)\s+(?:nuevo\s+)?(?:gasto\s*fijo|compromiso(?:\s*fijo)?|obligaci[oó]n|pago\s*fijo|fijo)\b/i.test(t) ||
+    const isCreateFixed = /\b(pon(?:me)?|coloca|registra|inscribe|a[ñn]ad[ae]|a[ñn]adir|agreg[ae]|agregar|crear?|poner|meter)\s+(?:un\s+|una\s+)?(?:nuevo\s+)?(?:gasto\s*fijo|compromiso(?:\s*fijo)?|obligaci[oó]n|pago\s*fijo|fijo)\b/i.test(t) ||
                           /\b(nuevo\s+gasto\s*fijo|nueva\s+obligaci[oó]n|nuevo\s+compromiso)\b/i.test(t);
 
     if (isCreateFixed) {
@@ -263,7 +263,7 @@ const FinancialNLP = {
         concepto = matchNamed[1].trim();
       } else {
         concepto = raw
-          .replace(/\b(a[ñn]ad[ae]|a[ñn]adir|agreg[ae]|agregar|crear?|poner|meter|nuevo|nueva)\b/gi, "")
+          .replace(/\b(pon(?:me)?|coloca|registra|inscribe|a[ñn]ad[ae]|a[ñn]adir|agreg[ae]|agregar|crear?|poner|meter|nuevo|nueva)\b/gi, "")
           .replace(/\b(gasto\s*fijo|compromiso\s*fijo|obligaci[oó]n|fijo|cuota|pago\s*fijo)\b/gi, "")
           .replace(/\b(?:los|el|dia|dias|fecha)\s*([1-9]|[12]\d|3[01])\b/gi, "")
           .replace(/\$?\s*\d+(?:[.,]\d+)?\s*(?:mil|k|lucas?|mill[oó]n|millones|palos?|pesos|cop)?\b/gi, "")
@@ -281,6 +281,7 @@ const FinancialNLP = {
       else if (/comida|mercado|almuerzo|cena/i.test(concepto)) categoria = "Alimentación";
       else if (/moto|gasolina|parqueadero|soat/i.test(concepto)) categoria = "Moto";
       else if (/spotify|netflix|disney|youtube|musica/i.test(concepto)) categoria = "Entretenimiento";
+      else if (/gimnasio|gym|fitness|smart\s*fit/i.test(concepto)) categoria = "Salud";
 
       const amount = this.parseAmount(raw);
 
@@ -290,6 +291,62 @@ const FinancialNLP = {
         dia: dia,
         categoria: categoria,
         cuota: amount || 0
+      };
+    }
+
+    // 2.1 Préstamos y Créditos a Cuotas (Addi, Sistecrédito, Tarjetas, Bancos)
+    const isLoanOrInstallment = /\b(saqu[eé]|tengo|hice|ped[ií]|adquir[ií]|financ[ieé]|meti|prestamo|credito)\b.*\b(addi|sistecredito|bancolombia|tarjeta|banco|cuotas?)\b/i.test(t) ||
+                                /\b(addi|sistecredito)\b.*\b(cuota|cuotas|meses|total|prestamo|credito|saque|compre)\b/i.test(t);
+
+    if (isLoanOrInstallment) {
+      let entidad = "Addi";
+      if (/sistecredito/i.test(t)) entidad = "Sistecrédito";
+      else if (/bancolombia/i.test(t)) entidad = "Bancolombia";
+      else if (/tarjeta/i.test(t)) entidad = "Tarjeta de Crédito";
+
+      let numCuotas = 3;
+      const matchCuotas = t.match(/\b(?:a|en|de)?\s*([1-9]|[1-4]\d)\s*(?:cuotas?|meses?|pagos?)\b/i);
+      if (matchCuotas) {
+        numCuotas = parseInt(matchCuotas[1], 10);
+      }
+
+      let totalMonto = this.parseAmount(raw);
+
+      const matchPorCuota = t.match(/(?:cuotas?\s+de|valor\s+cuota\s*(?:es\s*)?de?)\s*(\d+(?:[.,]\d+)?\s*(?:mil|k|lucas?|mill[oó]n)?)/i);
+      let cuotaMensual = 0;
+      if (matchPorCuota) {
+        const valCuota = this.parseAmount(matchPorCuota[1]);
+        if (valCuota > 0) {
+          cuotaMensual = valCuota;
+          if (totalMonto === 0 || totalMonto === cuotaMensual) {
+            totalMonto = cuotaMensual * numCuotas;
+          }
+        }
+      }
+
+      if (cuotaMensual === 0 && totalMonto > 0 && numCuotas > 0) {
+        cuotaMensual = Math.round(totalMonto / numCuotas);
+      }
+
+      let dia = 15;
+      const matchDia = t.match(/\b(?:los|el|dia|dias|fecha)\s*([1-9]|[12]\d|3[01])\b/i);
+      if (matchDia) dia = parseInt(matchDia[1], 10);
+
+      let concepto = `Crédito ${entidad}`;
+      const matchProducto = raw.match(/(?:para|por|de|compre|saque)\s+([a-zA-Z0-9\s]+?)(?:\s+(?:en|por|a|con|total|\$)\s+(?:addi|sistecredito|\d)|$)/i);
+      if (matchProducto && matchProducto[1].trim().length > 2 && !/^(un|el|la|este|ese)\s+(prestamo|credito)$/i.test(matchProducto[1].trim())) {
+        concepto = `${matchProducto[1].trim()} (${entidad})`;
+      }
+
+      return {
+        type: "CREATE_INSTALLMENT_LOAN",
+        entidad: entidad,
+        concepto: concepto,
+        totalMonto: totalMonto,
+        numCuotas: numCuotas,
+        cuotaMensual: cuotaMensual,
+        dia: dia,
+        categoria: "Compras / Créditos"
       };
     }
 
