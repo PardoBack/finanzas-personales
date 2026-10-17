@@ -16,24 +16,25 @@ const DEMO_DATA = {
   "ok": true,
   "resumen": {
     "ingresos": 1700605.0,
-    "gastos": 238239.0,
+    "gastos": 435239.0,
     "ahorros": 236121.0,
-    "disponible": 1462366.0,
-    "fijos_pendientes": 2557000,
+    "disponible": 1265366.0,
+    "fijos_pendientes": 2380000,
     "mes": "octubre",
     "anio": 2026
   },
   "gastosPorCategoria": {
+    "Servicios": 197000.0,
     "Moto": 116000.0,
     "Gastos Hormiga / Dulces": 86000.0,
     "Entretenimiento": 24123.0,
     "Alimentación": 12116.0
   },
   "cuentas": {
-    "aycColanta": 1390566.0,
+    "aycColanta": 1193566.0,
     "nequi": 0,
     "efectivo": 71800,
-    "total": 1462366.0
+    "total": 1265366.0
   },
   "ahorrosColanta": {
     "ordinarioAcumulado": 627000,
@@ -155,6 +156,21 @@ const DEMO_DATA = {
     }
   },
   "movimientos": [
+    {
+      "id": "M-0259",
+      "fecha": "17/10/2026",
+      "hora": "11:40 AM",
+      "tipo": "Gasto",
+      "categoria": "Servicios",
+      "subcategoria": "Pago fijo",
+      "descripcion": "Pago Fijo: EPM ENERGIA",
+      "valor": 197000.0,
+      "metodo": "Transferencia",
+      "cuenta": "Nequi",
+      "mes": "octubre",
+      "anio": 2026,
+      "idFijo": "F-0107"
+    },
     {
       "id": "M-0258",
       "fecha": "16/10/2026",
@@ -3382,9 +3398,9 @@ const DEMO_DATA = {
       "concepto": "EPM ENERGIA",
       "categoria": "Servicios",
       "dia": 15,
-      "cuota": 177000,
-      "abonado": 0,
-      "estado": "🔴 Pendiente"
+      "cuota": 197000,
+      "abonado": 197000,
+      "estado": "🟢 Pagado"
     },
     {
       "id": "F-0108",

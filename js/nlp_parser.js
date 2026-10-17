@@ -69,6 +69,35 @@ const FinancialNLP = {
     return "Nequi"; // Default en Colombia
   },
 
+  // Catálogo maestro de gastos fijos y compromisos de Marlon para reconciliación automática
+  fixedObligationsCatalog: [
+    { id: "F-0107", regex: /\b(epm|energ[ií]a|luz|agua|gas|factura epm|cuenta epm|servicios epm)\b/i, concepto: "EPM ENERGIA", cuota: 177000, variable: true, categoria: "Servicios", subcategoria: "EPM (Agua, Luz, Gas)" },
+    { id: "F-0108", regex: /\b(comida|mercado|alimentaci[oó]n|mercado quincena)\b/i, concepto: "COMIDA", cuota: 850000, variable: false, categoria: "Alimentación", subcategoria: "Mercado" },
+    { id: "F-0109", regex: /\b(tigo|internet|wifi|fibra|une)\b/i, concepto: "Internet Tigo", cuota: 120000, variable: true, categoria: "Servicios", subcategoria: "Internet" },
+    { id: "F-0110", regex: /\b(parqueadero trabajo|parking trabajo|parqueadero semana)\b/i, concepto: "Parqueadero Trabajo Semana", cuota: 40000, variable: false, categoria: "Transporte", subcategoria: "Parqueadero" },
+    { id: "F-0111", regex: /\b(aud[ií]fonos|samsung|galaxy buds)\b/i, concepto: "Cuota Audifonos Samsung", cuota: 50000, variable: false, categoria: "Otros", subcategoria: "Cuota" },
+    { id: "F-0112", regex: /\b(parqueadero moto|parking moto)\b/i, concepto: "PARQUEADERO MOTO", cuota: 60000, variable: false, categoria: "Moto", subcategoria: "Parqueadero" },
+    { id: "F-0113", regex: /\b(gasolina moto|gasolina|tanqueada)\b/i, concepto: "Gasolina Moto", cuota: 35000, variable: true, categoria: "Moto", subcategoria: "Gasolina" },
+    { id: "F-0114", regex: /\b(spotify|m[uú]sica)\b/i, concepto: "Spotify", cuota: 10100, variable: false, categoria: "Entretenimiento", subcategoria: "Suscripciones" },
+    { id: "F-0115", regex: /\b(celular|datos|plan celular|plan datos|claro|l[ií]nea m[oó]vil|cuota datos)\b/i, concepto: "CUOTA DATOS CELULAR", cuota: 43900, variable: false, categoria: "Servicios", subcategoria: "Telefonía" },
+    { id: "F-0116", regex: /\b(arriendo|casa|apartamento|canon|arriendo casa)\b/i, concepto: "ARRIENDO CASA", cuota: 900000, variable: false, categoria: "Vivienda", subcategoria: "Arriendo" },
+    { id: "F-0117", regex: /\b(google|google one|nube|almacenamiento)\b/i, concepto: "Google One", cuota: 20000, variable: false, categoria: "Servicios", subcategoria: "Suscripciones" },
+    { id: "F-0118", regex: /\b(gasolina moto q2|gasolina quincena 2)\b/i, concepto: "Gasolina Moto", cuota: 25000, variable: true, categoria: "Moto", subcategoria: "Gasolina" },
+    { id: "F-0119", regex: /\b(parqueadero trabajo q2)\b/i, concepto: "Parqueadero Trabajo Semana", cuota: 40000, variable: false, categoria: "Transporte", subcategoria: "Parqueadero" },
+    { id: "F-0120", regex: /\b(comida q2|mercado fin de mes)\b/i, concepto: "COMIDA", cuota: 200000, variable: false, categoria: "Alimentación", subcategoria: "Mercado" },
+    { id: "F-0121", regex: /\b(parqueadero moto q2)\b/i, concepto: "PARQUEADERO MOTO", cuota: 40000, variable: false, categoria: "Moto", subcategoria: "Parqueadero" }
+  ],
+
+  matchFixedObligation(text) {
+    const t = String(text || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    for (const item of this.fixedObligationsCatalog) {
+      if (item.regex.test(t) || item.regex.test(text)) {
+        return item;
+      }
+    }
+    return null;
+  },
+
   // Detecta la intención principal del usuario
   parseIntent(text) {
     const t = text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -88,16 +117,19 @@ const FinancialNLP = {
 
     if (amount > 0 && !isExplicitQuestion) {
       const isIngreso = /\b(recibi|recibo|ingreso|me pagaron|gane|cobre|nomina|sueldo|abono a mi favor)\b/i.test(t);
-      const isFijo = /\b(epm|tigo|arriendo|spotify|cuota|fijo|google one)\b/i.test(t);
+      const fixedMatch = !isIngreso ? this.matchFixedObligation(text) : null;
+      const isFijo = !!fixedMatch;
 
-      let category = isIngreso ? "Salario" : "Otros";
-      let subcategory = isIngreso ? "Ingreso Extra" : "General";
+      let category = isIngreso ? "Salario" : (fixedMatch ? fixedMatch.categoria : "Otros");
+      let subcategory = isIngreso ? "Ingreso Extra" : (fixedMatch ? "Pago fijo" : "General");
 
-      for (const item of this.categoriesMap) {
-        if (item.regex.test(t) || item.regex.test(text)) {
-          category = item.category;
-          subcategory = item.subcategory;
-          break;
+      if (!fixedMatch && !isIngreso) {
+        for (const item of this.categoriesMap) {
+          if (item.regex.test(t) || item.regex.test(text)) {
+            category = item.category;
+            subcategory = item.subcategory;
+            break;
+          }
         }
       }
 
@@ -109,7 +141,9 @@ const FinancialNLP = {
         .replace(/\s+/g, " ")
         .trim();
 
-      if (!desc || desc.length < 2) {
+      if (fixedMatch) {
+        desc = `Pago Fijo: ${fixedMatch.concepto}`;
+      } else if (!desc || desc.length < 2) {
         desc = subcategory !== "General" ? subcategory : category;
       } else {
         desc = desc.charAt(0).toUpperCase() + desc.slice(1);
@@ -123,7 +157,11 @@ const FinancialNLP = {
         subcategory: subcategory,
         account: this.parseAccount(text),
         description: desc,
-        isFixed: isFijo
+        isFixed: isFijo,
+        idFijo: fixedMatch ? fixedMatch.id : null,
+        conceptoFijo: fixedMatch ? fixedMatch.concepto : null,
+        isVariableInvoice: fixedMatch ? fixedMatch.variable : false,
+        cuotaBaseFijo: fixedMatch ? fixedMatch.cuota : 0
       };
     }
 

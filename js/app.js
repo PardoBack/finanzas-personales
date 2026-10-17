@@ -1365,6 +1365,39 @@ const FintechApp = {
       const horaHoy = new Date().toLocaleTimeString("es-CO", { hour: '2-digit', minute: '2-digit' });
       const targetMes = (this.state.activeMonth && this.state.activeMonth !== "all") ? this.state.activeMonth : "octubre";
 
+      // Reconciliación ultra-inteligente de gastos fijos si aplica
+      let fixedReconciled = null;
+      if (intent.transactionType === "Gasto" && this.state.data && Array.isArray(this.state.data.fijos)) {
+        const idTarget = (intent.idFijo || "").toUpperCase();
+        const fijo = this.state.data.fijos.find(f => 
+          (idTarget && String(f.id).toUpperCase() === idTarget) ||
+          (intent.conceptoFijo && String(f.concepto || "").toLowerCase().includes(intent.conceptoFijo.toLowerCase())) ||
+          (intent.description && String(f.concepto || "").toLowerCase().includes(intent.description.toLowerCase())) ||
+          (String(f.id).toUpperCase() === "F-0107" && /epm|energia|luz|agua|gas/i.test(intent.description || ""))
+        );
+
+        if (fijo) {
+          const valorPago = intent.amount;
+          if (intent.isVariableInvoice || valorPago > (fijo.cuota || 0)) {
+            fijo.cuota = valorPago;
+          }
+          fijo.abonado = valorPago;
+          fijo.estado = "🟢 Pagado";
+          fijo.fechaPago = fechaHoy;
+          fixedReconciled = fijo;
+
+          // Recalcular saldo total pendiente de fijos
+          const totalPendienteFijos = this.state.data.fijos.reduce((acc, f) => {
+            if (String(f.estado).includes("Pagado")) return acc;
+            return acc + Math.max(0, Number(f.cuota || 0) - Number(f.abonado || 0));
+          }, 0);
+
+          if (this.state.data.resumen) {
+            this.state.data.resumen.fijos_pendientes = totalPendienteFijos;
+          }
+        }
+      }
+
       const nuevoMov = {
         id: nuevoId,
         fecha: fechaHoy,
@@ -1373,11 +1406,13 @@ const FintechApp = {
         anio: this.state.activeYear || 2026,
         tipo: intent.transactionType,
         categoria: intent.category,
-        subcategoria: intent.subcategory,
-        descripcion: intent.description,
+        subcategoria: fixedReconciled ? "Pago fijo" : intent.subcategory,
+        descripcion: fixedReconciled ? `Pago Fijo: ${fixedReconciled.concepto}` : intent.description,
         valor: intent.amount,
         metodo: intent.account === "Efectivo" ? "Efectivo" : "Transferencia",
-        cuenta: intent.account
+        cuenta: intent.account,
+        idFijo: fixedReconciled ? fixedReconciled.id : (intent.idFijo || null),
+        conceptoFijo: fixedReconciled ? fixedReconciled.concepto : (intent.conceptoFijo || null)
       };
 
       if (this.state.data && this.state.data.movimientos) {
@@ -1418,6 +1453,7 @@ const FintechApp = {
         }
         this.updateSidebarMovCount();
         this.renderBalances();
+        this.renderFixedTable();
         this.renderCharts();
         this.renderAnnualSection();
         this.renderMovementsTable();
@@ -1429,27 +1465,48 @@ const FintechApp = {
       const isV26 = FinanceAPI.backendState.isV26;
       const syncStatusHtml = isV26 
         ? `<p style="font-size:0.75rem; color:#34D399; margin-top:0.4rem;">
-             <i class="fa-solid fa-cloud-arrow-up"></i> Sincronizado en tiempo real con Google Sheets (Fila 5).
+             <i class="fa-solid fa-cloud-arrow-up"></i> Sincronizado en tiempo real con Google Sheets (Fila 5 y CONTROL FIJOS).
            </p>`
         : `<p style="font-size:0.75rem; color:#FBBF24; margin-top:0.4rem; line-height: 1.4;">
              <i class="fa-solid fa-triangle-exclamation"></i> Guardado en la app. Tu Google Apps Script está en <strong>V25.3</strong>.<br>
              👉 Para que aparezca en tu Google Sheet, actualiza a <strong>V26.9</strong> desde Ajustes ⚙️ (solo toma 30 segundos).
            </p>`;
 
-      this.appendBotMsg(`
-        <p>✅ <strong>${intent.transactionType.toUpperCase()} REGISTRADO EN 0.05s</strong></p>
-        <p>🏷️ <strong>${intent.description}</strong> (<code>${nuevoId}</code>)<br>
-        💰 <strong>$${this.formatCOP(intent.amount)} COP</strong><br>
-        📂 Categoría: <em>${intent.category}</em><br>
-        💳 Cuenta: <em>${intent.account}</em></p>
-        ${syncStatusHtml}
-        <div style="margin-top:0.45rem;">
-          <button type="button" class="btn-chat-delete-mov" data-id="${nuevoId}" data-val="${intent.amount}" data-tipo="${intent.transactionType}" style="background:rgba(239, 68, 68, 0.12); color:#FCA5A5; border:1px solid rgba(239, 68, 68, 0.25); border-radius:6px; padding:0.25rem 0.55rem; font-size:0.75rem; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:0.35rem;">
-            <i class="fa-solid fa-trash-can"></i> Deshacer / Borrar este registro
-          </button>
-        </div>
-      `);
-      this.showToast(`✅ ${intent.description} guardado ($${this.formatCOP(intent.amount)})`, "success");
+      const fijosListNow = (this.state.data && this.state.data.fijos) || [];
+      const pendCount = fijosListNow.filter(f => !String(f.estado).includes("Pagado") && Number(f.cuota || 0) > Number(f.abonado || 0)).length;
+      const pendVal = (this.state.data && this.state.data.resumen && this.state.data.resumen.fijos_pendientes) || 2380000;
+
+      if (fixedReconciled) {
+        this.appendBotMsg(`
+          <p>⚡ <strong>COMPROMISO FIJO RECONCILIADO EN 0.05s</strong></p>
+          <p>🟢 <strong>${fixedReconciled.concepto} (${fixedReconciled.id})</strong> quedó registrado y marcado como <strong>PAGADO</strong>.<br>
+          💰 <strong>$${this.formatCOP(intent.amount)} COP</strong> abonados (Factura Variable).<br>
+          📂 Categoría: <em>${intent.category}</em> | 💳 Cuenta: <em>${intent.account}</em></p>
+          <p>📉 <strong>Compromisos restantes de ${targetMes}:</strong> <strong style="color:#FBBF24;">$${this.formatCOP(pendVal)} COP</strong> (${pendCount} obligaciones pendientes).</p>
+          ${syncStatusHtml}
+          <div style="margin-top:0.45rem;">
+            <button type="button" class="btn-chat-delete-mov" data-id="${nuevoId}" data-val="${intent.amount}" data-tipo="${intent.transactionType}" style="background:rgba(239, 68, 68, 0.12); color:#FCA5A5; border:1px solid rgba(239, 68, 68, 0.25); border-radius:6px; padding:0.25rem 0.55rem; font-size:0.75rem; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:0.35rem;">
+              <i class="fa-solid fa-trash-can"></i> Deshacer / Borrar este registro
+            </button>
+          </div>
+        `);
+        this.showToast(`🟢 ${fixedReconciled.concepto} marcado como Pagado ($${this.formatCOP(intent.amount)})`, "success");
+      } else {
+        this.appendBotMsg(`
+          <p>✅ <strong>${intent.transactionType.toUpperCase()} REGISTRADO EN 0.05s</strong></p>
+          <p>🏷️ <strong>${intent.description}</strong> (<code>${nuevoId}</code>)<br>
+          💰 <strong>$${this.formatCOP(intent.amount)} COP</strong><br>
+          📂 Categoría: <em>${intent.category}</em><br>
+          💳 Cuenta: <em>${intent.account}</em></p>
+          ${syncStatusHtml}
+          <div style="margin-top:0.45rem;">
+            <button type="button" class="btn-chat-delete-mov" data-id="${nuevoId}" data-val="${intent.amount}" data-tipo="${intent.transactionType}" style="background:rgba(239, 68, 68, 0.12); color:#FCA5A5; border:1px solid rgba(239, 68, 68, 0.25); border-radius:6px; padding:0.25rem 0.55rem; font-size:0.75rem; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:0.35rem;">
+              <i class="fa-solid fa-trash-can"></i> Deshacer / Borrar este registro
+            </button>
+          </div>
+        `);
+        this.showToast(`✅ ${intent.description} guardado ($${this.formatCOP(intent.amount)})`, "success");
+      }
       return;
     }
 
@@ -1619,6 +1676,81 @@ const FintechApp = {
     return String(str).replace(/[&<>'"]/g, t => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[t] || t));
   },
 
+  reconcileFixedObligationsWithMovements() {
+    if (!this.state.data) return;
+    if (!Array.isArray(this.state.data.fijos) || !this.state.data.fijos.length) {
+      if (typeof DEMO_DATA !== "undefined" && DEMO_DATA.fijos) {
+        this.state.data.fijos = JSON.parse(JSON.stringify(DEMO_DATA.fijos));
+      } else {
+        return;
+      }
+    }
+
+    const activeMonth = this.state.activeMonth || "octubre";
+    const targetMonth = activeMonth === "all" ? "octubre" : activeMonth;
+
+    // Filtrar movimientos de gasto del mes activo
+    const monthExpenses = movs.filter(m => {
+      const isGasto = !String(m.tipo || "").toLowerCase().includes("ingreso");
+      const mMes = String(m.mes || "").toLowerCase();
+      return isGasto && mMes === targetMonth;
+    });
+
+    this.state.data.fijos.forEach(f => {
+      const cLower = String(f.concepto || "").toLowerCase();
+      const idUpper = String(f.id || "").toUpperCase();
+
+      const matchingMov = monthExpenses.find(m => {
+        const d = String(m.descripcion || "").toLowerCase();
+        const s = String(m.subcategoria || "").toLowerCase();
+        const ref = String(m.notas || "").toUpperCase();
+
+        if (ref.includes(idUpper)) return true;
+        if (m.idFijo && String(m.idFijo).toUpperCase() === idUpper) return true;
+
+        if (idUpper === "F-0107" && (d.includes("epm") || s.includes("epm") || d.includes("energia") || d.includes("luz"))) return true;
+        if (idUpper === "F-0109" && (d.includes("tigo") || s.includes("internet") || d.includes("wifi"))) return true;
+        if (idUpper === "F-0114" && (d.includes("spotify"))) return true;
+        if (idUpper === "F-0115" && (d.includes("datos") || d.includes("celular") || s.includes("telefonia"))) return true;
+        if (idUpper === "F-0116" && (d.includes("arriendo"))) return true;
+        if (idUpper === "F-0117" && (d.includes("google"))) return true;
+        return false;
+      });
+
+      if (matchingMov) {
+        const val = Number(matchingMov.valor || 0);
+        if (val > 0) {
+          const esVariable = /\b(epm|energia|luz|agua|gas|tigo|internet|wifi|gasolina)\b/i.test(cLower);
+          if (esVariable || val > Number(f.cuota || 0)) {
+            f.cuota = val;
+          }
+          f.abonado = Math.max(Number(f.abonado || 0), val);
+          if (f.abonado >= Number(f.cuota || 0) || esVariable) {
+            f.abonado = f.cuota;
+            f.estado = "🟢 Pagado";
+          } else {
+            f.estado = "🟡 Abono Parcial";
+          }
+          f.fechaPago = matchingMov.fecha || new Date().toLocaleDateString("es-CO");
+        }
+      }
+    });
+
+    // Recalcular saldo total pendiente de fijos
+    const totalPendiente = this.state.data.fijos.reduce((acc, f) => {
+      if (String(f.estado).includes("Pagado")) return acc;
+      return acc + Math.max(0, Number(f.cuota || 0) - Number(f.abonado || 0));
+    }, 0);
+
+    if (this.state.data.resumen) {
+      this.state.data.resumen.fijos_pendientes = totalPendiente;
+    }
+
+    try {
+      localStorage.setItem(API_CONFIG.CACHE_KEY, JSON.stringify(this.state.data));
+    } catch (e) {}
+  },
+
   async loadData() {
     const res = await FinanceAPI.fetchFinancialData();
     this.state.data = res.data;
@@ -1634,8 +1766,11 @@ const FintechApp = {
     }
 
     if (!this.state.data.fijos || !this.state.data.fijos.length) {
-      this.state.data.fijos = DEMO_DATA.fijos;
+      this.state.data.fijos = JSON.parse(JSON.stringify(DEMO_DATA.fijos));
     }
+
+    // Auto-reconciliar fijos con los movimientos registrados
+    this.reconcileFixedObligationsWithMovements();
 
     this.updateSidebarMovCount();
     this.renderBalances();
@@ -1804,11 +1939,32 @@ const FintechApp = {
     const elNav = document.getElementById("kpi-val-navidad");
     const elNavSub = document.getElementById("kpi-sub-savings-total");
 
+    // Dynamic pending calculation from fijos
+    const fijosList = (this.state.data && this.state.data.fijos) || (typeof DEMO_DATA !== "undefined" ? DEMO_DATA.fijos : []);
+    const fijosPendientesList = fijosList.filter(f => !String(f.estado || "").includes("Pagado") && Number(f.cuota || 0) > Number(f.abonado || 0));
+    const calcFijosPend = fijosPendientesList.reduce((acc, f) => acc + Math.max(0, Number(f.cuota || 0) - Number(f.abonado || 0)), 0);
+    const finalFijosPend = calcFijosPend > 0 ? calcFijosPend : Number(res.fijos_pendientes || 2380000);
+
     if (elInc) elInc.textContent = formatVal(monthData.ingresos);
     if (elExp) elExp.textContent = formatVal(monthData.gastos);
-    if (elFix) elFix.textContent = formatVal(res.fijos_pendientes || 2557000);
+    if (elFix) elFix.textContent = formatVal(finalFijosPend);
     if (elNav) elNav.textContent = formatVal(navSavingsColanta);
     if (elNavSub) elNavSub.textContent = `Total Fondos: $${(totalSavingsColanta / 1000000).toFixed(2)}M`;
+
+    // Actualizar conteo y nombres dinámicos de fijos pendientes
+    const elKpiCountFixed = document.getElementById("kpi-count-fixed");
+    if (elKpiCountFixed) {
+      elKpiCountFixed.textContent = `${fijosPendientesList.length} pendientes`;
+    }
+    const elKpiSubFixedNames = document.getElementById("kpi-sub-fixed-names");
+    if (elKpiSubFixedNames) {
+      const topNames = fijosPendientesList.slice(0, 3).map(f => String(f.concepto || "").split(" ")[0]).join(", ");
+      elKpiSubFixedNames.textContent = topNames || "Sin pendientes";
+    }
+    const badgeFixed = document.getElementById("sidebar-fixed-pending") || document.getElementById("sidebar-fixed-count");
+    if (badgeFixed) {
+      badgeFixed.textContent = fijosPendientesList.length;
+    }
 
     // Etiqueta contextual de Ingresos
     const elMetaInc = document.getElementById("kpi-meta-income");
@@ -1837,7 +1993,7 @@ const FintechApp = {
     const hoy = new Date();
     const diasMes = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0).getDate();
     const diasRestantes = Math.max(1, diasMes - hoy.getDate() + 1);
-    const fijosPend = Number(res.fijos_pendientes || 2557000);
+    const fijosPend = Number(finalFijosPend);
     let ritmo = 0;
     if (totalAvail > 0) {
       if (totalAvail > fijosPend) {
@@ -3368,6 +3524,16 @@ const FintechApp = {
       ? this.state.activeMonth
       : "octubre";
 
+    let idFijo = null;
+    let conceptoFijo = null;
+    if (tipo === "Gasto" && typeof FinancialNLP !== "undefined" && typeof FinancialNLP.matchFixedObligation === "function") {
+      const match = FinancialNLP.matchFixedObligation(desc);
+      if (match) {
+        idFijo = match.id;
+        conceptoFijo = match.concepto;
+      }
+    }
+
     const payload = {
       tipo: tipo,
       valor: valor,
@@ -3376,7 +3542,9 @@ const FintechApp = {
       cuenta: cuenta,
       metodo: cuenta === "Efectivo" ? "Efectivo" : "Transferencia",
       mes: activeMonth,
-      anio: 2026
+      anio: 2026,
+      idFijo: idFijo,
+      conceptoFijo: conceptoFijo
     };
 
     const nuevo = {
@@ -3394,6 +3562,16 @@ const FintechApp = {
         this.state.data.resumen.disponible = Math.max(0, (this.state.data.resumen.disponible || 0) - valor);
         if (!this.state.data.gastosPorCategoria) this.state.data.gastosPorCategoria = {};
         this.state.data.gastosPorCategoria[cat] = (this.state.data.gastosPorCategoria[cat] || 0) + valor;
+
+        if (idFijo && Array.isArray(this.state.data.fijos)) {
+          const f = this.state.data.fijos.find(item => String(item.id).toUpperCase() === String(idFijo).toUpperCase());
+          if (f) {
+            f.cuota = Math.max(Number(f.cuota || 0), valor);
+            f.abonado = valor;
+            f.estado = "🟢 Pagado";
+            f.fechaPago = nuevo.fecha;
+          }
+        }
       } else {
         this.state.data.resumen.ingresos = (this.state.data.resumen.ingresos || 0) + valor;
         this.state.data.resumen.disponible = (this.state.data.resumen.disponible || 0) + valor;
@@ -3421,6 +3599,7 @@ const FintechApp = {
 
       this.updateSidebarMovCount();
       this.renderBalances();
+      this.renderFixedTable();
       this.renderCharts();
       this.renderAnnualSection();
       this.renderMovementsTable();

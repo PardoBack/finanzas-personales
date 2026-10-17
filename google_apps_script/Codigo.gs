@@ -310,12 +310,32 @@ function registrarMovimientoDesdeDashboard_(data) {
   // Aplicar fórmula de filtrado en Columna O (_IndexFiltro)
   shMov.getRange(5, 15).setFormula('=IF(ISBLANK(A5), "", IF(AND(LOWER(TRIM(K5))=LOWER(TRIM(PANEL!$L$2)), L5=PANEL!$I$2), MAX($O$4:O4)+1, ""))');
 
-  // Si corresponde a un gasto fijo, registrar abono en HISTORICO FIJOS
-  if (data.idFijo && tipo === "Gasto") {
+  // Detección automática ultra-inteligente de Gastos Fijos
+  let idFijoFinal = data.idFijo || null;
+  if (!idFijoFinal && tipo === "Gasto") {
+    const textoCompleto = `${descripcion} ${categoria} ${subcategoria}`.toLowerCase();
+    if (/\b(epm|energia|luz|agua|gas)\b/i.test(textoCompleto)) idFijoFinal = "F-0107";
+    else if (/\b(tigo|internet|wifi|une)\b/i.test(textoCompleto)) idFijoFinal = "F-0109";
+    else if (/\b(arriendo|casa|apartamento)\b/i.test(textoCompleto)) idFijoFinal = "F-0116";
+    else if (/\b(spotify)\b/i.test(textoCompleto)) idFijoFinal = "F-0114";
+    else if (/\b(celular|datos|linea movil)\b/i.test(textoCompleto)) idFijoFinal = "F-0115";
+    else if (/\b(google|google one)\b/i.test(textoCompleto)) idFijoFinal = "F-0117";
+    else if (/\b(parqueadero moto)\b/i.test(textoCompleto)) idFijoFinal = "F-0112";
+    else if (/\b(gasolina moto|gasolina)\b/i.test(textoCompleto)) idFijoFinal = "F-0113";
+    else if (/\b(parqueadero trabajo)\b/i.test(textoCompleto)) idFijoFinal = "F-0110";
+    else if (/\b(comida|mercado)\b/i.test(textoCompleto)) idFijoFinal = "F-0108";
+    else if (/\b(audifonos|samsung)\b/i.test(textoCompleto)) idFijoFinal = "F-0111";
+  }
+
+  // Si corresponde a un gasto fijo, registrar abono y reconciliar en HISTORICO FIJOS y CONTROL FIJOS
+  let fijoActualizadoInfo = null;
+  if (idFijoFinal && tipo === "Gasto") {
     try {
-      actualizarHistoricoFijos_(ss, data.idFijo, valor, mesActual, anioActual);
+      fijoActualizadoInfo = actualizarHistoricoFijos_(ss, idFijoFinal, valor, mesActual, anioActual, fechaStr);
+      shMov.getRange(5, 6).setValue("Pago fijo");
+      shMov.getRange(5, 14).setValue(`PAGO_FIJO|${idFijoFinal}|${mesActual}|${anioActual}`);
     } catch (eFijo) {
-      console.warn("Aviso fijos:", eFijo);
+      console.warn("Aviso reconciliación fijos:", eFijo);
     }
   }
 
@@ -335,6 +355,123 @@ function registrarMovimientoDesdeDashboard_(data) {
       cuenta: cuenta
     }
   })).setMimeType(ContentService.MimeType.JSON);
+}
+
+function actualizarHistoricoFijos_(ss, idFijo, valor, mes, anio, fechaOpt) {
+  if (!ss) ss = obtenerLibro_();
+  const shHist = ss.getSheetByName("HISTORICO FIJOS");
+  const shFijos = ss.getSheetByName("CONTROL FIJOS");
+  const mesNorm = normalizarTexto(String(mes || "octubre"));
+  const anioNum = Number(anio || 2026);
+  const idBuscado = String(idFijo || "").trim().toUpperCase();
+  const fechaStr = fechaOpt || Utilities.formatDate(new Date(), ZONA_HORARIA, "yyyy-MM-dd");
+
+  let reconciliado = false;
+  let conceptoFijo = "";
+
+  // 1. Actualizar en HISTORICO FIJOS
+  if (shHist && shHist.getLastRow() >= 4) {
+    const numRows = shHist.getLastRow() - 3;
+    const hRows = shHist.getRange(4, 1, numRows, 15).getValues();
+
+    for (let h = 0; h < hRows.length; h++) {
+      const hId = String(hRows[h][0] || "").trim().toUpperCase();
+      const hMes = normalizarTexto(String(hRows[h][9] || ""));
+      const hAnio = Number(hRows[h][10] || 0);
+
+      if (hId === idBuscado && hMes === mesNorm && (hAnio === anioNum || hAnio === 0)) {
+        const rowIndex = h + 4;
+        conceptoFijo = String(hRows[h][1] || "");
+        const cuotaActual = Number(hRows[h][4] || 0);
+        const abonoActual = Number(hRows[h][5] || 0);
+
+        // Si es servicio variable (EPM, Tigo, etc.) o el pago supera la cuota previa, ajustar cuota base a la factura real
+        const esVariable = /\b(epm|energia|luz|agua|gas|tigo|internet|wifi|une|claro|datos|celular|gasolina)\b/i.test(conceptoFijo);
+        const nuevaCuota = (esVariable || valor > cuotaActual) ? Math.max(cuotaActual, valor) : cuotaActual;
+        const nuevoAbono = (esVariable || valor >= nuevaCuota) ? valor : Math.min(nuevaCuota, abonoActual + valor);
+
+        shHist.getRange(rowIndex, 5).setValue(nuevaCuota); // Cuota Base ($)
+        shHist.getRange(rowIndex, 6).setValue(nuevoAbono); // Abonado ($)
+        shHist.getRange(rowIndex, 7).setValue(fechaStr);   // Fecha Pago
+        shHist.getRange(rowIndex, 8).setValue(nuevoAbono >= nuevaCuota ? "🟢 Pagado" : "🟡 Abono Parcial"); // Estado
+        shHist.getRange(rowIndex, 14).setValue(Math.max(0, nuevaCuota - nuevoAbono)); // Saldo Pendiente
+
+        reconciliado = true;
+        break;
+      }
+    }
+  }
+
+  // 2. Actualizar CONTROL FIJOS directamente si tiene valores planos o como refuerzo
+  if (shFijos && shFijos.getLastRow() >= 10) {
+    const numF = shFijos.getLastRow() - 9;
+    const fRows = shFijos.getRange(10, 1, numF, 9).getValues();
+    for (let f = 0; f < fRows.length; f++) {
+      const fId = String(fRows[f][0] || "").trim().toUpperCase();
+      if (fId === idBuscado) {
+        const rIndex = f + 10;
+        const fCellFormula = shFijos.getRange(rIndex, 6).getFormula();
+        if (!fCellFormula) {
+          const cuotaPrev = Number(fRows[f][4] || valor);
+          const cuotaFinal = valor > cuotaPrev ? valor : cuotaPrev;
+          shFijos.getRange(rIndex, 5).setValue(cuotaFinal);
+          shFijos.getRange(rIndex, 6).setValue(valor);
+          shFijos.getRange(rIndex, 7).setValue("🟢 Pagado");
+          shFijos.getRange(rIndex, 8).setValue(fechaStr);
+          shFijos.getRange(rIndex, 9).setValue(0);
+        }
+        break;
+      }
+    }
+  }
+
+  try {
+    CacheService.getScriptCache().remove("CTX_FIN_IA_" + mesNorm + "_" + anioNum);
+  } catch (e) {}
+
+  return { ok: true, reconciliado: reconciliado, idFijo: idBuscado, concepto: conceptoFijo, valor: valor };
+}
+
+function autoReconciliarFijosDesdeMovimientos_(ss, mes, anio) {
+  if (!ss) ss = obtenerLibro_();
+  const shMov = ss.getSheetByName("MOVIMIENTOS");
+  if (!shMov || shMov.getLastRow() < 5) return { ok: false, mensaje: "Sin movimientos" };
+
+  const mesNorm = normalizarTexto(String(mes || "octubre"));
+  const anioNum = Number(anio || 2026);
+  const numRows = Math.min(60, shMov.getLastRow() - 4);
+  const movRows = shMov.getRange(5, 1, numRows, 14).getValues();
+
+  const reconciliados = [];
+
+  for (let i = 0; i < movRows.length; i++) {
+    const r = movRows[i];
+    const tipo = String(r[3] || "").toLowerCase();
+    const mMes = normalizarTexto(String(r[10] || ""));
+    const mAnio = Number(r[11] || 2026);
+
+    if (!tipo.includes("gasto") || mMes !== mesNorm || (mAnio !== anioNum && mAnio !== 0)) continue;
+
+    const desc = String(r[6] || "").toLowerCase();
+    const subcat = String(r[5] || "").toLowerCase();
+    const valor = Number(r[7] || 0);
+    const fecha = r[1] instanceof Date ? Utilities.formatDate(r[1], ZONA_HORARIA, "yyyy-MM-dd") : String(r[1] || "");
+
+    let targetId = null;
+    if (desc.includes("epm") || subcat.includes("epm") || desc.includes("energia") || desc.includes("luz")) targetId = "F-0107";
+    else if (desc.includes("tigo") || subcat.includes("internet") || desc.includes("wifi")) targetId = "F-0109";
+    else if (desc.includes("arriendo") || subcat.includes("arriendo")) targetId = "F-0116";
+    else if (desc.includes("spotify")) targetId = "F-0114";
+    else if (desc.includes("datos") || desc.includes("celular")) targetId = "F-0115";
+    else if (desc.includes("google")) targetId = "F-0117";
+
+    if (targetId && valor > 0) {
+      const res = actualizarHistoricoFijos_(ss, targetId, valor, mesNorm, anioNum, fecha);
+      reconciliados.push({ idFijo: targetId, valor: valor, idMov: r[0], res: res });
+    }
+  }
+
+  return { ok: true, reconciliados: reconciliados, mes: mesNorm, anio: anioNum };
 }
 
 function actualizarRegistroMovimiento_(id, data) {
@@ -706,6 +843,12 @@ function obtenerDatosCompletosDashboard_(mesFiltro, anioFiltro) {
 
   let mesActivo = mesFiltro ? String(mesFiltro).toLowerCase() : "octubre";
   let anioActivo = anioFiltro ? Number(anioFiltro) : 2026;
+
+  // Auto-reconciliación de fijos para asegurar que los compromisos pagados (ej. EPM M-0259) se reflejen
+  try {
+    autoReconciliarFijosDesdeMovimientos_(ss, mesActivo, anioActivo);
+  } catch (eRec) {}
+
   let ingreso = 0, gasto = 0, ahorro = 0, disponible = 0, fijosPendientes = 0;
   let saldoColanta = 0, saldoNequi = 0, saldoEfectivo = 0, totalLiquidez = 0;
 
