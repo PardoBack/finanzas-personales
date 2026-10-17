@@ -87,10 +87,6 @@
           <i class="fa-solid fa-file-invoice-dollar" style="color:#FBBF24;"></i>
           <span>Subir Colilla (Gemini)</span>
         </a>
-        <a href="#modal-settings" class="nav-item" id="nav-item-settings" data-nav="settings">
-          <i class="fa-solid fa-gear" style="color:#FBBF24;"></i>
-          <span>Ajustes & Script</span>
-        </a>
       </nav>
 
       <!-- Perfil y Estado en la base del sidebar -->
@@ -154,11 +150,6 @@
         </div>
 
         <div class="topbar-right">
-          <button class="topbar-btn btn-shield" id="btn-cloud-shield" title="Escudo GitHub Anti-Spam Activo: Tus Google Sheets están blindados contra escrituras no autorizadas">
-            <i class="fa-solid fa-shield-halved"></i>
-            <span class="btn-text-desktop">Escudo GitHub</span>
-          </button>
-
           <button class="topbar-btn btn-install" id="btn-install-app" title="Instalar App en tu Celular">
             <i class="fa-solid fa-mobile-screen-button"></i>
             <span class="btn-text-desktop">Instalar App</span>
@@ -168,10 +159,10 @@
             <i class="fa-solid fa-rotate" id="topbar-sync-icon"></i>
             <span class="btn-text-desktop">Sincronizar</span>
           </button>
-          
-          <button class="topbar-btn btn-excel" id="btn-export-excel-top" title="Descargar Excel .xlsx">
-            <i class="fa-solid fa-file-excel"></i>
-            <span class="btn-text-desktop">Excel</span>
+
+          <button class="topbar-btn btn-report-email" id="btn-topbar-send-report" title="Enviar Reporte Ejecutivo a marlonpardomu@gmail.com">
+            <i class="fa-solid fa-paper-plane" id="topbar-report-icon"></i>
+            <span class="btn-text-desktop">Enviar Reporte</span>
           </button>
 
           <button class="topbar-btn btn-colilla" id="btn-topbar-colilla" title="Subir Colilla de Pago (Gemini AI)">
@@ -182,11 +173,6 @@
           <button class="topbar-btn btn-scan-gmail" id="btn-scan-gmail" title="Buscar y procesar facturas en Gmail">
             <i class="fa-solid fa-envelope-open-text" id="topbar-scan-icon"></i>
             <span class="btn-text-desktop">Escanear Gmail</span>
-          </button>
-
-          <button class="topbar-btn btn-settings" id="btn-topbar-settings" title="Ajustes de Conexión, Seguridad y Código Apps Script">
-            <i class="fa-solid fa-gear"></i>
-            <span class="btn-text-desktop">Ajustes</span>
           </button>
 
           <button class="topbar-btn btn-cta" id="btn-open-add-mov" title="Registrar nuevo movimiento">
@@ -252,7 +238,7 @@
               <div class="master-card-body">
                 <span class="master-label" id="overview-master-label">DISPONIBLE REAL EN CAJA (OCTUBRE)</span>
                 <div class="master-amount-row">
-                  <h1 class="master-amount" id="card-total-available">$1.462.366</h1>
+                  <h1 class="master-amount" id="card-total-available">$1.265.366</h1>
                   <span class="master-currency">COP</span>
                 </div>
 
@@ -333,8 +319,8 @@
                   </div>
                 </div>
                 <div class="acc-card-right">
-                  <strong class="acc-amount" id="card-acc-colanta">$1.390.566</strong>
-                  <span class="acc-badge-pct" id="badge-colanta-status">95% Liquidez</span>
+                  <strong class="acc-amount" id="card-acc-colanta">$1.193.566</strong>
+                  <span class="acc-badge-pct" id="badge-colanta-status">94% Liquidez</span>
                 </div>
               </div>
 
@@ -626,7 +612,7 @@
               <div class="master-card-body">
                 <span class="master-label" id="wallet-master-label">DISPONIBLE REAL EN CAJA (OCTUBRE)</span>
                 <div class="master-amount-row">
-                  <h1 class="master-amount card-total-available" id="wallet-total-available">$1.462.366</h1>
+                  <h1 class="master-amount card-total-available" id="wallet-total-available">$1.265.366</h1>
                   <span class="master-currency">COP</span>
                 </div>
 
@@ -707,8 +693,8 @@
                   </div>
                 </div>
                 <div class="acc-card-right">
-                  <strong class="acc-amount card-acc-colanta" id="wallet-acc-colanta">$1.390.566</strong>
-                  <span class="acc-badge-pct" id="wallet-badge-colanta">95% Liquidez</span>
+                  <strong class="acc-amount card-acc-colanta" id="wallet-acc-colanta">$1.193.566</strong>
+                  <span class="acc-badge-pct" id="wallet-badge-colanta">94% Liquidez</span>
                 </div>
               </div>
 
@@ -1319,18 +1305,68 @@
                   <i class="fa-solid fa-brain"></i>
                 </div>
                 <div>
-                  <div class="ai-badge-pill">DIAGNÓSTICO ALGORÍTMICO 12 MESES</div>
-                  <h3 class="ai-audit-heading">Auditoría Financiera Integral 2026</h3>
-                  <p class="ai-audit-sub">Análisis predictivo de patrones de gasto, meses récord, y distribución de capital para Marlon Muñoz Pardo</p>
+                  <div class="ai-badge-pill">MOTOR COGNITIVO FINANCIERO 2026</div>
+                  <h3 class="ai-audit-heading">Diagnóstico de Hábitos & Auditoría IA</h3>
+                  <p class="ai-audit-sub">Análisis algorítmico profundo de patrones de gasto, compras impulsivas y fugas de capital para Marlon Muñoz Pardo</p>
                 </div>
               </div>
-              <button type="button" class="btn-email-audit" id="btn-send-email-audit" title="Enviar diagnóstico detallado a marlonpardomu@gmail.com">
-                <i class="fa-solid fa-paper-plane" id="icon-email-audit"></i>
-                <span id="text-email-audit">Enviar Reporte al Correo</span>
-              </button>
+              <div class="ai-audit-actions-group">
+                <button type="button" class="btn-ai-habit-scanner" id="btn-run-annual-ai-habits" title="Diagnosticar hábitos y patrones de consumo con IA">
+                  <i class="fa-solid fa-wand-magic-sparkles" id="icon-ai-habit-sparkles"></i>
+                  <span id="text-ai-habit-sparkles">Analizar Hábitos con IA</span>
+                </button>
+                <button type="button" class="btn-email-audit" id="btn-send-email-audit" title="Enviar diagnóstico detallado a marlonpardomu@gmail.com">
+                  <i class="fa-solid fa-paper-plane" id="icon-email-audit"></i>
+                  <span id="text-email-audit">Enviar Reporte al Correo</span>
+                </button>
+              </div>
             </div>
 
-            <div class="ai-audit-grid">
+            <!-- Diagnóstico de 4 Hábitos Críticos Detectados por IA -->
+            <div class="ai-habits-insight-grid" id="ai-habits-insight-grid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 1rem; margin-top: 1.25rem;">
+              <div class="ai-habit-card habit-temu">
+                <div class="habit-header">
+                  <span class="habit-icon"><i class="fa-solid fa-bag-shopping" style="color:#F59E0B;"></i></span>
+                  <span class="habit-tag tag-warning">Compras & Plataformas</span>
+                </div>
+                <strong class="habit-amount" id="habit-temu-amount">$248.000 COP</strong>
+                <p class="habit-desc" id="habit-temu-desc">Compras detectadas en Temu y plataformas online. En compras impulsivas se observa una concentración en quincenas.</p>
+                <div class="habit-trend trend-caution" id="habit-temu-trend"><i class="fa-solid fa-triangle-exclamation"></i> Monitorear antojitos online</div>
+              </div>
+
+              <div class="ai-habit-card habit-dulces">
+                <div class="habit-header">
+                  <span class="habit-icon"><i class="fa-solid fa-cookie-bite" style="color:#EC4899;"></i></span>
+                  <span class="habit-tag tag-danger">Gastos Hormiga & Dulces</span>
+                </div>
+                <strong class="habit-amount" id="habit-dulces-amount">$186.000 COP</strong>
+                <p class="habit-desc" id="habit-dulces-desc">Endulzadas de amigo secreto, dulces y confitería en Colanta. Representan tu principal fuga silenciosa de liquidez.</p>
+                <div class="habit-trend trend-negative" id="habit-dulces-trend"><i class="fa-solid fa-arrow-trend-up"></i> Fuga hormiga recurrente</div>
+              </div>
+
+              <div class="ai-habit-card habit-moto">
+                <div class="habit-header">
+                  <span class="habit-icon"><i class="fa-solid fa-motorcycle" style="color:#38BDF8;"></i></span>
+                  <span class="habit-tag tag-info">Movilidad & Moto</span>
+                </div>
+                <strong class="habit-amount" id="habit-moto-amount">$148.000 COP</strong>
+                <p class="habit-desc" id="habit-moto-desc">Tanqueadas de gasolina ($31k-$33k) y lavadas. Patrón estable cada 5-6 días con óptima eficiencia de combustible.</p>
+                <div class="habit-trend trend-positive" id="habit-moto-trend"><i class="fa-solid fa-check"></i> Frecuencia controlada</div>
+              </div>
+
+              <div class="ai-habit-card habit-comida">
+                <div class="habit-header">
+                  <span class="habit-icon"><i class="fa-solid fa-utensils" style="color:#10B981;"></i></span>
+                  <span class="habit-tag tag-success">Alimentación & Casino</span>
+                </div>
+                <strong class="habit-amount" id="habit-comida-amount">$132.000 COP</strong>
+                <p class="habit-desc" id="habit-comida-desc">Consumos en restaurante y casino Colanta. Gasto esencial amortizado mediante la nómina quincenal.</p>
+                <div class="habit-trend trend-neutral" id="habit-comida-trend"><i class="fa-solid fa-shield-check"></i> Dentro del presupuesto</div>
+              </div>
+            </div>
+
+            <!-- KPIs Globales de Respaldo -->
+            <div class="ai-audit-grid" style="margin-top:1.25rem;">
               <div class="ai-audit-stat-card card-peak-expense">
                 <div class="stat-top">
                   <span class="stat-tag"><i class="fa-solid fa-arrow-trend-up"></i> Mes con Mayor Gasto</span>
@@ -1360,12 +1396,12 @@
             </div>
 
             <div class="ai-audit-narrative-box">
-              <div class="narrative-badge"><i class="fa-solid fa-microchip"></i> Diagnóstico Ejecutivo Consolidado:</div>
+              <div class="narrative-badge"><i class="fa-solid fa-microchip"></i> Diagnóstico Personalizado de Hábitos & Compras (IA):</div>
               <p class="narrative-text" id="ai-audit-narrative">
-                Marlon, de Enero a Octubre de 2026 acumulas un superávit neto de <strong>$11.070.954 COP</strong> con una tasa de ahorro global del <strong>32.5%</strong>. El mes más eficiente en control de egresos fue Enero ($1.35M en gastos), mientras que Junio representó tu mayor ingreso por la Prima de Servicios Colanta ($5.11M). El 68% de tus egresos corresponden a obligaciones recurrentes, y tus consumos diarios en Planta Colanta y combustible se encuentran debidamente conciliados.
+                Marlon, analizando el transcurso de todos estos meses de 2026, he detectado patrones claros en tus gastos: has realizado varias compras en plataformas como Temu y Eneba por aproximadamente <strong>$248.000 COP</strong>; compraste bastantes dulces y antojos acumulando <strong>$186.000 COP</strong> en gastos hormiga (especialmente en endulzadas de amigo secreto y confitería); y en la moto mantienes una cadencia promedio de tanqueo de <strong>$31.000 a $33.000 COP</strong> cada 5-6 días. Tu disciplina general es sólida con <strong>32.5% de ahorro</strong> y superávit acumulado de <strong>$11.070.954 COP</strong>.
               </p>
               <div class="ai-audit-footer-row">
-                <span class="ai-rule-badge"><i class="fa-solid fa-clock-rotate-left"></i> Automatización Gmail: Espera obligatoria de 3 horas antes de archivar</span>
+                <span class="ai-rule-badge"><i class="fa-solid fa-clock-rotate-left"></i> Auditoría en Tiempo Real conectada con Google Sheets</span>
                 <span class="ai-email-target"><i class="fa-solid fa-at"></i> marlonpardomu@gmail.com</span>
               </div>
             </div>
@@ -2011,8 +2047,8 @@
   <div class="toast-hub" id="toast-container"></div>
 
   <!-- SCRIPTS -->
-  <script src="js/api.js?v=26.9.5"></script>
-  <script src="js/nlp_parser.js?v=26.9.5"></script>
-  <script src="js/app.js?v=26.9.5"></script>
+  <script src="js/api.js?v=26.9.6"></script>
+  <script src="js/nlp_parser.js?v=26.9.6"></script>
+  <script src="js/app.js?v=26.9.6"></script>
 </body>
 </html>

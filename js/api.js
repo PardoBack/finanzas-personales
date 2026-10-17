@@ -6,7 +6,7 @@
 const API_CONFIG = {
   DEFAULT_WEBHOOK: "https://script.google.com/macros/s/AKfycbxfGcLK2UtQUpLYTOmD6o7PO-cCD_MmUnGul0F7MlfLbPebKYNy8HLV8XM3amI8a_BQ/exec",
   SPREADSHEET_ID: "1C9ifm7U8IYGOdY4IwAji9Z3McSlNy3B-e_2Jo-zvBFk",
-  CACHE_KEY: "PARDO_FINANZAS_CACHE_V26",
+  CACHE_KEY: "PARDO_FINANZAS_CACHE_V27",
   SETTINGS_KEY: "PARDO_FINANZAS_SETTINGS_V26",
   SECURITY_KEY: "PARDO_FINANZAS_SECURITY_V26"
 };
@@ -120,9 +120,9 @@ const DEMO_DATA = {
       "mes": "octubre",
       "nombre": "Octubre",
       "ingresos": 1700605.0,
-      "gastos": 238239.0,
-      "ahorro": 1462366.0,
-      "transacciones": 11
+      "gastos": 435239.0,
+      "ahorro": 1265366.0,
+      "transacciones": 12
     },
     {
       "mes": "noviembre",
