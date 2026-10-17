@@ -6,7 +6,7 @@
 const API_CONFIG = {
   DEFAULT_WEBHOOK: "https://script.google.com/macros/s/AKfycbxfGcLK2UtQUpLYTOmD6o7PO-cCD_MmUnGul0F7MlfLbPebKYNy8HLV8XM3amI8a_BQ/exec",
   SPREADSHEET_ID: "1C9ifm7U8IYGOdY4IwAji9Z3McSlNy3B-e_2Jo-zvBFk",
-  CACHE_KEY: "PARDO_FINANZAS_CACHE_V27",
+  CACHE_KEY: "PARDO_FINANZAS_CACHE_V28",
   SETTINGS_KEY: "PARDO_FINANZAS_SETTINGS_V26",
   SECURITY_KEY: "PARDO_FINANZAS_SECURITY_V26"
 };
@@ -16,25 +16,25 @@ const DEMO_DATA = {
   "ok": true,
   "resumen": {
     "ingresos": 1700605.0,
-    "gastos": 435239.0,
+    "gastos": 635239.0,
     "ahorros": 236121.0,
-    "disponible": 1265366.0,
-    "fijos_pendientes": 2380000,
+    "disponible": 1065366.0,
+    "fijos_pendientes": 2180000,
     "mes": "octubre",
     "anio": 2026
   },
   "gastosPorCategoria": {
-    "Servicios": 197000.0,
+    "Servicios": 397000.0,
     "Moto": 116000.0,
     "Gastos Hormiga / Dulces": 86000.0,
     "Entretenimiento": 24123.0,
     "Alimentación": 12116.0
   },
   "cuentas": {
-    "aycColanta": 1193566.0,
+    "aycColanta": 993566.0,
     "nequi": 0,
     "efectivo": 71800,
-    "total": 1265366.0
+    "total": 1065366.0
   },
   "ahorrosColanta": {
     "ordinarioAcumulado": 627000,
@@ -47,82 +47,82 @@ const DEMO_DATA = {
     {
       "mes": "enero",
       "nombre": "Enero",
-      "ingresos": 3410000.0,
+      "ingresos": 3842222.0,
       "gastos": 1359128.0,
-      "ahorro": 2050872.0,
+      "ahorro": 2483094.0,
       "transacciones": 14
     },
     {
       "mes": "febrero",
       "nombre": "Febrero",
-      "ingresos": 3380000.0,
+      "ingresos": 2733672.0,
       "gastos": 2296000.0,
-      "ahorro": 1084000.0,
+      "ahorro": 437672.0,
       "transacciones": 19
     },
     {
       "mes": "marzo",
       "nombre": "Marzo",
-      "ingresos": 3420000.0,
+      "ingresos": 3509411.0,
       "gastos": 2814000.0,
-      "ahorro": 606000.0,
+      "ahorro": 695411.0,
       "transacciones": 21
     },
     {
       "mes": "abril",
       "nombre": "Abril",
-      "ingresos": 3390000.0,
+      "ingresos": 3494112.0,
       "gastos": 3129946.0,
-      "ahorro": 260054.0,
+      "ahorro": 364166.0,
       "transacciones": 26
     },
     {
       "mes": "mayo",
       "nombre": "Mayo",
-      "ingresos": 3415000.0,
+      "ingresos": 3163753.0,
       "gastos": 2829200.0,
-      "ahorro": 585800.0,
+      "ahorro": 334553.0,
       "transacciones": 21
     },
     {
       "mes": "junio",
       "nombre": "Junio",
-      "ingresos": 5110000.0,
+      "ingresos": 5458114.0,
       "gastos": 3892812.0,
-      "ahorro": 1217188.0,
+      "ahorro": 1565302.0,
       "transacciones": 25
     },
     {
       "mes": "julio",
       "nombre": "Julio",
-      "ingresos": 3400000.0,
+      "ingresos": 3172191.0,
       "gastos": 2546900.0,
-      "ahorro": 853100.0,
+      "ahorro": 625291.0,
       "transacciones": 19
     },
     {
       "mes": "agosto",
       "nombre": "Agosto",
-      "ingresos": 3430000.0,
+      "ingresos": 3735393.0,
       "gastos": 1668936.0,
-      "ahorro": 1761064.0,
+      "ahorro": 2066457.0,
       "transacciones": 31
     },
     {
       "mes": "septiembre",
       "nombre": "Septiembre",
-      "ingresos": 3405454.0,
-      "gastos": 2214944.0,
-      "ahorro": 1190510.0,
+      "ingresos": 3343005.0,
+      "gastos": 2206444.0,
+      "ahorro": 1136561.0,
       "transacciones": 43
     },
     {
       "mes": "octubre",
       "nombre": "Octubre",
       "ingresos": 1700605.0,
-      "gastos": 435239.0,
-      "ahorro": 1265366.0,
-      "transacciones": 12
+      "gastos": 635239.0,
+      "ahorro": 1065366.0,
+      "transacciones": 13
     },
     {
       "mes": "noviembre",
@@ -142,13 +142,13 @@ const DEMO_DATA = {
     }
   ],
   "kpisAnuales": {
-    "totalIngresos": 34061059.0,
-    "totalGastos": 22990105.0,
-    "superavit": 11070954.0,
-    "tasaAhorro": 32.5,
+    "totalIngresos": 34152478.0,
+    "totalGastos": 23378605.0,
+    "superavit": 10773873.0,
+    "tasaAhorro": 31.5,
     "mesMayorAhorro": {
       "nombre": "Enero",
-      "monto": 2050872.0
+      "monto": 2483094.0
     },
     "mesMayorGasto": {
       "nombre": "Junio",
@@ -156,6 +156,21 @@ const DEMO_DATA = {
     }
   },
   "movimientos": [
+    {
+      "id": "M-0260",
+      "fecha": "17/10/2026",
+      "hora": "01:10 PM",
+      "tipo": "Gasto",
+      "categoria": "Servicios",
+      "subcategoria": "Pago fijo",
+      "descripcion": "Pago Fijo: Internet Tigo",
+      "valor": 200000.0,
+      "metodo": "Transferencia",
+      "cuenta": "Nequi",
+      "mes": "octubre",
+      "anio": 2026,
+      "idFijo": "F-0109"
+    },
     {
       "id": "M-0259",
       "fecha": "17/10/2026",

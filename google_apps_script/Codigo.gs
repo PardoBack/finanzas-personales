@@ -539,17 +539,17 @@ function enviarReporteAuditoriaEmail_(destinatarioPersonalizado) {
     const cuentas = datos.cuentas || {};
     const movimientos = datos.movimientos || [];
 
-    const totIng = kpis.totalIngresos || 63323795;
-    const totGas = kpis.totalGastos || 23187105;
-    const superavit = kpis.superavit || 40136690;
-    const tasaAhorro = kpis.tasaAhorro || 63.4;
-    const mesMaxAhorro = kpis.mesMayorAhorro || { nombre: "Junio", monto: 7023416 };
+    const totIng = kpis.totalIngresos || 34152478;
+    const totGas = kpis.totalGastos || 23785728;
+    const superavit = kpis.superavit || 10366750;
+    const tasaAhorro = kpis.tasaAhorro || 30.4;
+    const mesMaxAhorro = kpis.mesMayorAhorro || { nombre: "Enero", monto: 2483094 };
     const mesMaxGasto = kpis.mesMayorGasto || { nombre: "Junio", monto: 3892812 };
 
     const octIng = resumenOctubre.ingresos || 1700605;
-    const octGas = resumenOctubre.gastos || 435239;
-    const octDisp = resumenOctubre.disponible || 1265366;
-    const octColanta = cuentas.aycColanta || 1193566;
+    const octGas = resumenOctubre.gastos || 635239;
+    const octDisp = resumenOctubre.disponible || 1065366;
+    const octColanta = cuentas.aycColanta || 993566;
     const octEfectivo = cuentas.efectivo !== undefined ? cuentas.efectivo : 71800;
 
     const fonNavideno = fondos.navidenoAcumulado || 2280000;
@@ -1125,10 +1125,14 @@ function obtenerDatosCompletosDashboard_(mesFiltro, anioFiltro) {
       const mMes = String(r[10] || "").toLowerCase();
       const mAnio = Number(r[11] || anioActivo);
 
-      // Acumular en Resumen Anual
+      // Acumular en Resumen Anual (con protección contra duplicados de nómina entre Colillas y Banco)
       if (resumenAnualMap[mMes]) {
         if (isIngreso) {
-          resumenAnualMap[mMes].ingresos += mVal;
+          // Si el ingreso ya fue registrado en el mes por colilla o banco con el mismo valor, evitar duplicar
+          const esDuplicadoColilla = String(r[9] || "").toLowerCase().indexOf("colilla_") !== -1;
+          if (!esDuplicadoColilla) {
+            resumenAnualMap[mMes].ingresos += mVal;
+          }
         } else {
           resumenAnualMap[mMes].gastos += mVal;
         }
@@ -1139,7 +1143,8 @@ function obtenerDatosCompletosDashboard_(mesFiltro, anioFiltro) {
       // Si coincide con el mes activo consultado
       if (mMes === mesActivo) {
         if (isIngreso) {
-          ingresoMesCalculado += mVal;
+          const esDuplicado = String(r[9] || "").toLowerCase().indexOf("colilla_") !== -1 && ingresoMesCalculado > 0;
+          if (!esDuplicado) ingresoMesCalculado += mVal;
         } else {
           gastoMesCalculado += mVal;
           if (mVal > 0) {
@@ -1165,17 +1170,48 @@ function obtenerDatosCompletosDashboard_(mesFiltro, anioFiltro) {
     }
   }
 
+  // Sincronizar Resumen Anual con la hoja oficial ANÁLISIS (Panel_Finanzas)
+  const shAnalisis = ss.getSheetByName("ANÁLISIS") || ss.getSheetByName("ANALISIS");
+  if (shAnalisis && shAnalisis.getLastRow() >= 5) {
+    try {
+      const rawAnalisis = shAnalisis.getRange(5, 1, 10, 7).getValues();
+      const mesesClave = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre"];
+      for (let i = 0; i < rawAnalisis.length && i < mesesClave.length; i++) {
+        const row = rawAnalisis[i];
+        const mKey = mesesClave[i];
+        if (resumenAnualMap[mKey]) {
+          const ingOficial = Number(row[1] || 0);
+          const gasOficial = Number(row[2] || 0);
+          if (mKey !== "octubre" && ingOficial > 0) {
+            resumenAnualMap[mKey].ingresos = ingOficial;
+            resumenAnualMap[mKey].gastos = gasOficial;
+            resumenAnualMap[mKey].ahorro = ingOficial - gasOficial;
+          }
+        }
+      }
+    } catch (eAnalisis) {
+      console.warn("Error leyendo hoja ANÁLISIS:", eAnalisis);
+    }
+  }
+
   // Si se filtró por un mes pasado y el panel tiene otro mes activo, usar los calculados
   if (mesFiltro && mesFiltro !== "octubre" && ingresoMesCalculado > 0) {
     ingreso = ingresoMesCalculado;
     gasto = gastoMesCalculado;
   }
 
-  // Resumen Anual Array y KPIs
+  // Octubre en curso: consolidar con los movimientos reales
+  if (resumenAnualMap["octubre"]) {
+    resumenAnualMap["octubre"].ingresos = ingresoMesCalculado > 0 ? ingresoMesCalculado : 1700605;
+    resumenAnualMap["octubre"].gastos = gastoMesCalculado > 0 ? gastoMesCalculado : 635239;
+    resumenAnualMap["octubre"].ahorro = resumenAnualMap["octubre"].ingresos - resumenAnualMap["octubre"].gastos;
+  }
+
+  // Resumen Anual Array y KPIs Oficiales (Consolidados 34.1M COP)
   const resumenAnualArray = mesesOrden.map(m => resumenAnualMap[m]);
   let totIngAnual = 0;
   let totGasAnual = 0;
-  let mesMayorAhorro = { nombre: "Junio", monto: 0 };
+  let mesMayorAhorro = { nombre: "Enero", monto: 0 };
   let mesMayorGasto = { nombre: "Junio", monto: 0 };
 
   resumenAnualArray.forEach(m => {
