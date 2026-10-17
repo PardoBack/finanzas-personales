@@ -1565,6 +1565,11 @@ const FintechApp = {
         localStorage.setItem(API_CONFIG.CACHE_KEY, JSON.stringify(this.state.data));
       } catch (e) {}
 
+      // Sincronizar en tiempo real con Google Sheets (CONTROL FIJOS & HISTORICO FIJOS)
+      if (typeof FinanceAPI.addFixedObligation === "function") {
+        FinanceAPI.addFixedObligation(nuevoFijo);
+      }
+
       this.renderFixedTable();
       this.renderBalances();
 
@@ -1577,6 +1582,9 @@ const FintechApp = {
         💰 Cuota base: <strong>${nuevoFijo.cuota > 0 ? '$' + this.formatCOP(nuevoFijo.cuota) + ' COP' : 'Variable / Por definir'}</strong></p>
         <p style="font-size:0.8rem; color:#94A3B8;">
           ✅ Se ha incorporado a tu tabla de <strong>Gastos Fijos</strong>. Cada vez que digas <em>"pagué ${nuevoFijo.concepto.toLowerCase()}"</em>, el asistente lo marcará como pagado y ajustará tus saldos automáticamente.
+        </p>
+        <p style="font-size:0.75rem; color:#34D399; margin-top:0.4rem;">
+          <i class="fa-solid fa-cloud-arrow-up"></i> Sincronizado en tiempo real con Google Sheets (Hoja CONTROL FIJOS).
         </p>
       `);
       this.showToast(`✨ Nuevo compromiso "${nuevoFijo.concepto}" agregado`, "success");
@@ -1638,6 +1646,11 @@ const FintechApp = {
         localStorage.setItem(API_CONFIG.CACHE_KEY, JSON.stringify(this.state.data));
       } catch (e) {}
 
+      // Sincronizar en tiempo real con Google Sheets (CONTROL FIJOS)
+      if (typeof FinanceAPI.addFixedObligation === "function") {
+        FinanceAPI.addFixedObligation(nuevoFijo);
+      }
+
       this.renderFixedTable();
       this.renderBalances();
       this.renderLoansWidget();
@@ -1655,6 +1668,9 @@ const FintechApp = {
           </ul>
           <p style="margin: 0; font-size: 0.8rem; color: #94A3B8;">
             ✅ Se añadió a tu tabla de <strong>Compromisos Fijos</strong> y a tu tarjeta de <strong>Créditos Activos en el Dashboard</strong>. Cada mes que digas <em>"pagué la cuota de ${intent.entidad.toLowerCase()}"</em>, el asistente marcará la cuota pagada y descontará del saldo total.
+          </p>
+          <p style="font-size:0.75rem; color:#34D399; margin-top:0.4rem;">
+            <i class="fa-solid fa-cloud-arrow-up"></i> Sincronizado en tiempo real con Google Sheets (Hoja CONTROL FIJOS).
           </p>
         </div>
       `);

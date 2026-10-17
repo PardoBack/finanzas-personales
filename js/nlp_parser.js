@@ -86,7 +86,7 @@ const FinancialNLP = {
   fixedObligationsCatalog: [
     {
       id: "F-0107",
-      regex: /\b(epm|energ[ií]a|luz|agua|gas|alcantarillado|servicios\s*p[uú]blicos|servicios|factura\s*epm|cuenta\s*epm|factura\s*servicios|factura\s*de\s*(?:la\s*)?luz|cuenta\s*de\s*(?:la\s*)?luz|recibo\s*epm|recibo\s*de\s*(?:la\s*)?luz|cuenta\s*del?\s*agua)\b/i,
+      regex: /\b(epm|energ[ií]a|luz|gas|alcantarillado|servicios\s*p[uú]blicos|servicios|factura\s*epm|cuenta\s*epm|factura\s*servicios|factura\s*de\s*(?:la\s*)?luz|cuenta\s*de\s*(?:la\s*)?luz|recibo\s*epm|recibo\s*de\s*(?:la\s*)?luz)\b/i,
       concepto: "EPM ENERGIA",
       cuota: 177000,
       variable: true,
@@ -97,7 +97,7 @@ const FinancialNLP = {
       id: "F-0108",
       regex: /\b(comida(?:\s*q1)?|mercado(?:\s*q1)?|alimentaci[oó]n|mercado\s*quincena|mercado\s*del?\s*15|comida\s*del?\s*15|v[ií]veres|mercado\s*grande|mercado\s*colanta)\b/i,
       concepto: "COMIDA",
-      cuota: 850000,
+      cuota: 650000,
       variable: false,
       categoria: "Alimentación",
       subcategoria: "Mercado"
@@ -218,8 +218,79 @@ const FinancialNLP = {
       variable: false,
       categoria: "Moto",
       subcategoria: "Parqueadero"
+    },
+    {
+      id: "F-0122",
+      regex: /\b(agua|factura\s*del?\s*agua|recibo\s*del?\s*agua|cuenta\s*del?\s*agua|acueducto)\b/i,
+      concepto: "Agua",
+      cuota: 60000,
+      variable: true,
+      categoria: "Servicios",
+      subcategoria: "EPM (Agua, Luz, Gas)"
     }
   ],
+
+  // Elimina muletillas de cortesía y frases conversacionales
+  cleanCourtesyAndFiller(text) {
+    return String(text || "")
+      .replace(/\b(por\s*favor|porfa(?:vor)?|por\s*fa|h[aá]game\s+el\s+favor|hace(?:me)?\s+el\s+favor|favor|muchas\s+gracias|gracias|te\s+agradezco|buen\s+d[ií]a|buenas\s+tardes|hola|hey|oye|mira)\b/gi, " ")
+      .replace(/\b(de\s+todos\s+los\s+meses|todos\s+los\s+meses|cada\s+mes|de\s+cada\s+mes|al\s+mes|mensual(?:es|mente)?|quincenal(?:es|mente)?|por\s+quincena|cada\s+quincena|todas\s+las\s+quincenas|en\s+cada\s+mes|siempre)\b/gi, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  },
+
+  // Limpia y normaliza el nombre de un concepto o servicio sin ruido conversacional
+  cleanConcept(text, fallback = "Compromiso Fijo") {
+    let t = String(text || "").trim();
+    if (!t) return fallback;
+
+    // 1. Remover cortesías
+    t = t.replace(/\b(por\s*favor|porfa(?:vor)?|por\s*fa|favor|h[aá]game\s+el\s+favor|hace(?:me)?\s+el\s+favor|muchas\s+gracias|gracias|te\s+agradezco|buen\s+d[ií]a|buenas\s+tardes|hola|hey|oye|mira)\b/gi, " ");
+
+    // 2. Remover periodicidades y recurrencias
+    t = t.replace(/\b(de\s+todos\s+los\s+meses|todos\s+los\s+meses|cada\s+mes|de\s+cada\s+mes|al\s+mes|mensual(?:es|mente)?|quincenal(?:es|mente)?|por\s+quincena|cada\s+quincena|todas\s+las\s+quincenas|en\s+cada\s+mes|siempre)\b/gi, " ");
+
+    // 3. Remover verbos y comandos de creación
+    t = t.replace(/\b(pon(?:me)?|coloca|registra|inscribe|a[ñn]ad[ae]|a[ñn]adir|agreg[ae]|agregar|crear?|poner|meter|anota|anotar|nuevo|nueva|quiero\s+poner|quiero\s+crear|necesito\s+poner|puedes\s+poner)\b/gi, " ");
+
+    // 4. Remover tipos de entidad
+    t = t.replace(/\b(un\s+|una\s+)?(gasto\s*fijo|compromiso\s*fijo|obligaci[oó]n\s*fija|obligaci[oó]n|pago\s*fijo|fijo|fija|fijos|cuota|deuda|credito|pr[eé]stamo)\b/gi, " ");
+
+    // 5. Remover fechas y días
+    t = t.replace(/\b(?:los|el|dia|dias|fecha)\s*([1-9]|[12]\d|3[01])\b/gi, " ");
+
+    // 6. Remover montos de dinero
+    t = t.replace(/\$?\s*\d+(?:[.,]\d+)?\s*(?:mil|k|lucas?|mill[oó]n|millones|palos?|pesos|cop)?\b/gi, " ");
+
+    // 7. Remover conectores y frases puente
+    t = t.replace(/\b(que\s+se\s+llame|llamado|llamada|con\s+el\s+nombre|nombre|como)\b/gi, " ");
+    t = t.replace(/\b(de|del|por|para|con|en|que|sea|el|la|los|las|un|una|al|a)\b/gi, " ");
+    t = t.replace(/\s+/g, " ").trim();
+
+    // 8. Diccionario canónico de servicios del hogar comunes
+    const tLower = t.toLowerCase();
+    if (/\b(agua|acueducto|alcantarillado)\b/i.test(tLower)) return "Agua";
+    if (/\b(luz|energia|epm)\b/i.test(tLower)) return "EPM Energía";
+    if (/\b(gas|gas\s*domiciliario)\b/i.test(tLower)) return "Gas Domiciliario";
+    if (/\b(tigo|internet|wifi|fibra)\b/i.test(tLower)) return "Internet Tigo";
+    if (/\b(celular|datos|linea\s*movil|plan\s*celular)\b/i.test(tLower)) return "Plan Datos Celular";
+    if (/\b(arriendo|casa|apartamento)\b/i.test(tLower)) return "Arriendo Casa";
+    if (/\b(gimnasio|gym|smart\s*fit)\b/i.test(tLower)) return "Gimnasio";
+    if (/\b(comida|mercado|alimentacion)\b/i.test(tLower)) return "COMIDA";
+    if (/\b(gasolina|combustible)\b/i.test(tLower)) return "Gasolina Moto";
+    if (/\b(parqueadero\s*moto)\b/i.test(tLower)) return "Parqueadero Moto";
+    if (/\b(parqueadero\s*trabajo)\b/i.test(tLower)) return "Parqueadero Trabajo";
+    if (/\b(spotify)\b/i.test(tLower)) return "Spotify";
+    if (/\b(netflix)\b/i.test(tLower)) return "Netflix";
+    if (/\b(google|google\s*one)\b/i.test(tLower)) return "Google One";
+
+    if (t.length >= 2) {
+      return t.split(" ")
+        .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+        .join(" ");
+    }
+    return fallback;
+  },
 
   // Búsqueda inteligente de coincidencias en el catálogo de fijos
   matchFixedObligation(text) {
@@ -260,20 +331,10 @@ const FinancialNLP = {
       let concepto = "";
       const matchNamed = raw.match(/(?:que\s+se\s+llame|llamado|nombre|como)\s+([a-zA-Z0-9\s]+?)(?:\s+(?:los|el|dia|por|de\s+\d|\$)|$)/i);
       if (matchNamed) {
-        concepto = matchNamed[1].trim();
+        concepto = this.cleanConcept(matchNamed[1], "Nuevo Compromiso Fijo");
       } else {
-        concepto = raw
-          .replace(/\b(pon(?:me)?|coloca|registra|inscribe|a[ñn]ad[ae]|a[ñn]adir|agreg[ae]|agregar|crear?|poner|meter|nuevo|nueva)\b/gi, "")
-          .replace(/\b(gasto\s*fijo|compromiso\s*fijo|obligaci[oó]n|fijo|cuota|pago\s*fijo)\b/gi, "")
-          .replace(/\b(?:los|el|dia|dias|fecha)\s*([1-9]|[12]\d|3[01])\b/gi, "")
-          .replace(/\$?\s*\d+(?:[.,]\d+)?\s*(?:mil|k|lucas?|mill[oó]n|millones|palos?|pesos|cop)?\b/gi, "")
-          .replace(/\b(de|por|para|con)\b/gi, " ")
-          .replace(/\s+/g, " ")
-          .trim();
+        concepto = this.cleanConcept(raw, "Nuevo Compromiso Fijo");
       }
-
-      concepto = concepto.replace(/^(de|el|la|los|las|un|una)\s+/i, "").trim();
-      concepto = concepto ? (concepto.charAt(0).toUpperCase() + concepto.slice(1)) : "Nuevo Compromiso Fijo";
 
       let categoria = "Servicios";
       if (/agua|luz|energia|gas|servicios?|epm|tigo|internet|wifi|claro/i.test(concepto)) categoria = "Servicios";
@@ -337,11 +398,14 @@ const FinancialNLP = {
 
       // Extraer producto o motivo (ej: "teléfono", "celular", "moto", "cama", "ropa")
       let concepto = `Crédito ${entidad}`;
-      const matchProducto = raw.match(/(?:es\s+sobre|sobre|para|por|de|compre|saque)\s+(?:un|una|el|la|este|esta)?\s*([a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s]{3,20}?)(?:\s*[,.]|\s+(?:que|en|por|a|con|total|\$)\s+(?:addi|sistecredito|\d)|$)/i);
-      if (matchProducto && matchProducto[1].trim().length > 2 && !/^(un|el|la|este|ese|una)\s*(prestamo|credito|deuda)$/i.test(matchProducto[1].trim())) {
-        const prod = matchProducto[1].trim();
-        const prodCap = prod.charAt(0).toUpperCase() + prod.slice(1);
-        concepto = `${prodCap} en ${entidad}`;
+      const matchPara = raw.match(/(?:para|sobre|comprar?|compr[eé]|es\s+un|es\s+una)\s+(?:un|una|el|la|este|esta)?\s*([a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s]{3,25}?)(?:\s*[,.]|\s+(?:en|por|a|con|total|\$)\s+(?:addi|sistecredito|\d)|$)/i);
+      if (matchPara) {
+        let prod = this.cleanCourtesyAndFiller(matchPara[1].trim());
+        prod = prod.replace(/\b(a|al|de|del|para|por|con|en|un|una|el|la|los|las)\b/gi, " ").replace(/\s+/g, " ").trim();
+        if (prod.length >= 2 && !/^(prestamo|credito|deuda|cuotas?|cuota)$/i.test(prod)) {
+          const prodCap = prod.charAt(0).toUpperCase() + prod.slice(1);
+          concepto = `${prodCap} en ${entidad}`;
+        }
       }
 
       return {
@@ -364,7 +428,7 @@ const FinancialNLP = {
       let item = "esta compra / inversión";
       const matchItem = raw.match(/(?:sacar|comprar|adquirir|financiar|meterme\s+en)\s+(?:esta|este|un|una)?\s*([a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s]{3,25}?)(?:\s*[,?¿.]|\s+(?:que|como|cuanto|\$)|$)/i);
       if (matchItem && matchItem[1].trim()) {
-        item = matchItem[1].trim();
+        item = this.cleanCourtesyAndFiller(matchItem[1].trim());
       }
 
       const amount = this.parseAmount(raw);
@@ -410,11 +474,12 @@ const FinancialNLP = {
         }
       }
 
-      // Limpiar descripción ejecutiva
-      let desc = raw
-        .replace(/\b(pagu[eé]|pago|pagad[ao]|se\s*pago|ya\s*pagu[eé]|abon[eé]|abono|cancel[eé]|compr[eé]|me gast[eé]|gast[eé]|recib[ií]|ingreso|este mes|hoy|ayer)\b/gi, "")
-        .replace(/\b(con|por|de|en|el|la|los|las|un|una|pesos|cop|nequi|colanta|ayc|efectivo|bancolombia|tarjeta)\b/gi, "")
-        .replace(/\$?\s*\d+(?:[.,]\d+)?\s*(?:mil|k|lucas?|mill[oó]n|millones|palos?)?\b/gi, "")
+      // Limpiar descripción ejecutiva sin cortesías ni muletillas conversacionales
+      let desc = this.cleanCourtesyAndFiller(raw)
+        .replace(/(?:^|\s)(pague|pagué|pago|pagado|pagada|se pago|se pagó|ya pague|ya pagué|abone|aboné|abono|cancele|cancelé|compre|compré|me gaste|me gasté|gaste|gasté|recibi|recibí|ingreso|este mes|hoy|ayer)(?=\s|$)/gi, " ")
+        .replace(/\$?\s*\d+(?:[.,]\d+)?\s*(?:millones?|millón|palos?|mil(?:es)?|k|lucas?|pesos|cop)?(?=\s|$)/gi, " ")
+        .replace(/\$?\s*\d+(?:[.,]\d+)?/g, " ")
+        .replace(/(?:^|\s)(con|por|de|del|en|el|la|los|las|un|una|al|a|nequi|colanta|ayc|efectivo|bancolombia|tarjeta)(?=\s|$)/gi, " ")
         .replace(/\s+/g, " ")
         .trim();
 

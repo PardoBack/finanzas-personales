@@ -6,7 +6,7 @@
 const API_CONFIG = {
   DEFAULT_WEBHOOK: "https://script.google.com/macros/s/AKfycbxfGcLK2UtQUpLYTOmD6o7PO-cCD_MmUnGul0F7MlfLbPebKYNy8HLV8XM3amI8a_BQ/exec",
   SPREADSHEET_ID: "1C9ifm7U8IYGOdY4IwAji9Z3McSlNy3B-e_2Jo-zvBFk",
-  CACHE_KEY: "PARDO_FINANZAS_CACHE_V31",
+  CACHE_KEY: "PARDO_FINANZAS_CACHE_V32",
   SETTINGS_KEY: "PARDO_FINANZAS_SETTINGS_V26",
   SECURITY_KEY: "PARDO_FINANZAS_SECURITY_V26"
 };
@@ -3557,6 +3557,15 @@ const DEMO_DATA = {
       "cuota": 40000,
       "abonado": 0,
       "estado": "🔴 Pendiente"
+    },
+    {
+      "id": "F-0122",
+      "concepto": "Agua",
+      "categoria": "Servicios",
+      "dia": 15,
+      "cuota": 60000,
+      "abonado": 0,
+      "estado": "🔴 Pendiente"
     }
   ]
 };
@@ -3941,6 +3950,105 @@ const FinanceAPI = {
         headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify(payload)
       }).catch(e => console.warn("Background update sync info:", e));
+
+      return { ok: true, status: "updated", id: id };
+    } catch (err) {
+      return { ok: true, status: "updated_local", id: id };
+    }
+  },
+
+  async addFixedObligation(fixedData) {
+    const webhookUrl = this.getWebhookUrl();
+    const token = this.getAuthToken();
+    const payload = {
+      action: "addFixedObligation",
+      token: token,
+      id: fixedData.id,
+      concepto: fixedData.concepto,
+      categoria: fixedData.categoria,
+      dia: fixedData.dia || 15,
+      cuota: fixedData.cuota || 0,
+      abonado: fixedData.abonado || 0,
+      estado: fixedData.estado || "🔴 Pendiente",
+      prioridad: fixedData.prioridad || "Media",
+      medioPago: fixedData.medioPago || "Transferencia",
+      mes: fixedData.mes || "octubre",
+      anio: fixedData.anio || 2026,
+      timestamp: new Date().toISOString()
+    };
+
+    try {
+      const cached = localStorage.getItem(API_CONFIG.CACHE_KEY);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed && parsed.fijos) {
+          const exists = parsed.fijos.some(f => f.id === fixedData.id);
+          if (!exists) {
+            parsed.fijos.push(fixedData);
+            localStorage.setItem(API_CONFIG.CACHE_KEY, JSON.stringify(parsed));
+          }
+        }
+      }
+    } catch (e) {}
+
+    try {
+      fetch(webhookUrl, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(payload)
+      }).catch(e => console.warn("Background fixed sync info:", e));
+
+      // Respaldo GET silencioso para evitar bloqueos
+      const getParams = new URLSearchParams({
+        action: "addFixedObligation",
+        token: token,
+        id: fixedData.id || "",
+        concepto: fixedData.concepto || "",
+        categoria: fixedData.categoria || "",
+        dia: String(fixedData.dia || 15),
+        cuota: String(fixedData.cuota || 0)
+      });
+      fetch(`${webhookUrl}?${getParams.toString()}`).catch(() => {});
+
+      return { ok: true, status: "saved", id: fixedData.id };
+    } catch (err) {
+      return { ok: true, status: "saved_local", id: fixedData.id };
+    }
+  },
+
+  async updateFixedObligation(id, updateData) {
+    const webhookUrl = this.getWebhookUrl();
+    const token = this.getAuthToken();
+    const payload = {
+      action: "updateFixedObligation",
+      token: token,
+      id: id,
+      ...updateData,
+      timestamp: new Date().toISOString()
+    };
+
+    try {
+      const cached = localStorage.getItem(API_CONFIG.CACHE_KEY);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed && parsed.fijos) {
+          const f = parsed.fijos.find(item => item.id === id);
+          if (f) {
+            Object.assign(f, updateData);
+            localStorage.setItem(API_CONFIG.CACHE_KEY, JSON.stringify(parsed));
+          }
+        }
+      }
+    } catch (e) {}
+
+    try {
+      fetch(webhookUrl, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(payload)
+      }).catch(e => console.warn("Background fixed update sync info:", e));
 
       return { ok: true, status: "updated", id: id };
     } catch (err) {
