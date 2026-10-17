@@ -164,7 +164,7 @@
             <span class="btn-text-desktop">Instalar App</span>
           </button>
 
-          <button class="topbar-btn" id="btn-sync-now" title="Sincronizar en tiempo real">
+          <button class="topbar-btn btn-sync" id="btn-sync-now" title="Sincronizar en tiempo real">
             <i class="fa-solid fa-rotate" id="topbar-sync-icon"></i>
             <span class="btn-text-desktop">Sincronizar</span>
           </button>
@@ -174,22 +174,22 @@
             <span class="btn-text-desktop">Excel</span>
           </button>
 
-          <button class="topbar-btn" id="btn-topbar-colilla" title="Subir Colilla de Pago (Gemini AI)" style="border-color:rgba(251,191,36,0.4); color:#FBBF24;">
+          <button class="topbar-btn btn-colilla" id="btn-topbar-colilla" title="Subir Colilla de Pago (Gemini AI)">
             <i class="fa-solid fa-file-invoice-dollar"></i>
-            <span class="btn-text-desktop">Colilla</span>
+            <span class="btn-text-desktop">Subir Colilla</span>
           </button>
 
-          <button class="topbar-btn btn-scan-gmail" id="btn-scan-gmail" title="Buscar y procesar facturas en Gmail" style="border-color:rgba(16,185,129,0.4); color:#34D399;">
+          <button class="topbar-btn btn-scan-gmail" id="btn-scan-gmail" title="Buscar y procesar facturas en Gmail">
             <i class="fa-solid fa-envelope-open-text" id="topbar-scan-icon"></i>
             <span class="btn-text-desktop">Escanear Gmail</span>
           </button>
 
           <button class="topbar-btn btn-settings" id="btn-topbar-settings" title="Ajustes de Conexión, Seguridad y Código Apps Script">
-            <i class="fa-solid fa-gear" style="color:#FBBF24;"></i>
+            <i class="fa-solid fa-gear"></i>
             <span class="btn-text-desktop">Ajustes</span>
           </button>
 
-          <button class="topbar-btn btn-cta" id="btn-open-add-mov">
+          <button class="topbar-btn btn-cta" id="btn-open-add-mov" title="Registrar nuevo movimiento">
             <i class="fa-solid fa-plus"></i>
             <span>Nuevo</span>
           </button>
@@ -250,10 +250,22 @@
               </div>
 
               <div class="master-card-body">
-                <span class="master-label">TOTAL DISPONIBLE LIBRE</span>
+                <span class="master-label">DISPONIBLE REAL EN CAJA (OCTUBRE)</span>
                 <div class="master-amount-row">
-                  <h1 class="master-amount" id="card-total-available">$3.390.857</h1>
+                  <h1 class="master-amount" id="card-total-available">$71.800</h1>
                   <span class="master-currency">COP</span>
+                </div>
+
+                <!-- Banner de Alerta: Esperando Colilla de Nómina Colanta -->
+                <div class="october-colilla-alert" id="october-colilla-notice">
+                  <div class="alert-icon-pulse"><i class="fa-solid fa-clock-rotate-left"></i></div>
+                  <div class="alert-info">
+                    <strong class="alert-title">Esperando Colilla Q1 Colanta</strong>
+                    <span class="alert-desc">Sube tu comprobante de nómina para acreditar tus ingresos de Octubre.</span>
+                  </div>
+                  <button type="button" class="btn-subir-colilla-badge" id="btn-banner-upload-colilla" title="Subir Colilla de Pago">
+                    <i class="fa-solid fa-cloud-arrow-up"></i> Subir Colilla
+                  </button>
                 </div>
                 
                 <div class="master-stats-strip">
@@ -264,12 +276,12 @@
                   <div class="mstat-sep"></div>
                   <div class="mstat-item">
                     <span class="mstat-label">Ahorro 2026</span>
-                    <strong class="mstat-val text-emerald">+62.7%</strong>
+                    <strong class="mstat-val text-emerald">+24.4%</strong>
                   </div>
                   <div class="mstat-sep"></div>
                   <div class="mstat-item">
                     <span class="mstat-label">Superávit Acumulado</span>
-                    <strong class="mstat-val text-cyan">$38.6M</strong>
+                    <strong class="mstat-val text-cyan">$7.4M</strong>
                   </div>
                 </div>
               </div>
@@ -321,8 +333,8 @@
                   </div>
                 </div>
                 <div class="acc-card-right">
-                  <strong class="acc-amount" id="card-acc-colanta">$3.319.057</strong>
-                  <span class="acc-badge-pct">97.8% Liquidez</span>
+                  <strong class="acc-amount" id="card-acc-colanta">$0</strong>
+                  <span class="acc-badge-pct badge-pending-colilla" id="badge-colanta-status"><i class="fa-solid fa-hourglass-half"></i> Esperando Colilla Q1</span>
                 </div>
               </div>
 
@@ -467,13 +479,13 @@
           </div>
 
           <!-- Gráfico 2: Flujo Quincenal Colanta (Q1 vs Q2) -->
-          <div class="chart-box-panel">
+          <div class="chart-box-panel quincena-cockpit-panel">
             <div class="panel-header">
               <div class="panel-header-title">
-                <i class="fa-solid fa-chart-simple header-icon icon-cyan"></i>
+                <i class="fa-solid fa-scale-balanced header-icon icon-cyan"></i>
                 <div>
-                  <h3>Balanza Quincenal</h3>
-                  <span class="panel-subtitle">Compromisos Fijos vs Variables</span>
+                  <h3>Balanza Quincenal Pro</h3>
+                  <span class="panel-subtitle">Compromisos Fijos vs Variables por Quincena</span>
                 </div>
               </div>
               <div class="quincena-summary-pills">
@@ -481,7 +493,60 @@
                 <span class="quincena-header-pill pill-q2"><i class="fa-solid fa-calendar-day"></i> Q2: <strong id="quincena-q2-total">$1.225.000</strong></span>
               </div>
             </div>
-            <div class="chart-canvas-container" style="position: relative; height: 260px;">
+
+            <!-- Cockpit de Comparativa Dual Q1 vs Q2 -->
+            <div class="quincena-cards-grid">
+              <!-- Quincena 1 (Día 1-15) -->
+              <div class="q-cockpit-card card-q1">
+                <div class="q-cockpit-top">
+                  <div class="q-badge-phase"><span class="q-live-dot"></span> Q1 (Día 1 al 15)</div>
+                  <span class="q-status-tag tag-progress">En Curso</span>
+                </div>
+                <div class="q-cockpit-val-box">
+                  <span class="q-label-sub">TOTAL COMPROMETIDO</span>
+                  <div class="q-val-row">
+                    <strong class="q-val" id="q-cockpit-q1-val">$1.539.123</strong>
+                    <span class="q-curr">COP</span>
+                  </div>
+                </div>
+                <div class="q-progress-bar-wrap">
+                  <div class="q-bar-track">
+                    <div class="q-bar-chunk chunk-fixed" style="width: 86.5%;" title="Fijos: $1.332.000 (86.5%)"></div>
+                    <div class="q-bar-chunk chunk-var" style="width: 13.5%;" title="Variables: $207.123 (13.5%)"></div>
+                  </div>
+                  <div class="q-bar-legend">
+                    <span class="leg-item"><i class="fa-solid fa-square text-cyan"></i> Fijos $1.33M (86.5%)</span>
+                    <span class="leg-item"><i class="fa-solid fa-square text-rose"></i> Var $207k (13.5%)</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Quincena 2 (Día 16-30) -->
+              <div class="q-cockpit-card card-q2">
+                <div class="q-cockpit-top">
+                  <div class="q-badge-phase"><span class="q-blue-dot"></span> Q2 (Día 16 al 30)</div>
+                  <span class="q-status-tag tag-upcoming">Próxima</span>
+                </div>
+                <div class="q-cockpit-val-box">
+                  <span class="q-label-sub">COMPROMISOS PROGRAMADOS</span>
+                  <div class="q-val-row">
+                    <strong class="q-val" id="q-cockpit-q2-val">$1.225.000</strong>
+                    <span class="q-curr">COP</span>
+                  </div>
+                </div>
+                <div class="q-progress-bar-wrap">
+                  <div class="q-bar-track">
+                    <div class="q-bar-chunk chunk-fixed-q2" style="width: 100%;" title="Fijos: $1.225.000 (100%)"></div>
+                  </div>
+                  <div class="q-bar-legend">
+                    <span class="leg-item"><i class="fa-solid fa-square text-amber"></i> Arriendo ($850k) & Gym ($89k)</span>
+                    <span class="leg-item text-muted">Variables: $0</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="chart-canvas-container" style="position: relative; height: 230px; margin-top: 1rem;">
               <canvas id="quincenaBarChart"></canvas>
             </div>
           </div>
@@ -554,10 +619,22 @@
               </div>
 
               <div class="master-card-body">
-                <span class="master-label">TOTAL DISPONIBLE LIBRE</span>
+                <span class="master-label">DISPONIBLE REAL EN CAJA (OCTUBRE)</span>
                 <div class="master-amount-row">
-                  <h1 class="master-amount" id="card-total-available">$3.390.857</h1>
+                  <h1 class="master-amount card-total-available" id="wallet-total-available">$71.800</h1>
                   <span class="master-currency">COP</span>
+                </div>
+
+                <!-- Banner de Alerta en Billetera -->
+                <div class="october-colilla-alert" id="wallet-colilla-notice">
+                  <div class="alert-icon-pulse"><i class="fa-solid fa-clock-rotate-left"></i></div>
+                  <div class="alert-info">
+                    <strong class="alert-title">Esperando Colilla Q1 Colanta</strong>
+                    <span class="alert-desc">Sube tu comprobante de nómina para acreditar tus ingresos de Octubre.</span>
+                  </div>
+                  <button type="button" class="btn-subir-colilla-badge" id="btn-wallet-upload-colilla" title="Subir Colilla de Pago">
+                    <i class="fa-solid fa-cloud-arrow-up"></i> Subir Colilla
+                  </button>
                 </div>
                 
                 <div class="master-stats-strip">
@@ -568,35 +645,35 @@
                   <div class="mstat-sep"></div>
                   <div class="mstat-item">
                     <span class="mstat-label">Ahorro 2026</span>
-                    <strong class="mstat-val text-emerald">+62.7%</strong>
+                    <strong class="mstat-val text-emerald">+24.4%</strong>
                   </div>
                   <div class="mstat-sep"></div>
                   <div class="mstat-item">
                     <span class="mstat-label">Superávit Acumulado</span>
-                    <strong class="mstat-val text-cyan">$38.6M</strong>
+                    <strong class="mstat-val text-cyan">$7.4M</strong>
                   </div>
                 </div>
               </div>
 
               <!-- Fila Integrada de Acciones Rápidas -->
               <div class="master-actions-bar">
-                <button type="button" class="btn-cockpit-action btn-act-expense" id="btn-qa-gasto" title="Registrar Gasto Rápido">
+                <button type="button" class="btn-cockpit-action btn-act-expense" id="btn-qa-gasto-w" title="Registrar Gasto Rápido">
                   <i class="fa-solid fa-minus"></i>
                   <span>Gasto</span>
                 </button>
-                <button type="button" class="btn-cockpit-action btn-act-income" id="btn-qa-ingreso" title="Registrar Ingreso">
+                <button type="button" class="btn-cockpit-action btn-act-income" id="btn-qa-ingreso-w" title="Registrar Ingreso">
                   <i class="fa-solid fa-plus"></i>
                   <span>Ingreso</span>
                 </button>
-                <button type="button" class="btn-cockpit-action btn-act-colilla" id="btn-qa-colilla" title="Subir Colilla de Pago (Gemini AI)">
+                <button type="button" class="btn-cockpit-action btn-act-colilla" id="btn-qa-colilla-w" title="Subir Colilla de Pago (Gemini AI)">
                   <i class="fa-solid fa-file-invoice-dollar"></i>
                   <span>Colilla</span>
                 </button>
-                <button type="button" class="btn-cockpit-action btn-act-cfo" id="btn-qa-cfo" title="Asistente CFO AI por Voz">
+                <button type="button" class="btn-cockpit-action btn-act-cfo" id="btn-qa-cfo-w" title="Asistente CFO AI por Voz">
                   <i class="fa-solid fa-microphone-lines"></i>
                   <span>CFO Voz</span>
                 </button>
-                <a href="https://docs.google.com/spreadsheets/d/1C9ifm7U8IYGOdY4IwAji9Z3McSlNy3B-e_2Jo-zvBFk/edit" target="_blank" rel="noopener noreferrer" class="btn-cockpit-action btn-act-sheets" id="btn-qa-sheets" title="Abrir Google Sheets en Drive">
+                <a href="https://docs.google.com/spreadsheets/d/1C9ifm7U8IYGOdY4IwAji9Z3McSlNy3B-e_2Jo-zvBFk/edit" target="_blank" rel="noopener noreferrer" class="btn-cockpit-action btn-act-sheets" id="btn-qa-sheets-w" title="Abrir Google Sheets en Drive">
                   <i class="fa-solid fa-table"></i>
                   <span>Sheets</span>
                 </a>
@@ -625,8 +702,8 @@
                   </div>
                 </div>
                 <div class="acc-card-right">
-                  <strong class="acc-amount" id="card-acc-colanta">$3.319.057</strong>
-                  <span class="acc-badge-pct">97.8% Liquidez</span>
+                  <strong class="acc-amount card-acc-colanta" id="wallet-acc-colanta">$0</strong>
+                  <span class="acc-badge-pct badge-pending-colilla"><i class="fa-solid fa-hourglass-half"></i> Esperando Colilla Q1</span>
                 </div>
               </div>
 
@@ -905,29 +982,51 @@
           </div>
 
           <div class="interactive-tables-container">
-            <!-- Hero Card de Patrimonio Total en Cooperativa -->
-            <div style="background:linear-gradient(135deg, rgba(214,0,28,0.12) 0%, rgba(37,99,235,0.08) 100%); border:1px solid rgba(214,0,28,0.3); border-radius:20px; padding:1.75rem 2rem; margin-bottom:1.5rem; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:1.25rem;">
-              <div style="display:flex; align-items:center; gap:1.25rem;">
-                <div style="width:58px; height:58px; border-radius:16px; background:#D6001C; display:flex; align-items:center; justify-content:center; box-shadow:0 6px 20px rgba(214,0,28,0.4); flex-shrink:0;">
-                  <svg viewBox="0 0 36 36" width="38" height="38" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="18" cy="11.5" r="4.6" fill="#FFFFFF"/>
-                    <circle cx="12.5" cy="19" r="4.6" fill="#FFFFFF"/>
-                    <circle cx="23.5" cy="19" r="4.6" fill="#FFFFFF"/>
-                    <circle cx="18" cy="16.5" r="3.8" fill="#FFFFFF"/>
-                    <circle cx="18" cy="16.5" r="1.5" fill="#D6001C"/>
-                    <path d="M18 18C17.8 22.5 16 25 14 26.5" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round"/>
-                  </svg>
+            <!-- Hero Card de Patrimonio Total en Cooperativa Colanta con Barra de Progreso Navideño -->
+            <div class="colanta-savings-hero">
+              <div class="savings-hero-top">
+                <div class="savings-hero-left">
+                  <div class="colanta-emblem-badge">
+                    <svg viewBox="0 0 36 36" width="38" height="38" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <circle cx="18" cy="11.5" r="4.6" fill="#FFFFFF"/>
+                      <circle cx="12.5" cy="19" r="4.6" fill="#FFFFFF"/>
+                      <circle cx="23.5" cy="19" r="4.6" fill="#FFFFFF"/>
+                      <circle cx="18" cy="16.5" r="3.8" fill="#FFFFFF"/>
+                      <circle cx="18" cy="16.5" r="1.5" fill="#D6001C"/>
+                      <path d="M18 18C17.8 22.5 16 25 14 26.5" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <div class="hero-tag-row">
+                      <span class="hero-coop-tag">Cooperativa Colanta AyC</span>
+                      <span class="hero-verified-tag"><i class="fa-solid fa-circle-check"></i> Socio Activo • San Germán</span>
+                    </div>
+                    <h2 class="savings-total-val" id="colanta-hero-total">$3.931.299 COP</h2>
+                    <span class="savings-subline">Patrimonio acumulado en fondos protegidos y aportes de capital</span>
+                  </div>
                 </div>
-                <div>
-                  <span style="font-size:0.8rem; color:#FCA5A5; font-weight:700; text-transform:uppercase; letter-spacing:0.05em;">Patrimonio Cooperativo Total</span>
-                  <h2 style="font-family:var(--font-heading); font-size:2rem; font-weight:900; color:#FFFFFF; margin:0.15rem 0;">$3.931.299 COP</h2>
-                  <span style="font-size:0.78rem; color:#94A3B8;">Socio Cooperativa Colanta AyC • Ahorro protegido con rentabilidad directa</span>
+                <div class="savings-hero-right">
+                  <div class="navidad-countdown-box">
+                    <div class="cd-title"><i class="fa-solid fa-gift"></i> FONDO NAVIDEÑO 2026</div>
+                    <strong class="cd-date">1 de Diciembre 2026</strong>
+                    <span class="cd-badge">Faltan 2 quincenas ($240k)</span>
+                  </div>
                 </div>
               </div>
-              <div style="background:rgba(0,0,0,0.3); padding:0.85rem 1.25rem; border-radius:14px; border:1px solid rgba(255,255,255,0.08); text-align:right;">
-                <span style="font-size:0.72rem; color:#FBBF24; display:block; font-weight:700;"><i class="fa-solid fa-gift"></i> ENTREGA FONDO NAVIDEÑO</span>
-                <strong style="color:#FFFFFF; font-size:1.15rem;">1 de Diciembre 2026</strong>
-                <span style="display:block; font-size:0.7rem; color:#34D399;">100% garantizado sin deducciones</span>
+
+              <!-- Termómetro Visual de Meta Navideña ($2.16M / $2.40M) -->
+              <div class="navidad-progress-cockpit">
+                <div class="prog-meta-row">
+                  <span class="prog-label"><i class="fa-solid fa-bullseye text-amber"></i> Meta Fondo Navideño ($2.400.000 COP)</span>
+                  <strong class="prog-pct text-amber">90.0% Completado ($2.160.000 COP)</strong>
+                </div>
+                <div class="prog-track">
+                  <div class="prog-fill" style="width: 90%;"></div>
+                </div>
+                <div class="prog-sub-row">
+                  <span><i class="fa-solid fa-check text-emerald"></i> 18 quincenas aportadas</span>
+                  <span><i class="fa-solid fa-clock text-cyan"></i> 2 quincenas restantes ($120.000 c/u)</span>
+                </div>
               </div>
             </div>
 
@@ -1011,38 +1110,72 @@
           </div>
 
           <div class="interactive-tables-container">
-            <!-- 3 KPIs de Radar Antojos -->
-            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:1rem; margin-bottom:1.5rem;">
-              <div class="fugas-hero-card" style="margin-bottom:0; padding:1.25rem 1.5rem;">
-                <div class="fugas-alert-icon" style="font-size:1.8rem;"><i class="fa-solid fa-cookie-bite"></i></div>
-                <div class="fugas-text-content">
-                  <h4 style="font-size:0.95rem;">Total Hormiga Acumulado</h4>
-                  <p style="font-size:0.75rem;">Mecatos y panadería este mes</p>
+            <!-- Cockpit de Nivel de Amenaza y Cupo de Antojos -->
+            <div class="fugas-cockpit-grid">
+              <!-- Widget 1: Total Gastado vs Límite Seguro -->
+              <div class="fugas-gauge-card">
+                <div class="f-gauge-head">
+                  <span class="f-badge-threat threat-low"><i class="fa-solid fa-shield-heart"></i> Bajo Riesgo • Controlado</span>
+                  <span class="f-period-pill">Octubre 2026</span>
                 </div>
-                <div class="fugas-total-box">
-                  <h3 class="f-val" id="fugas-total-val" style="font-size:1.45rem;">$67.000 COP</h3>
+                <div class="f-amount-block">
+                  <span class="f-sub-lbl">TOTAL ANTOJOS ACUMULADO</span>
+                  <div class="f-val-row">
+                    <h3 class="f-val" id="fugas-total-val">$67.000</h3>
+                    <span class="f-curr">COP</span>
+                  </div>
+                </div>
+                <div class="f-progress-wrapper">
+                  <div class="f-bar-track">
+                    <div class="f-bar-fill" style="width: 44.6%;"></div>
+                  </div>
+                  <div class="f-bar-footer">
+                    <span>Gastado: $67.000 (44.6%)</span>
+                    <strong class="text-emerald">Cupo Restante: $83.000 COP</strong>
+                  </div>
                 </div>
               </div>
 
-              <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:18px; padding:1.25rem 1.5rem; display:flex; align-items:center; gap:1rem;">
-                <div style="width:44px; height:44px; border-radius:12px; background:rgba(59,130,246,0.12); color:#60A5FA; display:flex; align-items:center; justify-content:center; font-size:1.2rem; flex-shrink:0;">
-                  <i class="fa-solid fa-receipt"></i>
-                </div>
-                <div>
-                  <span style="font-size:0.75rem; color:#94A3B8; display:block;">Compras Detectadas</span>
-                  <strong style="font-size:1.3rem; color:#FFFFFF;">3 micropagos</strong>
-                  <span style="font-size:0.7rem; color:#60A5FA; display:block;">Pan de queso, dulces y cafetería</span>
+              <!-- Widget 2: Desglose Rápido por Antojo -->
+              <div class="fugas-breakdown-card">
+                <h4 class="f-box-title"><i class="fa-solid fa-cookie-bite text-amber"></i> Desglose de Micropagos</h4>
+                <div class="f-antojo-list">
+                  <div class="f-antojo-item">
+                    <div class="antojo-icon">🥖</div>
+                    <div class="antojo-meta">
+                      <strong>Panadería & Cafetería San Germán</strong>
+                      <span>Pan de queso, buñuelo, pastel</span>
+                    </div>
+                    <strong class="antojo-val">$35.000 COP</strong>
+                  </div>
+                  <div class="f-antojo-item">
+                    <div class="antojo-icon">🍬</div>
+                    <div class="antojo-meta">
+                      <strong>Mecato & Dulces Planta</strong>
+                      <span>Chocolatina, galletas, snacks</span>
+                    </div>
+                    <strong class="antojo-val">$22.000 COP</strong>
+                  </div>
+                  <div class="f-antojo-item">
+                    <div class="antojo-icon">☕</div>
+                    <div class="antojo-meta">
+                      <strong>Café & Tintos Cotidianos</strong>
+                      <span>Tintos de máquina y cafetería</span>
+                    </div>
+                    <strong class="antojo-val">$10.000 COP</strong>
+                  </div>
                 </div>
               </div>
 
-              <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:18px; padding:1.25rem 1.5rem; display:flex; align-items:center; gap:1rem;">
-                <div style="width:44px; height:44px; border-radius:12px; background:rgba(16,185,129,0.12); color:#34D399; display:flex; align-items:center; justify-content:center; font-size:1.2rem; flex-shrink:0;">
-                  <i class="fa-solid fa-shield-check"></i>
-                </div>
-                <div>
-                  <span style="font-size:0.75rem; color:#94A3B8; display:block;">Impacto en Presupuesto</span>
-                  <strong style="font-size:1.3rem; color:#34D399;">2.0% del salario</strong>
-                  <span style="font-size:0.7rem; color:#94A3B8; display:block;">Dentro del límite seguro</span>
+              <!-- Widget 3: Diagnóstico Inteligente Antifugas -->
+              <div class="fugas-tip-card">
+                <div class="tip-badge"><i class="fa-solid fa-lightbulb"></i> Diagnóstico Anti-Fugas</div>
+                <p class="tip-text">
+                  ¡Excelente disciplina Marlon! Solo has consumido el <strong>44.6%</strong> de tu presupuesto de antojitos ($150.000 COP). Con $83.000 COP aún disponibles, tu flujo de caja en planta se mantiene blindado contra microdesperdicios.
+                </p>
+                <div class="tip-tag-row">
+                  <span class="tip-tag"><i class="fa-solid fa-utensils"></i> Cafetería Planta Medellín</span>
+                  <span class="tip-tag"><i class="fa-solid fa-wallet"></i> Pagos en Efectivo</span>
                 </div>
               </div>
             </div>

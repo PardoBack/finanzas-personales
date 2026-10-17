@@ -18,7 +18,7 @@ const DEMO_DATA = {
     "ingresos": 0,
     "gastos": 207123.0,
     "ahorros": 0,
-    "disponible": 3390857,
+    "disponible": 71800,
     "fijos_pendientes": 2557000,
     "mes": "octubre",
     "anio": 2026
@@ -29,10 +29,10 @@ const DEMO_DATA = {
     "Gastos Hormiga / Dulces": 67000.0
   },
   "cuentas": {
-    "aycColanta": 3319057,
+    "aycColanta": 0,
     "nequi": 0,
     "efectivo": 71800,
-    "total": 3390857
+    "total": 71800
   },
   "ahorrosColanta": {
     "ordinarioAcumulado": 594000,
@@ -117,9 +117,9 @@ const DEMO_DATA = {
     {
       "mes": "octubre",
       "nombre": "Octubre",
-      "ingresos": 3405000.0,
+      "ingresos": 0,
       "gastos": 207123.0,
-      "ahorro": 3197877.0,
+      "ahorro": -207123.0,
       "transacciones": 8
     },
     {
@@ -140,10 +140,10 @@ const DEMO_DATA = {
     }
   ],
   "kpisAnuales": {
-    "totalIngresos": 33765454.0,
+    "totalIngresos": 30360454.0,
     "totalGastos": 22958989.0,
-    "superavit": 10806465.0,
-    "tasaAhorro": 32.0,
+    "superavit": 7401465.0,
+    "tasaAhorro": 24.4,
     "mesMayorAhorro": {
       "nombre": "Enero",
       "monto": 2050872.0

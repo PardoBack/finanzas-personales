@@ -1019,7 +1019,10 @@ const FintechApp = {
     };
 
     document.getElementById("btn-qa-colilla")?.addEventListener("click", openColillaModal);
+    document.getElementById("btn-qa-colilla-w")?.addEventListener("click", openColillaModal);
     document.getElementById("btn-topbar-colilla")?.addEventListener("click", openColillaModal);
+    document.getElementById("btn-banner-upload-colilla")?.addEventListener("click", openColillaModal);
+    document.getElementById("btn-wallet-upload-colilla")?.addEventListener("click", openColillaModal);
     document.getElementById("nav-item-colilla")?.addEventListener("click", openColillaModal);
     document.getElementById("btn-chat-upload-colilla")?.addEventListener("click", openColillaModal);
     document.getElementById("chip-chat-colilla")?.addEventListener("click", openColillaModal);
@@ -1030,10 +1033,35 @@ const FintechApp = {
       document.getElementById("chat-cfo-drawer")?.classList.add("open");
       document.getElementById("chat-text-input")?.focus();
     });
+    document.getElementById("btn-qa-cfo-w")?.addEventListener("click", () => {
+      this.haptic(15);
+      document.getElementById("chat-cfo-drawer")?.classList.add("open");
+      document.getElementById("chat-text-input")?.focus();
+    });
 
     document.getElementById("btn-qa-sheets")?.addEventListener("click", () => {
       this.haptic(15);
       window.open(`https://docs.google.com/spreadsheets/d/${API_CONFIG.SPREADSHEET_ID}/edit`, "_blank");
+    });
+    document.getElementById("btn-qa-sheets-w")?.addEventListener("click", () => {
+      this.haptic(15);
+      window.open(`https://docs.google.com/spreadsheets/d/${API_CONFIG.SPREADSHEET_ID}/edit`, "_blank");
+    });
+
+    document.getElementById("btn-qa-gasto-w")?.addEventListener("click", () => {
+      this.haptic(15);
+      const rg = document.getElementById("radio-gasto");
+      if (rg) rg.checked = true;
+      document.getElementById("modal-add-movement")?.classList.add("open");
+      document.getElementById("input-mov-valor")?.focus();
+    });
+
+    document.getElementById("btn-qa-ingreso-w")?.addEventListener("click", () => {
+      this.haptic(15);
+      const ri = document.getElementById("radio-ingreso");
+      if (ri) ri.checked = true;
+      document.getElementById("modal-add-movement")?.classList.add("open");
+      document.getElementById("input-mov-valor")?.focus();
     });
 
     // 7. Sincronización de Puntos del Carrusel al Deslizar
@@ -1376,14 +1404,18 @@ const FintechApp = {
     }
 
     if (intent.type === "QUERY_AVAILABLE") {
-      const disp = cuentas.total || res.disponible || 3390857;
+      const disp = (cuentas.total !== undefined && cuentas.total !== null) ? cuentas.total : ((res.disponible !== undefined && res.disponible !== null) ? res.disponible : 71800);
+      const ayc = (cuentas.aycColanta !== undefined && cuentas.aycColanta !== null) ? cuentas.aycColanta : 0;
+      const neq = cuentas.nequi || 0;
+      const eff = (cuentas.efectivo !== undefined && cuentas.efectivo !== null) ? cuentas.efectivo : 71800;
+
       this.appendBotMsg(`
-        <p>💎 <strong>LIQUIDEZ DISPONIBLE EN CAJA:</strong></p>
+        <p>💎 <strong>LIQUIDEZ DISPONIBLE EN CAJA (OCTUBRE):</strong></p>
         <p style="font-size:1.2rem; font-weight:800; color:#10B981;">$${this.formatCOP(disp)} COP</p>
         <p style="font-size:0.8rem; color:#94A3B8;">
-          🥛 AyC Colanta: <strong>$${this.formatCOP(cuentas.aycColanta || 3319057)}</strong><br>
-          📱 Nequi: <strong>$${this.formatCOP(cuentas.nequi || 0)}</strong><br>
-          💵 Efectivo: <strong>$${this.formatCOP(cuentas.efectivo || 71800)}</strong>
+          🥛 AyC Colanta: <strong>$${this.formatCOP(ayc)} COP</strong> ${ayc === 0 ? '<span style="color:#FBBF24;">(Esperando Colilla Q1)</span>' : ''}<br>
+          📱 Nequi: <strong>$${this.formatCOP(neq)} COP</strong><br>
+          💵 Efectivo en Mano: <strong>$${this.formatCOP(eff)} COP</strong>
         </p>
       `);
       return;
@@ -1454,10 +1486,19 @@ const FintechApp = {
     const res = await FinanceAPI.fetchFinancialData();
     this.state.data = res.data;
 
-    // Sanitizar caché anterior si contenía cifras infladas de prueba ($61M)
-    if (this.state.data && this.state.data.kpisAnuales && this.state.data.kpisAnuales.totalIngresos > 45000000) {
-      this.state.data.resumenAnual = DEMO_DATA.resumenAnual;
-      this.state.data.kpisAnuales = DEMO_DATA.kpisAnuales;
+    // Sanitizar caché anterior si contenía cifras infladas de prueba ($61M) o saldo inflado en octubre sin colilla
+    if (this.state.data) {
+      if (this.state.data.kpisAnuales && this.state.data.kpisAnuales.totalIngresos > 45000000) {
+        this.state.data.resumenAnual = DEMO_DATA.resumenAnual;
+        this.state.data.kpisAnuales = DEMO_DATA.kpisAnuales;
+      }
+      if (this.state.data.cuentas && this.state.data.cuentas.aycColanta > 1000000 && (!this.state.data.resumen || this.state.data.resumen.ingresos === 0)) {
+        this.state.data.cuentas = DEMO_DATA.cuentas;
+        if (this.state.data.resumen) {
+          this.state.data.resumen.disponible = DEMO_DATA.resumen.disponible;
+          this.state.data.resumen.ingresos = DEMO_DATA.resumen.ingresos;
+        }
+      }
       try {
         localStorage.setItem(API_CONFIG.CACHE_KEY, JSON.stringify(this.state.data));
       } catch (e) {}
@@ -1515,16 +1556,16 @@ const FintechApp = {
     let masterLabel = "TOTAL DISPONIBLE LIBRE";
 
     if (active === "octubre") {
-      // Mes activo actual en curso
-      totalAvail = cuentas.total || res.disponible || 3390857;
-      accCol = cuentas.aycColanta || 3319057;
-      accNeq = cuentas.nequi || 0;
-      accEff = cuentas.efectivo || 71800;
-      masterLabel = "DISPONIBLE EN CAJA (OCTUBRE)";
+      // Mes activo actual en curso (A la espera de colilla de nómina Colanta Q1)
+      totalAvail = (cuentas.total !== undefined && cuentas.total !== null) ? cuentas.total : ((res.disponible !== undefined && res.disponible !== null) ? res.disponible : 71800);
+      accCol = (cuentas.aycColanta !== undefined && cuentas.aycColanta !== null) ? cuentas.aycColanta : 0;
+      accNeq = (cuentas.nequi !== undefined && cuentas.nequi !== null) ? cuentas.nequi : 0;
+      accEff = (cuentas.efectivo !== undefined && cuentas.efectivo !== null) ? cuentas.efectivo : 71800;
+      masterLabel = "DISPONIBLE REAL EN CAJA (OCTUBRE)";
     } else if (active === "all") {
       // Consolidado de todo el año
       const kpis = (this.state.data && this.state.data.kpisAnuales) || {};
-      totalAvail = kpis.superavit || 10806465;
+      totalAvail = kpis.superavit || 7401465;
       accCol = 3931299; // Fondos Colanta acumulados
       accNeq = Math.round(totalAvail * 0.35);
       accEff = Math.max(0, totalAvail - accCol - accNeq);
@@ -1557,6 +1598,28 @@ const FintechApp = {
     document.querySelectorAll("#card-acc-efectivo, .card-acc-efectivo").forEach(el => {
       el.textContent = hidden ? "••••••" : `$${this.formatCOP(accEff)} COP`;
     });
+
+    // Actualizar visibilidad de banner de colilla pendiente
+    const colNoticeOverview = document.getElementById("october-colilla-notice");
+    const colNoticeWallet = document.getElementById("wallet-colilla-notice");
+    const colantaBadge = document.getElementById("badge-colanta-status");
+
+    if (active === "octubre" && accCol === 0) {
+      if (colNoticeOverview) colNoticeOverview.style.display = "flex";
+      if (colNoticeWallet) colNoticeWallet.style.display = "flex";
+      if (colantaBadge) {
+        colantaBadge.innerHTML = `<i class="fa-solid fa-hourglass-half"></i> Esperando Colilla Q1`;
+        colantaBadge.className = "acc-badge-pct badge-pending-colilla";
+      }
+    } else {
+      if (colNoticeOverview) colNoticeOverview.style.display = "none";
+      if (colNoticeWallet) colNoticeWallet.style.display = "none";
+      if (colantaBadge) {
+        const pct = totalAvail > 0 ? Math.round((accCol / totalAvail) * 100) : 0;
+        colantaBadge.textContent = `${pct}% Liquidez`;
+        colantaBadge.className = "acc-badge-pct";
+      }
+    }
 
     // Actualizar etiquetas dinámicas con el nombre del mes
     const elIncLabel = document.getElementById("kpi-label-income");
@@ -1712,11 +1775,18 @@ const FintechApp = {
     const q1Fixed = 1332000;
     const q2Fixed = 1225000;
 
-    // Actualizar pills del header del panel
+    // Actualizar pills del header del panel y widgets del Cockpit Quincenal
+    const q1Total = q1Fixed + q1Var;
+    const q2Total = q2Fixed + q2Var;
     const elQ1Total = document.getElementById("quincena-q1-total");
     const elQ2Total = document.getElementById("quincena-q2-total");
-    if (elQ1Total) elQ1Total.textContent = `$${this.formatCOP(q1Fixed + q1Var)}`;
-    if (elQ2Total) elQ2Total.textContent = `$${this.formatCOP(q2Fixed + q2Var)}`;
+    const elCockpitQ1 = document.getElementById("q-cockpit-q1-val");
+    const elCockpitQ2 = document.getElementById("q-cockpit-q2-val");
+
+    if (elQ1Total) elQ1Total.textContent = `$${this.formatCOP(q1Total)}`;
+    if (elQ2Total) elQ2Total.textContent = `$${this.formatCOP(q2Total)}`;
+    if (elCockpitQ1) elCockpitQ1.textContent = `$${this.formatCOP(q1Total)}`;
+    if (elCockpitQ2) elCockpitQ2.textContent = `$${this.formatCOP(q2Total)}`;
 
     this.state.charts.quincena = new Chart(canvas, {
       type: "bar",
@@ -1752,6 +1822,10 @@ const FintechApp = {
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        animation: {
+          duration: 1200,
+          easing: "easeOutQuart"
+        },
         layout: {
           padding: { top: 10, bottom: 6, left: 6, right: 6 }
         },
