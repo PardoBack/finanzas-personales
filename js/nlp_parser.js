@@ -248,17 +248,62 @@ const FinancialNLP = {
       };
     }
 
-    // 2. Comprobación de verbos de acción de pago en Colombia
+    // 2. Creación / Adición de un nuevo Gasto Fijo o Compromiso
+    const isCreateFixed = /\b(a[ñn]ad[ae]|a[ñn]adir|agreg[ae]|agregar|crear?|poner|meter)\s+(?:nuevo\s+)?(?:gasto\s*fijo|compromiso(?:\s*fijo)?|obligaci[oó]n|pago\s*fijo|fijo)\b/i.test(t) ||
+                          /\b(nuevo\s+gasto\s*fijo|nueva\s+obligaci[oó]n|nuevo\s+compromiso)\b/i.test(t);
+
+    if (isCreateFixed) {
+      let dia = 15;
+      const matchDia = t.match(/\b(?:los|el|dia|dias|fecha)\s*([1-9]|[12]\d|3[01])\b/i);
+      if (matchDia) dia = parseInt(matchDia[1], 10);
+
+      let concepto = "";
+      const matchNamed = raw.match(/(?:que\s+se\s+llame|llamado|nombre|como)\s+([a-zA-Z0-9\s]+?)(?:\s+(?:los|el|dia|por|de\s+\d|\$)|$)/i);
+      if (matchNamed) {
+        concepto = matchNamed[1].trim();
+      } else {
+        concepto = raw
+          .replace(/\b(a[ñn]ad[ae]|a[ñn]adir|agreg[ae]|agregar|crear?|poner|meter|nuevo|nueva)\b/gi, "")
+          .replace(/\b(gasto\s*fijo|compromiso\s*fijo|obligaci[oó]n|fijo|cuota|pago\s*fijo)\b/gi, "")
+          .replace(/\b(?:los|el|dia|dias|fecha)\s*([1-9]|[12]\d|3[01])\b/gi, "")
+          .replace(/\$?\s*\d+(?:[.,]\d+)?\s*(?:mil|k|lucas?|mill[oó]n|millones|palos?|pesos|cop)?\b/gi, "")
+          .replace(/\b(de|por|para|con)\b/gi, " ")
+          .replace(/\s+/g, " ")
+          .trim();
+      }
+
+      concepto = concepto.replace(/^(de|el|la|los|las|un|una)\s+/i, "").trim();
+      concepto = concepto ? (concepto.charAt(0).toUpperCase() + concepto.slice(1)) : "Nuevo Compromiso Fijo";
+
+      let categoria = "Servicios";
+      if (/agua|luz|energia|gas|servicios?|epm|tigo|internet|wifi|claro/i.test(concepto)) categoria = "Servicios";
+      else if (/arriendo|casa|apartamento|canon|administracion/i.test(concepto)) categoria = "Vivienda";
+      else if (/comida|mercado|almuerzo|cena/i.test(concepto)) categoria = "Alimentación";
+      else if (/moto|gasolina|parqueadero|soat/i.test(concepto)) categoria = "Moto";
+      else if (/spotify|netflix|disney|youtube|musica/i.test(concepto)) categoria = "Entretenimiento";
+
+      const amount = this.parseAmount(raw);
+
+      return {
+        type: "CREATE_FIXED_OBLIGATION",
+        concepto: concepto,
+        dia: dia,
+        categoria: categoria,
+        cuota: amount || 0
+      };
+    }
+
+    // 3. Comprobación de verbos de acción de pago en Colombia
     const isPaymentAction = /\b(pagu[eé]|pago|pagad[ao]|se\s*pago|ya\s*pagu[eé]|abon[eé]|abono|cancel[eé]|cancelad[ao]|transfer[ií]|met[ií]|le\s*met[ií]|d[ií]|liquid[eé]|descont[eé]|sald[eé]|saldad[ao]|consign[eé]|qued[oó]\s*pag[ao])\b/i.test(t);
     const isExplicitQuestion = /[¿?]|\b(cuanto|cuales|como va|mostrar|consultar|ver\s+mis|ver\s+gastos|historial)\b/i.test(t);
 
     let amount = this.parseAmount(raw);
     const fixedMatch = this.matchFixedObligation(raw);
 
-    // Si el usuario dijo "ya pague el arriendo", "pague epm", "se pago la luz", "pague spotify" SIN decir el monto:
-    // El sistema inteligente asume la cuota base del compromiso fijo automáticamente
+    // Si el usuario dijo explícitamente que PAGÓ un compromiso fijo ("ya pague el arriendo", "pague epm", "se pago la luz") SIN decir el monto:
+    // El sistema asume la cuota base del compromiso fijo automáticamente
     let usedDefaultAmount = false;
-    if (amount === 0 && fixedMatch && (isPaymentAction || /\b(ya|se|factura|cuenta|recibo)\b/i.test(t)) && !isExplicitQuestion) {
+    if (amount === 0 && fixedMatch && isPaymentAction && !isExplicitQuestion) {
       amount = fixedMatch.cuota;
       usedDefaultAmount = true;
     }

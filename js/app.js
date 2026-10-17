@@ -1362,6 +1362,69 @@ const FintechApp = {
     const res = (this.state.data && this.state.data.resumen) || {};
     const cuentas = (this.state.data && this.state.data.cuentas) || {};
 
+    if (intent.type === "CREATE_FIXED_OBLIGATION") {
+      if (!this.state.data) this.state.data = {};
+      if (!Array.isArray(this.state.data.fijos) || !this.state.data.fijos.length) {
+        this.state.data.fijos = (typeof DEMO_DATA !== "undefined" && DEMO_DATA.fijos)
+          ? JSON.parse(JSON.stringify(DEMO_DATA.fijos))
+          : [];
+      }
+
+      // Generar nuevo ID F-XXXX consecutivo
+      let maxFijoNum = 121;
+      this.state.data.fijos.forEach(f => {
+        const m = String(f.id || "").match(/^F-0?(\d+)$/);
+        if (m) maxFijoNum = Math.max(maxFijoNum, parseInt(m[1], 10));
+      });
+      const nuevoFijoId = "F-" + String(maxFijoNum + 1).padStart(4, "0");
+
+      const nuevoFijo = {
+        id: nuevoFijoId,
+        concepto: intent.concepto,
+        categoria: intent.categoria,
+        dia: intent.dia,
+        cuota: intent.cuota || 0,
+        abonado: 0,
+        estado: "🔴 Pendiente",
+        saldo: intent.cuota || 0,
+        prioridad: "Media",
+        medioPago: "Transferencia"
+      };
+
+      this.state.data.fijos.push(nuevoFijo);
+
+      // Recalcular saldo total de fijos pendientes
+      const totalPendiente = this.state.data.fijos.reduce((acc, f) => {
+        if (String(f.estado).includes("Pagado")) return acc;
+        return acc + Math.max(0, Number(f.cuota || 0) - Number(f.abonado || 0));
+      }, 0);
+
+      if (this.state.data.resumen) {
+        this.state.data.resumen.fijos_pendientes = totalPendiente;
+      }
+
+      try {
+        localStorage.setItem(API_CONFIG.CACHE_KEY, JSON.stringify(this.state.data));
+      } catch (e) {}
+
+      this.renderFixedTable();
+      this.renderBalances();
+
+      const quincenaStr = nuevoFijo.dia <= 15 ? "Quincena 1 (Día 1-15)" : "Quincena 2 (Día 16-31)";
+      this.appendBotMsg(`
+        <p>✨ <strong>NUEVO GASTO FIJO CREADO CON ÉXITO</strong></p>
+        <p>🏷️ <strong>${nuevoFijo.concepto}</strong> (<code>${nuevoFijo.id}</code>)<br>
+        📅 Día de cobro: <strong>Día ${nuevoFijo.dia} (${quincenaStr})</strong><br>
+        📁 Categoría: <em>${nuevoFijo.categoria}</em><br>
+        💰 Cuota base: <strong>${nuevoFijo.cuota > 0 ? '$' + this.formatCOP(nuevoFijo.cuota) + ' COP' : 'Variable / Por definir'}</strong></p>
+        <p style="font-size:0.8rem; color:#94A3B8;">
+          ✅ Se ha incorporado a tu tabla de <strong>Gastos Fijos</strong>. Cada vez que digas <em>"pagué ${nuevoFijo.concepto.toLowerCase()}"</em>, el asistente lo marcará como pagado y ajustará tus saldos automáticamente.
+        </p>
+      `);
+      this.showToast(`✨ Nuevo compromiso "${nuevoFijo.concepto}" agregado`, "success");
+      return;
+    }
+
     if (intent.type === "RECORD_TRANSACTION") {
       const nuevoId = this.getNextMovementId();
       const fechaHoy = new Date().toLocaleDateString("es-CO");
