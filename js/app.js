@@ -659,7 +659,11 @@ const FintechApp = {
 
     mMes.forEach(m => {
       const v = Number(m.valor || 0);
-      if (String(m.tipo).toLowerCase().includes("ingreso")) {
+      const isIngreso = String(m.tipo).toLowerCase().includes("ingreso");
+      // Evitar sumar duplicados de importación de colillas
+      if (isIngreso && String(m.cuenta || "").toLowerCase().includes("colilla_")) return;
+
+      if (isIngreso) {
         ing += v;
       } else {
         gas += v;
@@ -668,21 +672,28 @@ const FintechApp = {
       }
     });
 
-    // Validar y complementar con el balance consolidado oficial de resumenAnual
+    // Validar y blindar con el balance consolidado oficial de resumenAnual (hoja ANÁLISIS)
     const annualMatch = annualData.find(a => String(a.mes).toLowerCase() === active);
     if (annualMatch) {
-      if (annualMatch.ingresos > 0 && (ing === 0 || annualMatch.ingresos > ing)) {
+      if (active !== "octubre" && annualMatch.ingresos > 0) {
+        // En cualquier mes pasado cerrado (Enero a Septiembre), la cifra auditada oficial manda
         ing = annualMatch.ingresos;
-      }
-      if (annualMatch.gastos > 0 && (gas === 0 || annualMatch.gastos > gas)) {
         gas = annualMatch.gastos;
+      } else {
+        // Octubre en curso: proteger contra quincenas duplicadas (> 3.000.000)
+        if (annualMatch.ingresos > 0 && (ing === 0 || ing > 3000000)) {
+          ing = annualMatch.ingresos;
+        }
+        if (annualMatch.gastos > 0 && (gas === 0 || annualMatch.gastos > gas)) {
+          gas = annualMatch.gastos;
+        }
       }
     }
 
     const res = (this.state.data && this.state.data.resumen) || {};
     if (active === String(res.mes || "").toLowerCase()) {
-      if (res.gastos > gas) gas = res.gastos;
-      if (res.ingresos > ing) ing = res.ingresos;
+      if (res.gastos && res.gastos > gas) gas = res.gastos;
+      if (res.ingresos && res.ingresos > 0 && ing === 0) ing = res.ingresos;
     }
 
     const fallbackCats = active === "octubre"

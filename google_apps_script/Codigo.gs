@@ -1194,16 +1194,21 @@ function obtenerDatosCompletosDashboard_(mesFiltro, anioFiltro) {
     }
   }
 
-  // Si se filtró por un mes pasado y el panel tiene otro mes activo, usar los calculados
-  if (mesFiltro && mesFiltro !== "octubre" && ingresoMesCalculado > 0) {
-    ingreso = ingresoMesCalculado;
-    gasto = gastoMesCalculado;
+  // Si se filtró por un mes pasado y el panel tiene otro mes activo, usar las cifras auditadas oficiales
+  if (mesFiltro && mesFiltro !== "octubre") {
+    if (resumenAnualMap[mesFiltro] && resumenAnualMap[mesFiltro].ingresos > 0) {
+      ingreso = resumenAnualMap[mesFiltro].ingresos;
+      gasto = resumenAnualMap[mesFiltro].gastos;
+    } else {
+      ingreso = ingresoMesCalculado;
+      gasto = gastoMesCalculado;
+    }
   }
 
-  // Octubre en curso: consolidar con los movimientos reales
+  // Octubre en curso: consolidar con los movimientos reales auditados
   if (resumenAnualMap["octubre"]) {
     resumenAnualMap["octubre"].ingresos = ingresoMesCalculado > 0 ? ingresoMesCalculado : 1700605;
-    resumenAnualMap["octubre"].gastos = gastoMesCalculado > 0 ? gastoMesCalculado : 635239;
+    resumenAnualMap["octubre"].gastos = gastoMesCalculado > 0 ? gastoMesCalculado : 1485239;
     resumenAnualMap["octubre"].ahorro = resumenAnualMap["octubre"].ingresos - resumenAnualMap["octubre"].gastos;
   }
 

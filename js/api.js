@@ -16,25 +16,25 @@ const DEMO_DATA = {
   "ok": true,
   "resumen": {
     "ingresos": 1700605.0,
-    "gastos": 635239.0,
+    "gastos": 1485239.0,
     "ahorros": 236121.0,
-    "disponible": 1065366.0,
-    "fijos_pendientes": 2180000,
+    "disponible": 215366.0,
+    "fijos_pendientes": 1330000,
     "mes": "octubre",
     "anio": 2026
   },
   "gastosPorCategoria": {
+    "Alimentación": 862116.0,
     "Servicios": 397000.0,
     "Moto": 116000.0,
     "Gastos Hormiga / Dulces": 86000.0,
-    "Entretenimiento": 24123.0,
-    "Alimentación": 12116.0
+    "Entretenimiento": 24123.0
   },
   "cuentas": {
-    "aycColanta": 993566.0,
+    "aycColanta": 143566.0,
     "nequi": 0,
     "efectivo": 71800,
-    "total": 1065366.0
+    "total": 215366.0
   },
   "ahorrosColanta": {
     "ordinarioAcumulado": 627000,
@@ -120,9 +120,9 @@ const DEMO_DATA = {
       "mes": "octubre",
       "nombre": "Octubre",
       "ingresos": 1700605.0,
-      "gastos": 635239.0,
-      "ahorro": 1065366.0,
-      "transacciones": 13
+      "gastos": 1485239.0,
+      "ahorro": 215366.0,
+      "transacciones": 14
     },
     {
       "mes": "noviembre",
@@ -143,9 +143,9 @@ const DEMO_DATA = {
   ],
   "kpisAnuales": {
     "totalIngresos": 34152478.0,
-    "totalGastos": 23378605.0,
-    "superavit": 10773873.0,
-    "tasaAhorro": 31.5,
+    "totalGastos": 24228605.0,
+    "superavit": 9923873.0,
+    "tasaAhorro": 29.1,
     "mesMayorAhorro": {
       "nombre": "Enero",
       "monto": 2483094.0
@@ -156,6 +156,21 @@ const DEMO_DATA = {
     }
   },
   "movimientos": [
+    {
+      "id": "M-0261",
+      "fecha": "17/10/2026",
+      "hora": "02:30 PM",
+      "tipo": "Gasto",
+      "categoria": "Alimentación",
+      "subcategoria": "Pago fijo",
+      "descripcion": "Pago Fijo: COMIDA",
+      "valor": 850000.0,
+      "metodo": "Transferencia",
+      "cuenta": "AyC Colanta",
+      "mes": "octubre",
+      "anio": 2026,
+      "idFijo": "F-0108"
+    },
     {
       "id": "M-0260",
       "fecha": "17/10/2026",
@@ -3423,8 +3438,8 @@ const DEMO_DATA = {
       "categoria": "Alimentación",
       "dia": 15,
       "cuota": 850000,
-      "abonado": 0,
-      "estado": "🔴 Pendiente"
+      "abonado": 850000,
+      "estado": "🟢 Pagado"
     },
     {
       "id": "F-0109",
