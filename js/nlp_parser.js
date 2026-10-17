@@ -294,9 +294,11 @@ const FinancialNLP = {
       };
     }
 
-    // 2.1 Préstamos y Créditos a Cuotas (Addi, Sistecrédito, Tarjetas, Bancos)
-    const isLoanOrInstallment = /\b(saqu[eé]|tengo|hice|ped[ií]|adquir[ií]|financ[ieé]|meti|prestamo|credito)\b.*\b(addi|sistecredito|bancolombia|tarjeta|banco|cuotas?)\b/i.test(t) ||
-                                /\b(addi|sistecredito)\b.*\b(cuota|cuotas|meses|total|prestamo|credito|saque|compre)\b/i.test(t);
+    // 2.1 Préstamos, Deudas y Créditos a Cuotas (Addi, Sistecrédito, Tarjetas, Bancos)
+    // Soporta: "saqué una deuda en Addi a 6 cuotas y es de 600.000, es sobre un teléfono", "saqué un préstamo por addi...", etc.
+    const isLoanOrInstallment = /\b(saqu[eé]|tengo|hice|ped[ií]|adquir[ií]|financ[ieé]|meti|prestamo|credito|deuda)\b.*\b(addi|sistecredito|bancolombia|tarjeta|banco|cuotas?|prestamo|credito|deuda)\b/i.test(t) ||
+                                /\b(addi|sistecredito)\b.*\b(cuota|cuotas|meses|total|prestamo|credito|deuda|saque|compre|sobre)\b/i.test(t) ||
+                                /\b(deuda|prestamo|credito)\s+(?:en|por|con)\s+(addi|sistecredito|banco|bancolombia)\b/i.test(t);
 
     if (isLoanOrInstallment) {
       let entidad = "Addi";
@@ -328,14 +330,18 @@ const FinancialNLP = {
         cuotaMensual = Math.round(totalMonto / numCuotas);
       }
 
+      // Extraer día de pago (15, 17, 22, 30, etc.)
       let dia = 15;
-      const matchDia = t.match(/\b(?:los|el|dia|dias|fecha)\s*([1-9]|[12]\d|3[01])\b/i);
+      const matchDia = t.match(/\b(?:los|el|dia|dias|fecha|para\s+el|pagar\s+el|corte\s+el)\s*([1-9]|[12]\d|3[01])\b/i);
       if (matchDia) dia = parseInt(matchDia[1], 10);
 
+      // Extraer producto o motivo (ej: "teléfono", "celular", "moto", "cama", "ropa")
       let concepto = `Crédito ${entidad}`;
-      const matchProducto = raw.match(/(?:para|por|de|compre|saque)\s+([a-zA-Z0-9\s]+?)(?:\s+(?:en|por|a|con|total|\$)\s+(?:addi|sistecredito|\d)|$)/i);
-      if (matchProducto && matchProducto[1].trim().length > 2 && !/^(un|el|la|este|ese)\s+(prestamo|credito)$/i.test(matchProducto[1].trim())) {
-        concepto = `${matchProducto[1].trim()} (${entidad})`;
+      const matchProducto = raw.match(/(?:es\s+sobre|sobre|para|por|de|compre|saque)\s+(?:un|una|el|la|este|esta)?\s*([a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s]{3,20}?)(?:\s*[,.]|\s+(?:que|en|por|a|con|total|\$)\s+(?:addi|sistecredito|\d)|$)/i);
+      if (matchProducto && matchProducto[1].trim().length > 2 && !/^(un|el|la|este|ese|una)\s*(prestamo|credito|deuda)$/i.test(matchProducto[1].trim())) {
+        const prod = matchProducto[1].trim();
+        const prodCap = prod.charAt(0).toUpperCase() + prod.slice(1);
+        concepto = `${prodCap} en ${entidad}`;
       }
 
       return {
@@ -347,6 +353,27 @@ const FinancialNLP = {
         cuotaMensual: cuotaMensual,
         dia: dia,
         categoria: "Compras / Créditos"
+      };
+    }
+
+    // 2.2 Consultas de Asesoría Financiera Inteligente con IA (CFO Asesor)
+    // Ej: "quiero sacar esta moto, quiero sacar una cama, ¿qué me recomiendas? ¿cómo ves mis finanzas?"
+    const isFinancialAdvice = /\b(recomiend[ao]s?|como\s+ves|qu[eé]\s+(?:me\s+)?aconsejas?|qu[eé]\s+opinas?|consejo|puedo\s+comprar|puedo\s+sacar|quiero\s+sacar|quiero\s+comprar|me\s+alcanza|capacidad\s+de\s+endeudamiento|como\s+van\s+mis\s+finanzas|analiz[ao]|eval[uú]a)\b/i.test(t);
+
+    if (isFinancialAdvice) {
+      let item = "esta compra / inversión";
+      const matchItem = raw.match(/(?:sacar|comprar|adquirir|financiar|meterme\s+en)\s+(?:esta|este|un|una)?\s*([a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s]{3,25}?)(?:\s*[,?¿.]|\s+(?:que|como|cuanto|\$)|$)/i);
+      if (matchItem && matchItem[1].trim()) {
+        item = matchItem[1].trim();
+      }
+
+      const amount = this.parseAmount(raw);
+
+      return {
+        type: "CFO_ADVICE_CONSULTATION",
+        item: item,
+        montoEstimado: amount || 0,
+        rawQuery: raw
       };
     }
 

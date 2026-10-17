@@ -1629,6 +1629,7 @@ const FintechApp = {
 
       this.renderFixedTable();
       this.renderBalances();
+      this.renderLoansWidget();
 
       this.appendBotMsg(`
         <div style="background: rgba(14, 165, 233, 0.08); border-left: 4px solid #0EA5E9; padding: 0.85rem; border-radius: 8px;">
@@ -1642,11 +1643,58 @@ const FintechApp = {
             <li>📉 <strong>Saldo pendiente total:</strong> $${this.formatCOP(intent.totalMonto)} COP</li>
           </ul>
           <p style="margin: 0; font-size: 0.8rem; color: #94A3B8;">
-            ✅ Se añadió a tu tabla de <strong>Compromisos Fijos</strong>. Cada mes que digas <em>"pagué la cuota de ${intent.entidad.toLowerCase()}"</em>, el asistente marcará la cuota pagada y descontará del saldo total.
+            ✅ Se añadió a tu tabla de <strong>Compromisos Fijos</strong> y a tu tarjeta de <strong>Créditos Activos en el Dashboard</strong>. Cada mes que digas <em>"pagué la cuota de ${intent.entidad.toLowerCase()}"</em>, el asistente marcará la cuota pagada y descontará del saldo total.
           </p>
         </div>
       `);
       this.showToast(`💳 Crédito ${intent.entidad} registrado ($${this.formatCOP(intent.cuotaMensual)}/mes)`, "success");
+      return;
+    }
+
+    if (intent.type === "CFO_ADVICE_CONSULTATION") {
+      const sav = (this.state.data && this.state.data.ahorrosColanta) || {};
+      const totSav = sav.totalAcumulado || 4167420;
+      const navSav = sav.navidenoAcumulado || 2280000;
+      const disponible = (this.state.data && this.state.data.cuentas && this.state.data.cuentas.total) || 1065366;
+
+      const ingresoMensualEstimado = 3400000;
+      const fijosMensualesEstimados = 2300000;
+      const margenLibreMensual = Math.max(500000, ingresoMensualEstimado - fijosMensualesEstimados);
+      const cuotaSeguraMax = Math.round(margenLibreMensual * 0.35); // ~$385.000 COP max
+      const itemLabel = intent.item ? intent.item.toUpperCase() : "ESTA INVERSIÓN / COMPRA";
+
+      this.appendBotMsg(`
+        <div style="background: rgba(16, 185, 129, 0.06); border-left: 4px solid #10B981; padding: 0.95rem; border-radius: 10px; margin-bottom: 0.5rem;">
+          <p style="margin: 0 0 0.5rem 0; font-weight: 700; color: #34D399; font-size: 0.95rem;">
+            🧠 <strong>ANÁLISIS FINANCIERO CFO — EVALUACIÓN DE: ${itemLabel}</strong>
+          </p>
+          <p style="margin: 0 0 0.5rem 0; font-size: 0.88rem; color: #E2E8F0; line-height: 1.5;">
+            Hola Marlon. Analizando tu flujo de caja real en <strong>Colanta San Germán</strong>:
+          </p>
+          <ul style="margin: 0 0 0.65rem 0; padding-left: 1.2rem; font-size: 0.85rem; line-height: 1.5; color: #CBD5E1;">
+            <li>💵 <strong>Ingreso promedio mensual:</strong> ~$3.4M COP (Nómina quincenal de ~$1.7M)</li>
+            <li>🏠 <strong>Compromisos fijos del mes:</strong> ~$2.3M COP (EPM, arriendo, alimentación, etc.)</li>
+            <li>💎 <strong>Flujo de caja libre mensual:</strong> ~$1.1M COP</li>
+            <li>🏛️ <strong>Ahorro acumulado en Fondos Colanta:</strong> $${this.formatCOP(totSav)} COP</li>
+            <li>🎄 <strong>Fondo Navideño disponible el 1 Dic:</strong> $${this.formatCOP(navSav)} COP</li>
+          </ul>
+
+          <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 0.75rem; margin-bottom: 0.65rem;">
+            <strong style="color: #FBBF24; font-size: 0.85rem;"><i class="fa-solid fa-scale-balanced"></i> Diagnóstico de Endeudamiento Saludable:</strong>
+            <p style="margin: 0.35rem 0 0 0; font-size: 0.82rem; color: #94A3B8; line-height: 1.45;">
+              • <strong>Cuota mensual máxima recomendada:</strong> Hasta <strong>$${this.formatCOP(cuotaSeguraMax)} COP/mes</strong> para no comprometer tus gastos fijos ni imprevistos.<br>
+              • <strong>Veredicto:</strong> Si sacas ${intent.item} a cuotas (ej. por Addi, banco o cooperativa) y la cuota mensual queda por debajo de <strong>$350.000 COP</strong>, tus finanzas lo absorben con total tranquilidad sin afectar tus ahorros.
+            </p>
+          </div>
+
+          <div style="background: rgba(56, 189, 248, 0.08); border: 1px dashed rgba(56, 189, 248, 0.3); border-radius: 8px; padding: 0.75rem;">
+            <strong style="color: #38BDF8; font-size: 0.85rem;"><i class="fa-solid fa-lightbulb"></i> Recomendación Estratégica del Asistente:</strong>
+            <p style="margin: 0.35rem 0 0 0; font-size: 0.82rem; color: #CBD5E1; line-height: 1.45;">
+              💡 <em>Recuerda que el 1 de Diciembre recibes tu Fondo Navideño ($2.28M) y la prima de Navidad. Si puedes esperar unas semanas o dar una cuota inicial con ese ingreso extra, reducirás las cuotas mensuales a menos de la mitad y evitarás pagar intereses altos.</em>
+            </p>
+          </div>
+        </div>
+      `);
       return;
     }
 
@@ -1961,12 +2009,34 @@ const FintechApp = {
       return;
     }
 
-    // Default
+    // Fallback inteligente contextual para preguntas libres
+    const isQuestionOrIdea = /[¿?]|\b(como|puedo|sera|crees|debo|cuanto|donde|por que|si|moto|cama|viaje|casa|carro|addi|credito|plata|dinero|ahorro|consejo|opinion)\b/i.test(originalText);
+    const sav = (this.state.data && this.state.data.ahorrosColanta) || {};
+    const totSav = sav.totalAcumulado || 4167420;
+    const navSav = sav.navidenoAcumulado || 2280000;
+    const disp = cuentas.total || 1065366;
+
+    if (isQuestionOrIdea) {
+      this.appendBotMsg(`
+        <div style="background: rgba(56, 189, 248, 0.08); border-left: 3px solid #38BDF8; padding: 0.8rem; border-radius: 8px;">
+          <p style="margin: 0 0 0.4rem 0; font-weight: 700; color: #38BDF8;"><i class="fa-solid fa-brain"></i> CFO ASESOR — ANÁLISIS EN VIVO</p>
+          <p style="margin: 0 0 0.4rem 0; font-size: 0.86rem; color: #E2E8F0; line-height: 1.45;">
+            Te escucho, Marlon. Teniendo en cuenta tus <strong>$${this.formatCOP(disp)} COP</strong> disponibles hoy en caja y tus <strong>$${this.formatCOP(totSav)} COP</strong> en Fondos Colanta (con <strong>$${this.formatCOP(navSav)} COP</strong> de Navidad el 1 Dic):
+          </p>
+          <p style="margin: 0; font-size: 0.83rem; color: #94A3B8; line-height: 1.45;">
+            • Si deseas registrar una compra o deuda a cuotas (Addi, Sistecrédito, moto, teléfono), dime con tus palabras: <em>"Saqué una deuda en Addi de 600 mil a 6 cuotas para un teléfono pagando el 17"</em>.<br>
+            • Si buscas asesoría sobre si te conviene hacer un gasto o compra, dime: <em>"¿Cómo ves mis finanzas para sacar una moto?"</em> y te daré un diagnóstico con cuotas máximas seguras.
+          </p>
+        </div>
+      `);
+      return;
+    }
+
     this.appendBotMsg(`
-      <p>🤖 Entendido Marlon. Escribe un gasto con su monto o toca un botón rápido:</p>
-      <p>• <em>"35 mil gasolina Terpel Nequi"</em><br>
-      • <em>"18 mil almuerzo Nequi"</em><br>
-      • <em>"Pagué EPM 177 mil"</em></p>
+      <p>🤖 Entendido Marlon. Puedes decirme lo que quieras con tus propias palabras:</p>
+      <p>• <em>"Saqué una deuda en Addi a 6 cuotas y es de 600.000, es sobre un teléfono"</em><br>
+      • <em>"Pon un gasto fijo de gimnasio de 80 mil los 15"</em><br>
+      • <em>"¿Cómo ves mis finanzas para sacar una cama?"</em></p>
     `);
   },
 
@@ -2335,6 +2405,49 @@ const FintechApp = {
     const elPaceSub = document.getElementById("pace-days-left");
     if (elPace) elPace.textContent = hidden ? "••••••" : `$${this.formatCOP(ritmo)}`;
     if (elPaceSub) elPaceSub.textContent = `${diasRestantes} días restantes`;
+
+    this.renderLoansWidget();
+  },
+
+  renderLoansWidget() {
+    const container = document.getElementById("dashboard-loans-container");
+    if (!container) return;
+
+    const fijos = (this.state.data && this.state.data.fijos) || [];
+    const loan = fijos.find(f => f.creditoInfo || /addi|sistecredito|prestamo|credito|cuota\s*\d/i.test(f.concepto) || f.categoria === "Compras / Créditos");
+
+    if (!loan) {
+      container.style.display = "none";
+      return;
+    }
+
+    container.style.display = "block";
+
+    const titleEl = document.getElementById("loan-main-title");
+    const subEl = document.getElementById("loan-main-subtitle");
+    const pillEl = document.getElementById("loan-due-pill");
+    const quotaEl = document.getElementById("loan-monthly-quota");
+    const progressEl = document.getElementById("loan-quota-progress");
+    const balanceEl = document.getElementById("loan-remaining-balance");
+    const entityEl = document.getElementById("loan-entity-name");
+    const fillEl = document.getElementById("loan-progress-fill");
+
+    const diaCobro = loan.dia || 17;
+    const entidad = (loan.creditoInfo && loan.creditoInfo.entidad) || (/sistecredito/i.test(loan.concepto) ? "Sistecrédito" : /addi/i.test(loan.concepto) ? "Addi" : "Crédito Financiado");
+    const cuotasTot = (loan.creditoInfo && loan.creditoInfo.cuotasTotales) || 6;
+    const cuotaAct = (loan.creditoInfo && loan.creditoInfo.cuotaActual) || 1;
+    const cuotaVal = loan.cuota || ((loan.creditoInfo && loan.creditoInfo.cuotaValor) || 100000);
+    const saldoTot = loan.saldo || ((loan.creditoInfo && loan.creditoInfo.total) || cuotaVal * cuotasTot);
+    const pct = Math.min(100, Math.max(10, Math.round(((cuotaAct - 1) / cuotasTot) * 100)));
+
+    if (titleEl) titleEl.textContent = loan.concepto || `Crédito en ${entidad}`;
+    if (subEl) subEl.textContent = `Compromiso financiero activo • Monitoreo quincenal`;
+    if (pillEl) pillEl.innerHTML = `<i class="fa-solid fa-calendar-day"></i> Pagar el ${diaCobro} de cada mes`;
+    if (quotaEl) quotaEl.textContent = `$${this.formatCOP(cuotaVal)} COP`;
+    if (progressEl) progressEl.textContent = `Cuota ${cuotaAct} de ${cuotasTot}`;
+    if (balanceEl) balanceEl.textContent = `$${this.formatCOP(saldoTot)} COP`;
+    if (entityEl) entityEl.textContent = entidad;
+    if (fillEl) fillEl.style.width = `${pct}%`;
   },
 
   renderSavingsSection() {

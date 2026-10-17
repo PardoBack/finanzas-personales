@@ -444,8 +444,44 @@
           </div>
         </section>
 
-          <!-- Gráficos Interactivos: Categorías + Balanza Quincenal -->
-          <!-- SECCIÓN DE GRÁFICOS INTERACTIVOS (Desktop 2 cols / Móvil 1 col) -->
+        <!-- PANEL DE PRÉSTAMOS & CRÉDITOS A CUOTAS (Addi, Bancos, Tarjetas) -->
+        <section class="dashboard-loans-banner" id="dashboard-loans-container" style="display: none;">
+          <div class="loans-card-glass">
+            <div class="loans-card-header">
+              <div class="loans-header-left">
+                <span class="badge-loan-pulse"><i class="fa-solid fa-credit-card"></i> COMPROMISO FINANCIADO ACTIVO</span>
+                <h3 class="loans-title" id="loan-main-title">Crédito Addi — Teléfono (6 cuotas)</h3>
+                <span class="loans-subtitle" id="loan-main-subtitle">Obligación diferida monitoreada por el sistema</span>
+              </div>
+              <div class="loans-header-right">
+                <span class="loan-day-pill" id="loan-due-pill"><i class="fa-solid fa-calendar-day"></i> Pagar el 17 de cada mes</span>
+              </div>
+            </div>
+            <div class="loans-stats-grid">
+              <div class="lstat-item">
+                <span class="lstat-label">Cuota Mensual</span>
+                <strong class="lstat-val highlight-amber" id="loan-monthly-quota">$100.000 COP</strong>
+              </div>
+              <div class="lstat-item">
+                <span class="lstat-label">Progreso</span>
+                <strong class="lstat-val" id="loan-quota-progress">Cuota 1 de 6</strong>
+              </div>
+              <div class="lstat-item">
+                <span class="lstat-label">Saldo Pendiente</span>
+                <strong class="lstat-val text-rose" id="loan-remaining-balance">$600.000 COP</strong>
+              </div>
+              <div class="lstat-item">
+                <span class="lstat-label">Entidad</span>
+                <strong class="lstat-val" id="loan-entity-name">Addi</strong>
+              </div>
+            </div>
+            <div class="loan-progress-bar-wrap">
+              <div class="loan-progress-bar" id="loan-progress-fill" style="width: 16%;"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SECCIÓN DE GRÁFICOS INTERACTIVOS (Desktop 2 cols / Móvil 1 col) -->
         <section class="analytics-charts-grid">
           <!-- Gráfico 1: Categorías de Gasto -->
           <div class="chart-box-panel">
@@ -2047,8 +2083,8 @@
   <div class="toast-hub" id="toast-container"></div>
 
   <!-- SCRIPTS -->
-  <script src="js/api.js?v=26.9.8"></script>
-  <script src="js/nlp_parser.js?v=26.9.8"></script>
-  <script src="js/app.js?v=26.9.8"></script>
+  <script src="js/api.js?v=26.9.9"></script>
+  <script src="js/nlp_parser.js?v=26.9.9"></script>
+  <script src="js/app.js?v=26.9.9"></script>
 </body>
 </html>

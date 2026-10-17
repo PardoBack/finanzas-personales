@@ -4,14 +4,14 @@
  * Versión 28 con invalidación inmediata de caché antigua
  */
 
-const CACHE_NAME = "pardofinanzas-pwa-v33";
+const CACHE_NAME = "pardofinanzas-pwa-v34";
 const STATIC_ASSETS = [
   "./",
   "./index.html",
   "./css/styles.css",
-  "./js/api.js?v=26.9.8",
-  "./js/nlp_parser.js?v=26.9.8",
-  "./js/app.js?v=26.9.8",
+  "./js/api.js?v=26.9.9",
+  "./js/nlp_parser.js?v=26.9.9",
+  "./js/app.js?v=26.9.9",
   "./manifest.json",
   "./assets/icon-192.png",
   "./assets/icon-512.png"
