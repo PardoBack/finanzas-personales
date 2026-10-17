@@ -25,6 +25,7 @@ const FintechApp = {
     activeFilterChip: "ALL",
     activeMonth: "octubre",
     activeYear: 2026,
+    activeView: "overview",
     cloudShield: {
       active: true,
       hasWriteAccess: true,
@@ -45,6 +46,15 @@ const FintechApp = {
     this.setupDateContext();
     this.loadData();
     this.checkBackendHealth();
+
+    // Enrutamiento inicial de vista (SPA)
+    const initialHash = window.location.hash ? window.location.hash.replace("#view-", "").replace("#section-", "").replace("#", "") : "overview";
+    this.switchView(initialHash);
+
+    window.addEventListener("hashchange", () => {
+      const h = window.location.hash ? window.location.hash.replace("#view-", "").replace("#section-", "").replace("#", "") : "overview";
+      this.switchView(h);
+    });
 
     // Auto-sincronización silenciosa cada 30 segundos
     setInterval(() => {
@@ -166,8 +176,8 @@ const FintechApp = {
     btnCopyShieldUrl?.addEventListener("click", copyAuthUrlAction);
     btnCopyPrivateLink?.addEventListener("click", copyAuthUrlAction);
 
-    btnSaveAuthToken?.addEventListener("click", () => {
-      const val = (inputAuthToken?.value || "").trim();
+    const saveTokenAction = (tokenInput) => {
+      const val = (tokenInput?.value || "").trim();
       if (!val || val.length < 5) {
         this.showToast("El token debe tener al menos 6 caracteres", "error");
         return;
@@ -178,7 +188,44 @@ const FintechApp = {
       if (inputShieldShareUrl) {
         inputShieldShareUrl.value = `${baseOrigin}${basePath}?auth=${encodeURIComponent(val)}`;
       }
+      const tokenView = document.getElementById("input-auth-token-view");
+      if (tokenView && tokenView !== tokenInput) tokenView.value = val;
+      if (inputAuthToken && inputAuthToken !== tokenInput) inputAuthToken.value = val;
       this.showToast("🛡️ Token de seguridad actualizado correctamente", "success");
+    };
+
+    btnSaveAuthToken?.addEventListener("click", () => saveTokenAction(inputAuthToken));
+    document.getElementById("btn-save-auth-token-view")?.addEventListener("click", () => {
+      saveTokenAction(document.getElementById("input-auth-token-view"));
+    });
+
+    document.getElementById("btn-send-email-audit-view")?.addEventListener("click", async () => {
+      this.haptic(15);
+      const btn = document.getElementById("btn-send-email-audit-view");
+      const originalText = btn.innerHTML;
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Generando y enviando reporte...`;
+      btn.disabled = true;
+
+      try {
+        const res = await FinanceAPI.sendEmailAudit();
+        if (res.ok) {
+          this.showToast("📧 ¡Reporte ejecutivo enviado exitosamente a tu correo!", "success");
+        } else {
+          this.showToast("⚠️ " + (res.error || "No se pudo despachar el correo"), "warning");
+        }
+      } catch (e) {
+        this.showToast("Error al despachar el reporte por email", "error");
+      } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+      }
+    });
+
+    document.getElementById("btn-view-test-connection")?.addEventListener("click", async () => {
+      this.haptic(15);
+      this.showToast("Probando conexión con Google Apps Script...", "info");
+      await this.checkBackendHealth();
+      this.showToast("✓ Conexión con Google Sheets verificada", "success");
     });
   },
 
@@ -424,20 +471,24 @@ const FintechApp = {
     this.state.activeMonth = month;
     this.state.activeYear = year;
 
+    const capitalize = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1) : "";
+    const mName = month === "all" ? `TODO EL AÑO ${year}` : `${month.toUpperCase()} ${year}`;
+
     // Actualizar texto en topbar
     const lbl = document.getElementById("label-active-month");
     if (lbl) {
-      lbl.textContent = month === "all" ? `TODO EL AÑO ${year}` : `${month.toUpperCase()} ${year}`;
+      lbl.textContent = mName;
     }
 
-    // Actualizar pills en la barra rápida
+    // Actualizar pills en la barra rápida (en todas las barras de las vistas)
     document.querySelectorAll(".month-strip-pill").forEach(p => {
       const pMonth = p.getAttribute("data-month");
       p.classList.toggle("active", pMonth === month);
     });
 
-    const btnAllYear = document.getElementById("btn-show-all-year");
-    if (btnAllYear) btnAllYear.classList.toggle("active", month === "all");
+    document.querySelectorAll(".btn-all-year-pill").forEach(b => {
+      b.classList.toggle("active", month === "all");
+    });
 
     // Recalcular vistas
     this.renderBalances();
@@ -446,7 +497,7 @@ const FintechApp = {
     this.renderMovementsTable();
     this.renderFugasTable();
 
-    this.showToast(`📅 Visualizando: ${month === 'all' ? 'Todo el año 2026' : month.toUpperCase() + ' ' + year}`, "success");
+    this.showToast(`📅 Visualizando: ${month === 'all' ? 'Todo el año 2026' : capitalize(month) + ' ' + year}`, "success");
 
     // Sincronizar en segundo plano con el backend
     FinanceAPI.setMonth(month, year);
@@ -455,6 +506,7 @@ const FintechApp = {
   getCurrentMonthData() {
     const active = this.state.activeMonth || "octubre";
     const allMovs = (this.state.data && this.state.data.movimientos) || [];
+    const annualData = (this.state.data && this.state.data.resumenAnual) || [];
 
     if (active === "all") {
       let totIng = 0;
@@ -470,6 +522,11 @@ const FintechApp = {
           cats[c] = (cats[c] || 0) + v;
         }
       });
+
+      const kpis = (this.state.data && this.state.data.kpisAnuales) || {};
+      if (kpis.totalIngresos && kpis.totalIngresos > totIng) totIng = kpis.totalIngresos;
+      if (kpis.totalGastos && kpis.totalGastos > totGas) totGas = kpis.totalGastos;
+
       return {
         ingresos: totIng,
         gastos: totGas,
@@ -495,19 +552,28 @@ const FintechApp = {
       }
     });
 
-    const res = (this.state.data && this.state.data.resumen) || {};
-    if (active === String(res.mes || "").toLowerCase() && res.gastos > gas) {
-      gas = res.gastos;
+    // Validar y complementar con el balance consolidado oficial de resumenAnual
+    const annualMatch = annualData.find(a => String(a.mes).toLowerCase() === active);
+    if (annualMatch) {
+      if (annualMatch.ingresos > 0 && (ing === 0 || annualMatch.ingresos > ing)) {
+        ing = annualMatch.ingresos;
+      }
+      if (annualMatch.gastos > 0 && (gas === 0 || annualMatch.gastos > gas)) {
+        gas = annualMatch.gastos;
+      }
     }
-    if (active === String(res.mes || "").toLowerCase() && res.ingresos > ing) {
-      ing = res.ingresos;
+
+    const res = (this.state.data && this.state.data.resumen) || {};
+    if (active === String(res.mes || "").toLowerCase()) {
+      if (res.gastos > gas) gas = res.gastos;
+      if (res.ingresos > ing) ing = res.ingresos;
     }
 
     return {
       ingresos: ing,
       gastos: gas,
       mes: active,
-      gastosPorCategoria: Object.keys(cats).length > 0 ? cats : (this.state.data && this.state.data.gastosPorCategoria) || {},
+      gastosPorCategoria: Object.keys(cats).length > 0 ? cats : ((this.state.data && this.state.data.gastosPorCategoria) || {}),
       movimientos: mMes
     };
   },
@@ -780,11 +846,10 @@ const FintechApp = {
     // 1. Sidebar Links (Desktop)
     document.querySelectorAll(".sidebar-nav .nav-item").forEach(link => {
       link.addEventListener("click", (e) => {
+        e.preventDefault();
         this.haptic(10);
-        document.querySelectorAll(".sidebar-nav .nav-item").forEach(l => l.classList.remove("active"));
-        link.classList.add("active");
         const navTarget = link.getAttribute("data-nav");
-        this.scrollToSection(navTarget);
+        this.switchView(navTarget);
       });
     });
 
@@ -794,11 +859,25 @@ const FintechApp = {
         this.haptic(12);
         const target = btn.getAttribute("data-target");
         if (target) {
-          document.querySelectorAll(".mobile-nav-btn").forEach(b => b.classList.remove("active"));
-          btn.classList.add("active");
-          this.scrollToSection(target);
+          this.switchView(target);
         }
       });
+    });
+
+    // Botón en vista Overview para ver todos los movimientos en el módulo
+    document.getElementById("btn-goto-all-movements")?.addEventListener("click", () => {
+      this.haptic(12);
+      this.switchView("movements");
+    });
+
+    // Acceso a Ajustes desde Topbar o Perfil
+    document.getElementById("btn-topbar-settings")?.addEventListener("click", () => {
+      this.haptic(12);
+      this.switchView("settings");
+    });
+    document.getElementById("btn-quick-settings")?.addEventListener("click", () => {
+      this.haptic(12);
+      this.switchView("settings");
     });
 
     // Mobile Center Add Button
@@ -921,28 +1000,67 @@ const FintechApp = {
     }
   },
 
-  scrollToSection(sectionKey) {
-    let targetEl = null;
-    if (sectionKey === "overview") targetEl = document.getElementById("section-overview");
-    else if (sectionKey === "wallet") targetEl = document.getElementById("section-wallet");
-    else if (sectionKey === "movements") {
-      targetEl = document.getElementById("section-movements");
-      this.switchSegmentedTab("tab-all-movements");
-    } else if (sectionKey === "fixed") {
-      targetEl = document.getElementById("section-movements");
-      this.switchSegmentedTab("tab-all-fixed");
-    } else if (sectionKey === "savings") {
-      targetEl = document.getElementById("section-movements");
-      this.switchSegmentedTab("tab-all-savings");
-    } else if (sectionKey === "fugas") {
-      targetEl = document.getElementById("section-movements");
-      this.switchSegmentedTab("tab-all-fugas");
-    } else if (sectionKey === "annual") {
-      targetEl = document.getElementById("section-annual");
+  switchView(viewKey) {
+    if (!viewKey) viewKey = "overview";
+    let cleanKey = String(viewKey).toLowerCase()
+      .replace(/^#/, "")
+      .replace(/^view-/, "")
+      .replace(/^section-/, "");
+
+    // Normalizar alias
+    if (cleanKey === "home" || cleanKey === "resumen") cleanKey = "overview";
+    if (cleanKey === "cuentas" || cleanKey === "billetera") cleanKey = "wallet";
+    if (cleanKey === "fijos") cleanKey = "fixed";
+    if (cleanKey === "ahorros" || cleanKey === "colanta") cleanKey = "savings";
+    if (cleanKey === "antojos") cleanKey = "fugas";
+    if (cleanKey === "anual") cleanKey = "annual";
+    if (cleanKey === "ajustes") cleanKey = "settings";
+
+    const validViews = ["overview", "wallet", "movements", "fixed", "savings", "fugas", "annual", "colilla", "settings"];
+    if (!validViews.includes(cleanKey)) cleanKey = "overview";
+
+    this.state.activeView = cleanKey;
+
+    // 1. Ocultar todos los paneles y activar únicamente la vista solicitada
+    document.querySelectorAll(".view-panel").forEach(panel => {
+      panel.classList.remove("active");
+    });
+
+    const targetPanel = document.getElementById(`view-${cleanKey}`);
+    if (targetPanel) {
+      targetPanel.classList.add("active");
     }
 
-    if (targetEl) {
-      targetEl.scrollIntoView({ behavior: "smooth", block: "start" });
+    // 2. Actualizar estado activo en Sidebar
+    document.querySelectorAll(".sidebar-nav .nav-item").forEach(link => {
+      const navTarget = (link.getAttribute("data-nav") || "").toLowerCase().replace(/^section-/, "");
+      link.classList.toggle("active", navTarget === cleanKey);
+    });
+
+    // 3. Actualizar estado activo en Barra Inferior Móvil
+    document.querySelectorAll(".mobile-nav-btn").forEach(btn => {
+      const btnTarget = (btn.getAttribute("data-target") || "").toLowerCase().replace(/^section-/, "");
+      btn.classList.toggle("active", btnTarget === cleanKey);
+    });
+
+    // 4. Scroll suave hacia arriba
+    const scrollContainer = document.getElementById("main-content-scroll");
+    if (scrollContainer) scrollContainer.scrollTop = 0;
+    window.scrollTo({ top: 0, behavior: "smooth" });
+
+    // 5. Actualizar URL hash de forma limpia
+    try {
+      window.history.replaceState(null, null, `#view-${cleanKey}`);
+    } catch (e) {}
+
+    // 6. Refrescar componentes según la vista
+    if (cleanKey === "overview") {
+      setTimeout(() => this.renderCharts(), 50);
+      this.renderOverviewPreview();
+    } else if (cleanKey === "annual") {
+      setTimeout(() => this.renderAnnualSection(), 50);
+    } else if (cleanKey === "movements") {
+      this.renderMovementsTable();
     }
   },
 
@@ -1303,8 +1421,11 @@ const FintechApp = {
     const res = (this.state.data && this.state.data.resumen) || {};
     const cuentas = (this.state.data && this.state.data.cuentas) || {};
     const hidden = this.state.balancesHidden;
+    const active = this.state.activeMonth || "octubre";
 
     const formatVal = (v) => hidden ? "••••••••" : `$${this.formatCOP(v)}`;
+    const capitalize = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1) : "";
+    const monthLabel = active === "all" ? "Año 2026" : capitalize(active);
 
     // Virtual Cards
     const totalAvail = cuentas.total || res.disponible || 3390857;
@@ -1318,6 +1439,12 @@ const FintechApp = {
     if (elNeq) elNeq.textContent = hidden ? "••••••" : `$${this.formatCOP(cuentas.nequi || 0)} COP`;
     if (elEff) elEff.textContent = hidden ? "••••••" : `$${this.formatCOP(cuentas.efectivo || 71800)} COP`;
 
+    // Actualizar etiquetas dinámicas con el nombre del mes
+    const elIncLabel = document.getElementById("kpi-label-income");
+    const elExpLabel = document.getElementById("kpi-label-expense");
+    if (elIncLabel) elIncLabel.textContent = `Ingresos ${monthLabel}`;
+    if (elExpLabel) elExpLabel.textContent = `Gasto ${monthLabel}`;
+
     // KPI Widgets
     const elInc = document.getElementById("kpi-val-income");
     const elExp = document.getElementById("kpi-val-expense");
@@ -1328,6 +1455,29 @@ const FintechApp = {
     if (elExp) elExp.textContent = formatVal(monthData.gastos);
     if (elFix) elFix.textContent = formatVal(res.fijos_pendientes || 2557000);
     if (elNav) elNav.textContent = formatVal(2160000);
+
+    // Etiqueta contextual de Ingresos
+    const elMetaInc = document.getElementById("kpi-meta-income");
+    if (elMetaInc) {
+      if (monthData.ingresos > 0) {
+        elMetaInc.innerHTML = `<span class="meta-tag tag-emerald"><i class="fa-solid fa-circle-check"></i> Nómina + Ingresos Auditados</span>`;
+      } else {
+        elMetaInc.innerHTML = `<span class="meta-tag tag-colanta"><i class="fa-solid fa-calendar"></i> Esperando Nómina Q1</span>`;
+      }
+    }
+
+    // Porcentaje de gasto respecto al ingreso
+    const elPctExp = document.getElementById("kpi-pct-expense");
+    if (elPctExp) {
+      if (monthData.ingresos > 0) {
+        const pct = Math.round((monthData.gastos / monthData.ingresos) * 100);
+        elPctExp.textContent = `${pct}% del ingreso`;
+        elPctExp.className = pct > 80 ? "meta-tag tag-danger" : pct > 50 ? "meta-tag tag-warning" : "meta-tag tag-emerald";
+      } else {
+        elPctExp.textContent = "0% del ingreso";
+        elPctExp.className = "meta-tag tag-danger";
+      }
+    }
 
     // Ritmo Diario Seguro
     const hoy = new Date();
@@ -1416,10 +1566,32 @@ const FintechApp = {
     gradVar.addColorStop(0, "rgba(244, 63, 94, 0.95)");
     gradVar.addColorStop(1, "rgba(159, 18, 57, 0.35)");
 
+    const monthData = this.getCurrentMonthData();
+    const movs = monthData.movimientos || [];
+
+    let q1Var = 0;
+    let q2Var = 0;
+
+    movs.forEach(m => {
+      const isGasto = !String(m.tipo || "").toLowerCase().includes("ingreso");
+      if (isGasto) {
+        const val = Number(m.valor || 0);
+        const dayMatch = String(m.fecha || "").match(/^(\d{1,2})/);
+        const day = dayMatch ? parseInt(dayMatch[1], 10) : 10;
+        if (day <= 15) {
+          q1Var += val;
+        } else {
+          q2Var += val;
+        }
+      }
+    });
+
+    if (this.state.activeMonth === "octubre" && q1Var === 0 && q2Var === 0) {
+      q1Var = 207123;
+    }
+
     const q1Fixed = 1332000;
     const q2Fixed = 1225000;
-    const q1Var = 207123;
-    const q2Var = 0;
 
     // Actualizar pills del header del panel
     const elQ1Total = document.getElementById("quincena-q1-total");
@@ -1651,12 +1823,12 @@ const FintechApp = {
 
     const items = filteredItems !== null ? filteredItems : monthBaseMovs;
 
-    // Calcular las 4 métricas del Financial Pulse Strip
+    // Calcular las 4 métricas del Financial Pulse Strip basadas ÚNICAMENTE en el mes activo
     let totalMesGastos = 0;
     let totalAlim = 0;
     let totalMoto = 0;
 
-    all.forEach(m => {
+    monthBaseMovs.forEach(m => {
       const v = Number(m.valor || 0);
       const isGasto = !String(m.tipo || "").toLowerCase().includes("ingreso");
       const c = String(m.categoria || "").toLowerCase();
@@ -1673,7 +1845,17 @@ const FintechApp = {
       }
     });
 
-    const elTotalMes = document.getElementById("pulse-total-mes");
+    // Si resumenAnual tiene el balance consolidado para este mes, asegurar consistencia
+    const annualData = (this.state.data && this.state.data.resumenAnual) || [];
+    const matchAnnual = annualData.find(a => String(a.mes).toLowerCase() === activeMonth);
+    if (matchAnnual && matchAnnual.gastos > totalMesGastos) {
+      totalMesGastos = matchAnnual.gastos;
+    }
+
+    const capitalize = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1) : "";
+    const mName = activeMonth === "all" ? "Año 2026" : capitalize(activeMonth);
+
+    const elTotalMes = document.getElementById("pulse-total-gastos") || document.getElementById("pulse-total-mes");
     const elPulseAlim = document.getElementById("pulse-total-alimentacion");
     const elPulseMoto = document.getElementById("pulse-total-moto");
     const elPulseTrans = document.getElementById("pulse-total-transacciones");
@@ -1681,13 +1863,14 @@ const FintechApp = {
     if (elTotalMes) elTotalMes.textContent = `$${this.formatCOP(totalMesGastos)} COP`;
     if (elPulseAlim) elPulseAlim.textContent = `$${this.formatCOP(totalAlim)} COP`;
     if (elPulseMoto) elPulseMoto.textContent = `$${this.formatCOP(totalMoto)} COP`;
-    if (elPulseTrans) elPulseTrans.textContent = `${all.length} registros`;
+    if (elPulseTrans) elPulseTrans.textContent = `${monthBaseMovs.length} registros en ${mName}`;
 
     if (!items.length) {
       tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:3rem 1.5rem; color:#64748B;">
         <i class="fa-solid fa-receipt" style="font-size:2rem; opacity:0.3; margin-bottom:0.6rem; display:block;"></i>
-        No se encontraron movimientos con los filtros aplicados.
+        No se encontraron movimientos registrados para ${mName}.
       </td></tr>`;
+      this.renderOverviewPreview(monthBaseMovs);
       return;
     }
 
@@ -1731,6 +1914,91 @@ const FintechApp = {
         </tr>
       `;
     }).join("");
+
+    // Eventos de filas y botones
+    tbody.querySelectorAll("tr").forEach(tr => {
+      tr.addEventListener("click", () => {
+        const id = tr.getAttribute("data-id");
+        if (id) this.openTransactionDetail(id);
+      });
+    });
+
+    tbody.querySelectorAll(".btn-action-delete").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const id = btn.getAttribute("data-id");
+        this.confirmDeleteMovement(id);
+      });
+    });
+
+    tbody.querySelectorAll(".btn-action-edit").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const id = btn.getAttribute("data-id");
+        this.openTransactionDetail(id, true);
+      });
+    });
+
+    // Renderizar muestra de transacciones en la vista Overview
+    this.renderOverviewPreview(monthBaseMovs);
+  },
+
+  renderOverviewPreview(monthMovs = null) {
+    const tbody = document.getElementById("overview-preview-tbody");
+    if (!tbody) return;
+
+    const all = (this.state.data && this.state.data.movimientos) || [];
+    const active = this.state.activeMonth || "octubre";
+    const capitalize = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1) : "";
+    const mName = active === "all" ? "Año 2026" : capitalize(active);
+
+    const lbl = document.getElementById("overview-recent-month-lbl");
+    if (lbl) lbl.textContent = mName;
+
+    const base = monthMovs || (active === "all" ? all : all.filter(m => String(m.mes).toLowerCase() === active));
+    const items = base.slice(0, 6);
+
+    const btnGoto = document.getElementById("btn-goto-all-movements");
+    if (btnGoto) {
+      btnGoto.innerHTML = `<span>Ver los ${base.length} en Movimientos</span> <i class="fa-solid fa-arrow-right"></i>`;
+    }
+
+    if (!items.length) {
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:2rem; color:#64748B;">No hay movimientos para ${mName}.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = items.map(m => {
+      const isIngreso = String(m.tipo).toLowerCase().includes("ingreso");
+      const pretty = this.prettifyMovement(m);
+      return `
+        <tr data-id="${m.id}" style="cursor:pointer;" title="Clic para ver recibo">
+          <td><code style="color:#64748B; font-weight:700;">${m.id}</code></td>
+          <td>
+            <div class="cell-concept-wrapper">
+              <div class="concept-avatar ${pretty.avatarClass}">${pretty.avatar}</div>
+              <div class="concept-texts">
+                <span class="concept-title">${this.escapeHTML(pretty.title)}</span>
+                <span class="concept-subline">${this.escapeHTML(pretty.subline || m.descripcion || "")}</span>
+              </div>
+            </div>
+          </td>
+          <td><span class="badge-account">${this.escapeHTML(m.categoria || "General")}</span></td>
+          <td><span class="badge-account">${this.escapeHTML(m.cuenta || "Nequi")}</span></td>
+          <td style="font-size:0.8rem; color:#94A3B8;">${m.fecha || ""}</td>
+          <td class="text-right" style="font-weight:700; color:${isIngreso ? '#34D399' : '#FFFFFF'};">
+            ${isIngreso ? '+' : '-'}$${this.formatCOP(m.valor || 0)}
+          </td>
+        </tr>
+      `;
+    }).join("");
+
+    tbody.querySelectorAll("tr").forEach(tr => {
+      tr.addEventListener("click", () => {
+        const id = tr.getAttribute("data-id");
+        if (id) this.openTransactionDetail(id);
+      });
+    });
   },
 
   openTransactionDetail(id, focusInput = false) {

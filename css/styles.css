@@ -4429,6 +4429,78 @@ html, body {
   }
 }
 
+/* =========================================================
+   SISTEMA DE VISTAS MODULARES (SPA VIEW ARCHITECTURE)
+   ========================================================= */
+.view-panel {
+  display: none;
+}
 
+.view-panel.active {
+  display: block;
+  animation: fadeInView 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
 
+@keyframes fadeInView {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 
+.view-header-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.view-title {
+  font-family: var(--font-heading);
+  font-size: 1.65rem;
+  font-weight: 800;
+  color: #FFFFFF;
+  margin: 0.25rem 0 0.2rem 0;
+  letter-spacing: -0.5px;
+}
+
+.view-subtitle {
+  font-size: 0.85rem;
+  color: #94A3B8;
+  margin: 0;
+}
+
+.overview-recent-panel {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-glass);
+  border-radius: 20px;
+  padding: 1.5rem;
+  margin-top: 1.75rem;
+}
+
+.btn-all-movs-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  color: #38BDF8;
+  padding: 0.45rem 0.9rem;
+  border-radius: 10px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-all-movs-link:hover {
+  background: rgba(56, 189, 248, 0.2);
+  transform: translateX(3px);
+  color: #FFFFFF;
+}

@@ -197,11 +197,40 @@
       </header>
 
       <!-- CONTENEDOR DE VISTAS (Scrollable) -->
+      
       <main class="app-content-area" id="main-content-scroll">
         
-        <!-- HERO WALLET: TARJETAS VIRTUALES DE CUENTAS (Deslizable en Celular) -->
-        <!-- HERO COCKPIT: PATRIMONIO LÍQUIDO Y CUENTAS AUDITADAS (DISEÑO FINTECH EJECUTIVO) -->
-        <section class="wallet-cockpit-section" id="section-wallet">
+        <!-- =========================================================
+             VISTA 1: RESUMEN GENERAL (OVERVIEW DASHBOARD)
+             ========================================================= -->
+        <div class="view-panel active" id="view-overview">
+          <!-- Selector Rápido de Meses -->
+          <!-- BARRA DE SELECCIÓN RÁPIDA DE MESES (ENERO A DICIEMBRE 2026) -->
+        <div class="months-quick-strip" id="months-quick-strip">
+          <div class="months-strip-header">
+            <span class="strip-title"><i class="fa-solid fa-calendar-week" style="color:#60A5FA;"></i> Periodo Activo:</span>
+            <button class="btn-all-year-pill" id="btn-show-all-year" title="Ver consolidado de todo el año 2026">
+              <i class="fa-solid fa-layer-group"></i> Ver Todo 2026
+            </button>
+          </div>
+          <div class="months-strip-wrapper">
+            <button class="month-strip-pill" data-month="enero">Ene</button>
+            <button class="month-strip-pill" data-month="febrero">Feb</button>
+            <button class="month-strip-pill" data-month="marzo">Mar</button>
+            <button class="month-strip-pill" data-month="abril">Abr</button>
+            <button class="month-strip-pill" data-month="mayo">May</button>
+            <button class="month-strip-pill" data-month="junio">Jun</button>
+            <button class="month-strip-pill" data-month="julio">Jul</button>
+            <button class="month-strip-pill" data-month="agosto">Ago</button>
+            <button class="month-strip-pill" data-month="septiembre">Sep</button>
+            <button class="month-strip-pill active" data-month="octubre">Oct</button>
+            <button class="month-strip-pill" data-month="noviembre">Nov</button>
+            <button class="month-strip-pill" data-month="diciembre">Dic</button>
+          </div>
+        </div>
+
+          <!-- Tarjeta de Patrimonio Líquido Maestro -->
+          <section class="wallet-cockpit-section" id="section-wallet">
           <div class="cockpit-grid">
             
             <!-- Panel Principal: Patrimonio Líquido Consolidado -->
@@ -348,40 +377,17 @@
           </div>
         </section>
 
-        <!-- BARRA DE SELECCIÓN RÁPIDA DE MESES (ENERO A DICIEMBRE 2026) -->
-        <div class="months-quick-strip" id="months-quick-strip">
-          <div class="months-strip-header">
-            <span class="strip-title"><i class="fa-solid fa-calendar-week" style="color:#60A5FA;"></i> Periodo Activo:</span>
-            <button class="btn-all-year-pill" id="btn-show-all-year" title="Ver consolidado de todo el año 2026">
-              <i class="fa-solid fa-layer-group"></i> Ver Todo 2026
-            </button>
-          </div>
-          <div class="months-strip-wrapper">
-            <button class="month-strip-pill" data-month="enero">Ene</button>
-            <button class="month-strip-pill" data-month="febrero">Feb</button>
-            <button class="month-strip-pill" data-month="marzo">Mar</button>
-            <button class="month-strip-pill" data-month="abril">Abr</button>
-            <button class="month-strip-pill" data-month="mayo">May</button>
-            <button class="month-strip-pill" data-month="junio">Jun</button>
-            <button class="month-strip-pill" data-month="julio">Jul</button>
-            <button class="month-strip-pill" data-month="agosto">Ago</button>
-            <button class="month-strip-pill" data-month="septiembre">Sep</button>
-            <button class="month-strip-pill active" data-month="octubre">Oct</button>
-            <button class="month-strip-pill" data-month="noviembre">Nov</button>
-            <button class="month-strip-pill" data-month="diciembre">Dic</button>
-          </div>
-        </div>
-
-        <!-- KPI SUMMARY GRID (Cifras del Mes Activo) -->
+          <!-- KPI Summary Grid con IDs dinámicos de mes -->
+          <!-- KPI SUMMARY GRID (Cifras del Mes Activo) -->
         <section class="kpi-banner-grid" id="section-overview">
           
           <!-- KPI 1: Ingreso -->
           <div class="kpi-widget widget-income">
             <div class="widget-icon-box"><i class="fa-solid fa-arrow-up-right-dots"></i></div>
             <div class="widget-content">
-              <span class="widget-label">Ingresos Octubre</span>
+              <span class="widget-label" id="kpi-label-income">Ingresos Octubre</span>
               <h3 class="widget-val" id="kpi-val-income">$0</h3>
-              <div class="widget-meta">
+              <div class="widget-meta" id="kpi-meta-income">
                 <span class="meta-tag tag-colanta"><i class="fa-solid fa-calendar"></i> Esperando Nómina Q1</span>
               </div>
             </div>
@@ -391,7 +397,7 @@
           <div class="kpi-widget widget-expense">
             <div class="widget-icon-box"><i class="fa-solid fa-arrow-down-left-dots"></i></div>
             <div class="widget-content">
-              <span class="widget-label">Gasto Ejecutado</span>
+              <span class="widget-label" id="kpi-label-expense">Gasto Octubre</span>
               <h3 class="widget-val" id="kpi-val-expense">$207.123</h3>
               <div class="widget-meta">
                 <span class="meta-tag tag-danger" id="kpi-pct-expense">0% del ingreso</span>
@@ -440,7 +446,8 @@
           </div>
         </section>
 
-        <!-- SECCIÓN DE GRÁFICOS INTERACTIVOS (Desktop 2 cols / Móvil 1 col) -->
+          <!-- Gráficos Interactivos: Categorías + Balanza Quincenal -->
+          <!-- SECCIÓN DE GRÁFICOS INTERACTIVOS (Desktop 2 cols / Móvil 1 col) -->
         <section class="analytics-charts-grid">
           <!-- Gráfico 1: Categorías de Gasto -->
           <div class="chart-box-panel">
@@ -480,7 +487,495 @@
           </div>
         </section>
 
+          <!-- Muestra de Últimos Movimientos con acceso al módulo -->
+          <div class="overview-recent-panel">
+            <div class="panel-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem;">
+              <div class="panel-header-title">
+                <i class="fa-solid fa-clock-rotate-left header-icon icon-cyan"></i>
+                <div>
+                  <h3>Últimos Movimientos — <span id="overview-recent-month-lbl">Octubre</span></h3>
+                  <span class="panel-subtitle">Auditoría rápida del periodo activo</span>
+                </div>
+              </div>
+              <button type="button" class="btn-all-movs-link" id="btn-goto-all-movements">
+                <span>Ver todos en Movimientos</span>
+                <i class="fa-solid fa-arrow-right"></i>
+              </button>
+            </div>
+            <div class="table-card-wrapper">
+              <table class="fintech-table" id="table-overview-preview">
+                <thead>
+                  <tr>
+                    <th style="width: 80px;">ID</th>
+                    <th>Concepto & Comercio</th>
+                    <th>Categoría</th>
+                    <th>Cuenta</th>
+                    <th>Fecha & Hora</th>
+                    <th class="text-right">Monto</th>
+                  </tr>
+                </thead>
+                <tbody id="overview-preview-tbody">
+                  <!-- Render dinámico de las 6 transacciones más recientes -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
         <!-- =========================================================
+             VISTA 2: BILLETERA & CUENTAS (WALLET & ACCOUNTS)
+             ========================================================= -->
+        <div class="view-panel" id="view-wallet">
+          <div class="view-header-title-row">
+            <div>
+              <span class="section-badge-tiny"><i class="fa-solid fa-wallet"></i> BILLETERA & CUENTAS</span>
+              <h2 class="view-title">Centro de Cuentas y Liquidez Auditada</h2>
+              <p class="view-subtitle">Supervisión en tiempo real de saldos disponibles, nómina Colanta, fondos y efectivo</p>
+            </div>
+          </div>
+
+          <section class="wallet-cockpit-section" id="section-wallet-dedicated">
+          <div class="cockpit-grid">
+            
+            <!-- Panel Principal: Patrimonio Líquido Consolidado -->
+            <div class="wealth-master-card">
+              <div class="master-card-glow"></div>
+              
+              <div class="master-card-header">
+                <div class="master-tag-group">
+                  <span class="status-live-dot"></span>
+                  <span class="master-tag">LIQUIDEZ EN TIEMPO REAL</span>
+                  <span class="verified-pill"><i class="fa-solid fa-circle-check"></i> Google Sheets Conectado</span>
+                </div>
+                <div class="balance-visibility-toggle" id="btn-toggle-balance-visibility" title="Ocultar/Mostrar saldo">
+                  <i class="fa-solid fa-eye" id="icon-eye-balance"></i>
+                  <span class="hide-text">Privacidad</span>
+                </div>
+              </div>
+
+              <div class="master-card-body">
+                <span class="master-label">TOTAL DISPONIBLE LIBRE</span>
+                <div class="master-amount-row">
+                  <h1 class="master-amount" id="card-total-available">$3.390.857</h1>
+                  <span class="master-currency">COP</span>
+                </div>
+                
+                <div class="master-stats-strip">
+                  <div class="mstat-item">
+                    <span class="mstat-label">Titular</span>
+                    <strong class="mstat-val">Marlon Muñoz</strong>
+                  </div>
+                  <div class="mstat-sep"></div>
+                  <div class="mstat-item">
+                    <span class="mstat-label">Ahorro 2026</span>
+                    <strong class="mstat-val text-emerald">+62.7%</strong>
+                  </div>
+                  <div class="mstat-sep"></div>
+                  <div class="mstat-item">
+                    <span class="mstat-label">Superávit Acumulado</span>
+                    <strong class="mstat-val text-cyan">$38.6M</strong>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Fila Integrada de Acciones Rápidas -->
+              <div class="master-actions-bar">
+                <button type="button" class="btn-cockpit-action btn-act-expense" id="btn-qa-gasto" title="Registrar Gasto Rápido">
+                  <i class="fa-solid fa-minus"></i>
+                  <span>Gasto</span>
+                </button>
+                <button type="button" class="btn-cockpit-action btn-act-income" id="btn-qa-ingreso" title="Registrar Ingreso">
+                  <i class="fa-solid fa-plus"></i>
+                  <span>Ingreso</span>
+                </button>
+                <button type="button" class="btn-cockpit-action btn-act-colilla" id="btn-qa-colilla" title="Subir Colilla de Pago (Gemini AI)">
+                  <i class="fa-solid fa-file-invoice-dollar"></i>
+                  <span>Colilla</span>
+                </button>
+                <button type="button" class="btn-cockpit-action btn-act-cfo" id="btn-qa-cfo" title="Asistente CFO AI por Voz">
+                  <i class="fa-solid fa-microphone-lines"></i>
+                  <span>CFO Voz</span>
+                </button>
+                <a href="https://docs.google.com/spreadsheets/d/1C9ifm7U8IYGOdY4IwAji9Z3McSlNy3B-e_2Jo-zvBFk/edit" target="_blank" rel="noopener noreferrer" class="btn-cockpit-action btn-act-sheets" id="btn-qa-sheets" title="Abrir Google Sheets en Drive">
+                  <i class="fa-solid fa-table"></i>
+                  <span>Sheets</span>
+                </a>
+              </div>
+            </div>
+
+            <!-- Columna Derecha: 3 Cuentas & Fondos (Elegantes Tarjetas Obsidian Glass) -->
+            <div class="accounts-vertical-grid">
+              
+              <!-- Cuenta 1: AyC Colanta (Nómina) -->
+              <div class="account-compact-card card-aura-colanta">
+                <div class="acc-card-left">
+                  <div class="acc-brand-badge brand-colanta">
+                    <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <circle cx="16" cy="16" r="14" fill="#E11D48"/>
+                      <path d="M16 13C14 10.5 11.5 10.5 11.5 13C11.5 15.5 14.5 16 16 16C17.5 16 20.5 15.5 20.5 13C20.5 10.5 18 10.5 16 13Z" fill="#FFFFFF"/>
+                      <path d="M13 16C10.5 14 10.5 11.5 13 11.5C15.5 11.5 16 14.5 16 16C16 17.5 15.5 20.5 13 20.5C10.5 20.5 10.5 18 13 16Z" fill="#FFFFFF"/>
+                      <path d="M19 16C21.5 14 21.5 11.5 19 11.5C16.5 11.5 16 14.5 16 16C16 17.5 16.5 20.5 19 20.5C21.5 20.5 21.5 18 19 16Z" fill="#FFFFFF"/>
+                      <path d="M16 16C16 19 14.5 21.5 12.5 22.5" stroke="#FFFFFF" stroke-width="1.8" stroke-linecap="round"/>
+                    </svg>
+                  </div>
+                  <div class="acc-info">
+                    <span class="acc-type-pill">Nómina Principal • San Germán</span>
+                    <h4 class="acc-name">AyC Colanta</h4>
+                    <span class="acc-sub">Cuenta de Ahorros y Crédito</span>
+                  </div>
+                </div>
+                <div class="acc-card-right">
+                  <strong class="acc-amount" id="card-acc-colanta">$3.319.057</strong>
+                  <span class="acc-badge-pct">97.8% Liquidez</span>
+                </div>
+              </div>
+
+              <!-- Cuenta 2: Fondos Colanta (Ahorros Acumulados) -->
+              <div class="account-compact-card card-aura-gold">
+                <div class="acc-card-left">
+                  <div class="acc-brand-badge brand-savings" style="background: rgba(245, 158, 11, 0.15); border-radius: 12px; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(245, 158, 11, 0.3);">
+                    <i class="fa-solid fa-piggy-bank" style="color:#FBBF24; font-size:1.2rem;"></i>
+                  </div>
+                  <div class="acc-info">
+                    <span class="acc-type-pill pill-gold">Patrimonio Reservado</span>
+                    <h4 class="acc-name">Fondos Colanta</h4>
+                    <span class="acc-sub">Navideño ($2.16M) • Ordinario • Aportes</span>
+                  </div>
+                </div>
+                <div class="acc-card-right">
+                  <strong class="acc-amount text-amber" id="card-acc-savings">$3.931.299</strong>
+                  <span class="acc-badge-pct badge-gold">Entrega 1 Dic</span>
+                </div>
+              </div>
+
+              <!-- Cuenta 3: Nequi & Efectivo en Mano -->
+              <div class="account-compact-card card-aura-nequi">
+                <div class="acc-card-left">
+                  <div class="acc-brand-badge brand-nequi">
+                    <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <rect width="32" height="32" rx="8" fill="#1F0036"/>
+                      <path d="M10 22V10L22 22V10" stroke="#E11D74" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+                      <path d="M10 22V10L22 22V10" stroke="#FFFFFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </div>
+                  <div class="acc-info">
+                    <span class="acc-type-pill pill-purple">Bolsillo Cotidiano</span>
+                    <h4 class="acc-name">Nequi & Efectivo</h4>
+                    <span class="acc-sub">Compras Diarias y Traslados</span>
+                  </div>
+                </div>
+                <div class="acc-card-right split-right">
+                  <div class="split-sub-item">
+                    <span class="split-lbl">Nequi:</span>
+                    <strong class="split-val" id="card-acc-nequi">$0 COP</strong>
+                  </div>
+                  <div class="split-sub-item">
+                    <span class="split-lbl">Efectivo:</span>
+                    <strong class="split-val" id="card-acc-efectivo">$71.800 COP</strong>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+        </section>
+
+          <div class="table-card-wrapper" style="margin-top:1.5rem; padding:1.5rem; background:rgba(18,25,43,0.7); border:1px solid rgba(255,255,255,0.07); border-radius:18px;">
+            <h4 style="font-size:1.05rem; font-weight:700; color:#fff; margin-bottom:0.5rem;"><i class="fa-solid fa-shield-halved text-emerald"></i> Conciliación Bancaria y Liquidez</h4>
+            <p style="font-size:0.82rem; color:#94A3B8; margin-bottom:1.25rem;">Tus saldos se recalculan automáticamente con cada colilla de pago de Colanta San Germán y cada gasto registrado.</p>
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:1rem;">
+              <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); padding:1rem; border-radius:12px;">
+                <span style="font-size:0.7rem; color:#94A3B8; text-transform:uppercase; font-weight:700;">Nómina Colanta AyC</span>
+                <h3 style="font-size:1.35rem; color:#38BDF8; font-weight:800; margin:0.25rem 0;">$3.319.057</h3>
+                <span style="font-size:0.72rem; color:#10B981;">✓ 97.8% de tu liquidez libre</span>
+              </div>
+              <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); padding:1rem; border-radius:12px;">
+                <span style="font-size:0.7rem; color:#94A3B8; text-transform:uppercase; font-weight:700;">Fondos Ahorro Colanta</span>
+                <h3 style="font-size:1.35rem; color:#FBBF24; font-weight:800; margin:0.25rem 0;">$3.931.299</h3>
+                <span style="font-size:0.72rem; color:#FBBF24;">✓ Entrega 1 Dic ($2.16M Navideño)</span>
+              </div>
+              <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); padding:1rem; border-radius:12px;">
+                <span style="font-size:0.7rem; color:#94A3B8; text-transform:uppercase; font-weight:700;">Nequi + Efectivo</span>
+                <h3 style="font-size:1.35rem; color:#C084FC; font-weight:800; margin:0.25rem 0;">$71.800</h3>
+                <span style="font-size:0.72rem; color:#94A3B8;">✓ Bolsillo de gastos cotidianos</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- =========================================================
+             VISTA 3: MOVIMIENTOS (MOVEMENTS AUDIT)
+             ========================================================= -->
+        <div class="view-panel" id="view-movements">
+          <div class="view-header-title-row">
+            <div>
+              <span class="section-badge-tiny"><i class="fa-solid fa-receipt"></i> AUDITORÍA DE MOVIMIENTOS</span>
+              <h2 class="view-title">Registro y Control de Movimientos</h2>
+              <p class="view-subtitle">Transacciones filtradas por periodo con desglose de factura DIAN, comercio y recibo digital</p>
+            </div>
+          </div>
+
+          <!-- Selector de Meses dentro del Módulo de Movimientos -->
+          <!-- BARRA DE SELECCIÓN RÁPIDA DE MESES (ENERO A DICIEMBRE 2026) -->
+        <div class="months-quick-strip" id="months-quick-strip-movs">
+          <div class="months-strip-header">
+            <span class="strip-title"><i class="fa-solid fa-calendar-week" style="color:#60A5FA;"></i> Periodo Activo:</span>
+            <button class="btn-all-year-pill" id="btn-show-all-year" title="Ver consolidado de todo el año 2026">
+              <i class="fa-solid fa-layer-group"></i> Ver Todo 2026
+            </button>
+          </div>
+          <div class="months-strip-wrapper">
+            <button class="month-strip-pill" data-month="enero">Ene</button>
+            <button class="month-strip-pill" data-month="febrero">Feb</button>
+            <button class="month-strip-pill" data-month="marzo">Mar</button>
+            <button class="month-strip-pill" data-month="abril">Abr</button>
+            <button class="month-strip-pill" data-month="mayo">May</button>
+            <button class="month-strip-pill" data-month="junio">Jun</button>
+            <button class="month-strip-pill" data-month="julio">Jul</button>
+            <button class="month-strip-pill" data-month="agosto">Ago</button>
+            <button class="month-strip-pill" data-month="septiembre">Sep</button>
+            <button class="month-strip-pill active" data-month="octubre">Oct</button>
+            <button class="month-strip-pill" data-month="noviembre">Nov</button>
+            <button class="month-strip-pill" data-month="diciembre">Dic</button>
+          </div>
+        </div>
+
+          <div class="interactive-tables-container" style="margin-top:1.25rem;">
+            <!-- Strip de Métricas Rápidas / Financial Pulse -->
+            <div class="movements-pulse-strip" id="movements-pulse-strip">
+              <div class="pulse-card">
+                <div class="pulse-icon pulse-icon-red"><i class="fa-solid fa-arrow-trend-down"></i></div>
+                <div class="pulse-info">
+                  <span class="pulse-label">Gastos del Mes</span>
+                  <strong class="pulse-val" id="pulse-total-gastos">$0 COP</strong>
+                </div>
+              </div>
+              <div class="pulse-card">
+                <div class="pulse-icon pulse-icon-amber"><i class="fa-solid fa-utensils"></i></div>
+                <div class="pulse-info">
+                  <span class="pulse-label">Alimentación & Colanta</span>
+                  <strong class="pulse-val" id="pulse-total-alimentacion">$0 COP</strong>
+                </div>
+              </div>
+              <div class="pulse-card">
+                <div class="pulse-icon pulse-icon-blue"><i class="fa-solid fa-motorcycle"></i></div>
+                <div class="pulse-info">
+                  <span class="pulse-label">Moto & Transporte</span>
+                  <strong class="pulse-val" id="pulse-total-moto">$0 COP</strong>
+                </div>
+              </div>
+              <div class="pulse-card">
+                <div class="pulse-icon pulse-icon-emerald"><i class="fa-solid fa-receipt"></i></div>
+                <div class="pulse-info">
+                  <span class="pulse-label">Total Transacciones</span>
+                  <strong class="pulse-val" id="pulse-total-transacciones">256 registros</strong>
+                </div>
+              </div>
+            </div>
+
+            <!-- Chips de Filtrado Rápido estilo Nubank / Revolut -->
+            <div class="quick-filter-chips-bar" id="quick-filter-chips">
+              <button class="filter-chip active" data-filter="ALL">Todos</button>
+              <button class="filter-chip" data-filter="GASTO"><i class="fa-solid fa-arrow-down" style="color:#FB7185;"></i> Gastos</button>
+              <button class="filter-chip" data-filter="INGRESO"><i class="fa-solid fa-arrow-up" style="color:#34D399;"></i> Ingresos</button>
+              <button class="filter-chip" data-filter="ALIMENTACION"><i class="fa-solid fa-utensils" style="color:#FBBF24;"></i> Alimentación</button>
+              <button class="filter-chip" data-filter="MOTO"><i class="fa-solid fa-motorcycle" style="color:#60A5FA;"></i> Moto</button>
+              <button class="filter-chip" data-filter="COLANTA"><i class="fa-solid fa-building-wheat" style="color:#38BDF8;"></i> Colanta / AyC</button>
+              <button class="filter-chip" data-filter="NEQUI"><i class="fa-solid fa-mobile-screen" style="color:#C084FC;"></i> Nequi</button>
+            </div>
+
+            <!-- Barra de Búsqueda y Filtros -->
+            <div class="filter-actions-bar">
+              <div class="search-input-pill">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="search-movements-input" placeholder="Buscar por comercio, concepto, valor...">
+              </div>
+              <div class="select-filters-row">
+                <select id="filter-category-select" class="custom-select">
+                  <option value="ALL">Todas las Categorías</option>
+                  <option value="Alimentación">Alimentación</option>
+                  <option value="Transporte y Moto">Transporte y Moto</option>
+                  <option value="Gastos Hormiga / Dulces">Gastos Hormiga / Dulces</option>
+                  <option value="Ocio y Entretenimiento">Ocio y Entretenimiento</option>
+                  <option value="Servicios">Servicios</option>
+                  <option value="Compras">Compras</option>
+                  <option value="Otros">Otros</option>
+                </select>
+
+                <select id="filter-account-select" class="custom-select">
+                  <option value="ALL">Todas las Cuentas</option>
+                  <option value="AyC Colanta">AyC Colanta</option>
+                  <option value="Nequi">Nequi</option>
+                  <option value="Efectivo">Efectivo</option>
+                  <option value="Bancolombia">Bancolombia</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Tabla de Movimientos Ultra Estilizada -->
+            <div class="table-card-wrapper">
+              <table class="fintech-table" id="table-movements">
+                <thead>
+                  <tr>
+                    <th style="width: 80px;">ID</th>
+                    <th>Concepto & Comercio</th>
+                    <th>Categoría</th>
+                    <th>Cuenta</th>
+                    <th>Fecha & Hora</th>
+                    <th class="text-right">Monto</th>
+                    <th class="text-center" style="width: 85px;">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="movements-tbody">
+                  <!-- Renderizado dinámicamente con Avatares, badges y micro-interacciones -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- =========================================================
+             VISTA 4: GASTOS FIJOS (FIXED COMMITMENTS)
+             ========================================================= -->
+        <div class="view-panel" id="view-fixed">
+          <div class="view-header-title-row">
+            <div>
+              <span class="section-badge-tiny"><i class="fa-solid fa-calendar-check"></i> OBLIGACIONES DEL MES</span>
+              <h2 class="view-title">Gastos Fijos y Compromisos Quincenales</h2>
+              <p class="view-subtitle">Distribución quincenal de arriendo, servicios públicos (EPM, Tigo) y cuotas fijas</p>
+            </div>
+          </div>
+
+          <div class="interactive-tables-container">
+            <div class="fixed-overview-banner">
+              <div class="q-banner-card">
+                <span class="q-title">Quincena 1 (Día 1 a 15)</span>
+                <h4 class="q-amount" id="q1-fixed-amount">$1.332.000 COP</h4>
+                <span class="q-note">EPM, Comida, Tigo, Audífonos, Parqueadero</span>
+              </div>
+              <div class="q-banner-card">
+                <span class="q-title">Quincena 2 (Día 16 a 31)</span>
+                <h4 class="q-amount" id="q2-fixed-amount">$1.225.000 COP</h4>
+                <span class="q-note">Arriendo Casa ($900k), Google, Parqueadero</span>
+              </div>
+            </div>
+
+            <div class="table-card-wrapper">
+              <table class="fintech-table" id="table-fixed">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Servicio / Obligación</th>
+                    <th>Día</th>
+                    <th>Cuota Base</th>
+                    <th>Abonado</th>
+                    <th>Saldo</th>
+                    <th>Estado</th>
+                  </tr>
+                </thead>
+                <tbody id="fixed-tbody">
+                  <!-- Renderizado dinámicamente -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- =========================================================
+             VISTA 5: FONDOS COLANTA (SAVINGS)
+             ========================================================= -->
+        <div class="view-panel" id="view-savings">
+          <div class="view-header-title-row">
+            <div>
+              <span class="section-badge-tiny"><i class="fa-solid fa-piggy-bank"></i> AHORRO ESTRATÉGICO</span>
+              <h2 class="view-title">Fondos Cooperativa Colanta</h2>
+              <p class="view-subtitle">Ahorro navideño, ordinario a la vista y aportes sociales acumulados</p>
+            </div>
+          </div>
+
+          <div class="interactive-tables-container">
+            <div class="savings-cards-grid">
+              <div class="savings-detail-card highlight-card">
+                <div class="card-icon-round"><i class="fa-solid fa-gifts"></i></div>
+                <div class="card-text">
+                  <span class="s-label">Ahorro Navideño (Diciembre 2026)</span>
+                  <h3 class="s-val">$2.160.000 COP</h3>
+                  <p class="s-desc">Fondo contractual Colanta para compras de fin de año sin deudas.</p>
+                </div>
+              </div>
+
+              <div class="savings-detail-card">
+                <div class="card-icon-round"><i class="fa-solid fa-shield-heart"></i></div>
+                <div class="card-text">
+                  <span class="s-label">Ahorro Ordinario a la Vista</span>
+                  <h3 class="s-val">$594.000 COP</h3>
+                  <p class="s-desc">Fondo de emergencia disponible en Cooperativa Colanta.</p>
+                </div>
+              </div>
+
+              <div class="savings-detail-card">
+                <div class="card-icon-round"><i class="fa-solid fa-handshake-angle"></i></div>
+                <div class="card-text">
+                  <span class="s-label">Aportes y Afiliación</span>
+                  <h3 class="s-val">$1.177.299 COP</h3>
+                  <p class="s-desc">Capitalización como asociado de Cooperativa Colanta AyC.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- =========================================================
+             VISTA 6: RADAR ANTOJOS (FUGAS)
+             ========================================================= -->
+        <div class="view-panel" id="view-fugas">
+          <div class="view-header-title-row">
+            <div>
+              <span class="section-badge-tiny"><i class="fa-solid fa-cookie-bite"></i> CONTROL DE FUGAS</span>
+              <h2 class="view-title">Radar de Gastos Hormiga & Antojos</h2>
+              <p class="view-subtitle">Monitoreo de mecato, dulces, panaderías y consumos cotidianos</p>
+            </div>
+          </div>
+
+          <div class="interactive-tables-container">
+            <div class="fugas-hero-card">
+              <div class="fugas-alert-icon"><i class="fa-solid fa-cookie-bite"></i></div>
+              <div class="fugas-text-content">
+                <h4>Monitor de Gastos Hormiga & Dulces</h4>
+                <p>Gastos pequeños en mecato, helados, granizados y panaderías acumulados en octubre.</p>
+              </div>
+              <div class="fugas-total-box">
+                <span class="f-label">Total Acumulado</span>
+                <h3 class="f-val" id="fugas-total-val">$67.000 COP</h3>
+              </div>
+            </div>
+
+            <div class="table-card-wrapper">
+              <table class="fintech-table" id="table-fugas">
+                <thead>
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Concepto / Antojo</th>
+                    <th>Valor</th>
+                    <th>Cuenta</th>
+                    <th>Clasificación</th>
+                  </tr>
+                </thead>
+                <tbody id="fugas-tbody">
+                  <!-- Renderizado dinámicamente -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+          </div>
+        </div>
+
+        <!-- =========================================================
+             VISTA 7: EVOLUCIÓN ANUAL 2026 (ANNUAL EVOLUTION)
+             ========================================================= -->
+        <div class="view-panel" id="view-annual">
+          <!-- =========================================================
              SECCIÓN: EVOLUCIÓN ANUAL 2026 — BALANCE MES A MES & PROCESO DEL AÑO
              ========================================================= -->
         <section class="dashboard-section annual-evolution-section" id="section-annual">
@@ -641,226 +1136,106 @@
             </div>
           </div>
         </section>
+        </div>
 
-        <!-- PANELES DE DATOS EN PROFUNDIDAD (TABS MODERNOS) -->
-        <section class="interactive-tables-container" id="section-movements">
-          <!-- Segmented Tab Control (Pills modernas tipo iOS) -->
-          <div class="segmented-control" id="segmented-tabs-bar">
-            <button class="seg-btn active" data-tab="tab-all-movements">
-              <i class="fa-solid fa-list-ul"></i>
-              <span>Movimientos</span>
-            </button>
-            <button class="seg-btn" data-tab="tab-all-fixed" id="section-fixed-tab">
-              <i class="fa-solid fa-thumbtack"></i>
-              <span>Gastos Fijos</span>
-              <span class="pill-badge-num">15</span>
-            </button>
-            <button class="seg-btn" data-tab="tab-all-savings" id="section-savings-tab">
-              <i class="fa-solid fa-piggy-bank"></i>
-              <span>Ahorros Colanta</span>
-            </button>
-            <button class="seg-btn" data-tab="tab-all-fugas" id="section-fugas-tab">
-              <i class="fa-solid fa-bug"></i>
-              <span>Gastos Hormiga</span>
-              <span class="pill-badge-alert">$67k</span>
-            </button>
-          </div>
-
-          <!-- TAB 1: MOVIMIENTOS RECIENTES -->
-          <div class="tab-pane active" id="tab-all-movements">
-            <!-- Strip de Métricas Rápidas / Financial Pulse -->
-            <div class="movements-pulse-strip" id="movements-pulse-strip">
-              <div class="pulse-card">
-                <div class="pulse-icon pulse-icon-red"><i class="fa-solid fa-arrow-trend-down"></i></div>
-                <div class="pulse-info">
-                  <span class="pulse-label">Gastos del Mes</span>
-                  <strong class="pulse-val" id="pulse-total-gastos">$0 COP</strong>
-                </div>
-              </div>
-              <div class="pulse-card">
-                <div class="pulse-icon pulse-icon-amber"><i class="fa-solid fa-utensils"></i></div>
-                <div class="pulse-info">
-                  <span class="pulse-label">Alimentación & Colanta</span>
-                  <strong class="pulse-val" id="pulse-total-alimentacion">$0 COP</strong>
-                </div>
-              </div>
-              <div class="pulse-card">
-                <div class="pulse-icon pulse-icon-blue"><i class="fa-solid fa-motorcycle"></i></div>
-                <div class="pulse-info">
-                  <span class="pulse-label">Moto & Transporte</span>
-                  <strong class="pulse-val" id="pulse-total-moto">$0 COP</strong>
-                </div>
-              </div>
-              <div class="pulse-card">
-                <div class="pulse-icon pulse-icon-emerald"><i class="fa-solid fa-receipt"></i></div>
-                <div class="pulse-info">
-                  <span class="pulse-label">Total Transacciones</span>
-                  <strong class="pulse-val" id="pulse-total-transacciones">256 registros</strong>
-                </div>
-              </div>
-            </div>
-
-            <!-- Chips de Filtrado Rápido estilo Nubank / Revolut -->
-            <div class="quick-filter-chips-bar" id="quick-filter-chips">
-              <button class="filter-chip active" data-filter="ALL">Todos</button>
-              <button class="filter-chip" data-filter="GASTO"><i class="fa-solid fa-arrow-down" style="color:#FB7185;"></i> Gastos</button>
-              <button class="filter-chip" data-filter="INGRESO"><i class="fa-solid fa-arrow-up" style="color:#34D399;"></i> Ingresos</button>
-              <button class="filter-chip" data-filter="ALIMENTACION"><i class="fa-solid fa-utensils" style="color:#FBBF24;"></i> Alimentación</button>
-              <button class="filter-chip" data-filter="MOTO"><i class="fa-solid fa-motorcycle" style="color:#60A5FA;"></i> Moto</button>
-              <button class="filter-chip" data-filter="COLANTA"><i class="fa-solid fa-building-wheat" style="color:#38BDF8;"></i> Colanta / AyC</button>
-              <button class="filter-chip" data-filter="NEQUI"><i class="fa-solid fa-mobile-screen" style="color:#C084FC;"></i> Nequi</button>
-            </div>
-
-            <!-- Barra de Búsqueda y Filtros -->
-            <div class="filter-actions-bar">
-              <div class="search-input-pill">
-                <i class="fa-solid fa-magnifying-glass"></i>
-                <input type="text" id="search-movements-input" placeholder="Buscar por comercio, concepto, valor...">
-              </div>
-              <div class="select-filters-row">
-                <select id="filter-category-select" class="custom-select">
-                  <option value="ALL">Todas las Categorías</option>
-                  <option value="Alimentación">Alimentación</option>
-                  <option value="Transporte y Moto">Transporte y Moto</option>
-                  <option value="Gastos Hormiga / Dulces">Gastos Hormiga / Dulces</option>
-                  <option value="Ocio y Entretenimiento">Ocio y Entretenimiento</option>
-                  <option value="Servicios">Servicios</option>
-                  <option value="Compras">Compras</option>
-                  <option value="Otros">Otros</option>
-                </select>
-
-                <select id="filter-account-select" class="custom-select">
-                  <option value="ALL">Todas las Cuentas</option>
-                  <option value="AyC Colanta">AyC Colanta</option>
-                  <option value="Nequi">Nequi</option>
-                  <option value="Efectivo">Efectivo</option>
-                  <option value="Bancolombia">Bancolombia</option>
-                </select>
-              </div>
-            </div>
-
-            <!-- Tabla de Movimientos Ultra Estilizada -->
-            <div class="table-card-wrapper">
-              <table class="fintech-table" id="table-movements">
-                <thead>
-                  <tr>
-                    <th style="width: 80px;">ID</th>
-                    <th>Concepto & Comercio</th>
-                    <th>Categoría</th>
-                    <th>Cuenta</th>
-                    <th>Fecha & Hora</th>
-                    <th class="text-right">Monto</th>
-                    <th class="text-center" style="width: 85px;">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody id="movements-tbody">
-                  <!-- Renderizado dinámicamente con Avatares, badges y micro-interacciones -->
-                </tbody>
-              </table>
+        <!-- =========================================================
+             VISTA 8: SUBIR COLILLA (GEMINI AI PROCESSOR)
+             ========================================================= -->
+        <div class="view-panel" id="view-colilla">
+          <div class="view-header-title-row">
+            <div>
+              <span class="section-badge-tiny"><i class="fa-solid fa-file-invoice-dollar" style="color:#FBBF24;"></i> GEMINI MULTIMODAL AI</span>
+              <h2 class="view-title">Subir Colilla de Pago Colanta</h2>
+              <p class="view-subtitle">Sube el PDF o captura de tu colilla de nómina para extraer automáticamente sueldo, horas extras y fondos</p>
             </div>
           </div>
 
-          <!-- TAB 2: COMPROMISOS FIJOS (Semaforizados Q1 y Q2) -->
-          <div class="tab-pane" id="tab-all-fixed">
-            <div class="fixed-overview-banner">
-              <div class="q-banner-card">
-                <span class="q-title">Quincena 1 (Día 1 a 15)</span>
-                <h4 class="q-amount" id="q1-fixed-amount">$1.332.000 COP</h4>
-                <span class="q-note">EPM, Comida, Tigo, Audífonos, Parqueadero</span>
-              </div>
-              <div class="q-banner-card">
-                <span class="q-title">Quincena 2 (Día 16 a 31)</span>
-                <h4 class="q-amount" id="q2-fixed-amount">$1.225.000 COP</h4>
-                <span class="q-note">Arriendo Casa ($900k), Google, Parqueadero</span>
-              </div>
+          <div class="sheet-modal-card" style="max-width:800px; margin:0 auto; background:linear-gradient(145deg, rgba(18,25,43,0.85) 0%, rgba(13,19,33,0.95) 100%); border:1px solid rgba(255,255,255,0.08); border-radius:20px; padding:2rem;">
+            <div class="upload-dropzone" id="view-dropzone-colilla" style="border:2px dashed rgba(251,191,36,0.4); border-radius:16px; padding:3rem 1.5rem; text-align:center; background:rgba(251,191,36,0.03); cursor:pointer;">
+              <i class="fa-solid fa-cloud-arrow-up" style="font-size:3rem; color:#FBBF24; margin-bottom:1rem; display:block;"></i>
+              <h3 style="font-size:1.2rem; font-weight:700; color:#fff; margin-bottom:0.5rem;">Arrastra aquí tu colilla de nómina Colanta</h3>
+              <p style="font-size:0.85rem; color:#94A3B8; margin-bottom:1.5rem;">Formatos soportados: PDF, JPG, PNG de Colanta San Germán</p>
+              <input type="file" id="view-file-colilla" accept="image/*,application/pdf" style="display:none;">
+              <button type="button" class="btn-sheet-submit" onclick="document.getElementById('view-file-colilla').click();" style="padding:0.75rem 2rem; font-size:0.9rem;">
+                <i class="fa-solid fa-folder-open"></i> Seleccionar Archivo
+              </button>
             </div>
 
-            <div class="table-card-wrapper">
-              <table class="fintech-table" id="table-fixed">
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>Servicio / Obligación</th>
-                    <th>Día</th>
-                    <th>Cuota Base</th>
-                    <th>Abonado</th>
-                    <th>Saldo</th>
-                    <th>Estado</th>
-                  </tr>
-                </thead>
-                <tbody id="fixed-tbody">
-                  <!-- Renderizado dinámicamente -->
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <!-- TAB 3: AHORROS COLANTA -->
-          <div class="tab-pane" id="tab-all-savings">
-            <div class="savings-cards-grid">
-              <div class="savings-detail-card highlight-card">
-                <div class="card-icon-round"><i class="fa-solid fa-gifts"></i></div>
-                <div class="card-text">
-                  <span class="s-label">Ahorro Navideño (Diciembre 2026)</span>
-                  <h3 class="s-val">$2.160.000 COP</h3>
-                  <p class="s-desc">Fondo contractual Colanta para compras de fin de año sin deudas.</p>
-                </div>
+            <div style="margin-top:1.75rem; display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:1rem;">
+              <div style="background:rgba(255,255,255,0.03); padding:1rem; border-radius:12px; border:1px solid rgba(255,255,255,0.06);">
+                <strong style="display:block; font-size:0.85rem; color:#F8FAFC; margin-bottom:0.25rem;"><i class="fa-solid fa-bolt text-amber"></i> Extracción Automática</strong>
+                <span style="font-size:0.74rem; color:#94A3B8;">Detecta sueldo base, horas extras, deducciones y fondo navideño.</span>
               </div>
-
-              <div class="savings-detail-card">
-                <div class="card-icon-round"><i class="fa-solid fa-shield-heart"></i></div>
-                <div class="card-text">
-                  <span class="s-label">Ahorro Ordinario a la Vista</span>
-                  <h3 class="s-val">$594.000 COP</h3>
-                  <p class="s-desc">Fondo de emergencia disponible en Cooperativa Colanta.</p>
-                </div>
-              </div>
-
-              <div class="savings-detail-card">
-                <div class="card-icon-round"><i class="fa-solid fa-handshake-angle"></i></div>
-                <div class="card-text">
-                  <span class="s-label">Aportes y Afiliación</span>
-                  <h3 class="s-val">$1.177.299 COP</h3>
-                  <p class="s-desc">Capitalización como asociado de Cooperativa Colanta AyC.</p>
-                </div>
+              <div style="background:rgba(255,255,255,0.03); padding:1rem; border-radius:12px; border:1px solid rgba(255,255,255,0.06);">
+                <strong style="display:block; font-size:0.85rem; color:#F8FAFC; margin-bottom:0.25rem;"><i class="fa-solid fa-table-cells text-emerald"></i> Inserción en Fila 5</strong>
+                <span style="font-size:0.74rem; color:#94A3B8;">Guarda el movimiento automáticamente en tu hoja de Google Sheets.</span>
               </div>
             </div>
           </div>
+        </div>
 
-          <!-- TAB 4: RADAR DE FUGAS (Gastos Hormiga) -->
-          <div class="tab-pane" id="tab-all-fugas">
-            <div class="fugas-hero-card">
-              <div class="fugas-alert-icon"><i class="fa-solid fa-cookie-bite"></i></div>
-              <div class="fugas-text-content">
-                <h4>Monitor de Gastos Hormiga & Dulces</h4>
-                <p>Gastos pequeños en mecato, helados, granizados y panaderías acumulados en octubre.</p>
-              </div>
-              <div class="fugas-total-box">
-                <span class="f-label">Total Acumulado</span>
-                <h3 class="f-val" id="fugas-total-val">$67.000 COP</h3>
-              </div>
-            </div>
-
-            <div class="table-card-wrapper">
-              <table class="fintech-table" id="table-fugas">
-                <thead>
-                  <tr>
-                    <th>Fecha</th>
-                    <th>Concepto / Antojo</th>
-                    <th>Valor</th>
-                    <th>Cuenta</th>
-                    <th>Clasificación</th>
-                  </tr>
-                </thead>
-                <tbody id="fugas-tbody">
-                  <!-- Renderizado dinámicamente -->
-                </tbody>
-              </table>
+        <!-- =========================================================
+             VISTA 9: AJUSTES & SCRIPT (SETTINGS & CLOUD SHIELD)
+             ========================================================= -->
+        <div class="view-panel" id="view-settings">
+          <div class="view-header-title-row">
+            <div>
+              <span class="section-badge-tiny"><i class="fa-solid fa-gear" style="color:#FBBF24;"></i> CONFIGURACIÓN Y SEGURIDAD</span>
+              <h2 class="view-title">Ajustes & Conexión Google Sheets</h2>
+              <p class="view-subtitle">Estado del Webhook Apps Script, Escudo Cloud anti-spam, token de acceso y auditoría por correo</p>
             </div>
           </div>
 
-        </section>
+          <div style="max-width:850px; margin:0 auto; display:flex; flex-direction:column; gap:1.5rem;">
+            <!-- Estado Backend -->
+            <div class="settings-backend-card" id="settings-backend-status-card" style="background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.25); border-radius:18px; padding:1.5rem;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+                <h4 style="font-size:1.1rem; font-weight:800; color:#fff; display:flex; align-items:center; gap:0.5rem;">
+                  <i class="fa-solid fa-circle-check text-emerald"></i> Google Sheets Conectado
+                </h4>
+                <span style="font-size:0.72rem; font-weight:800; padding:0.25rem 0.75rem; border-radius:20px; background:#10B981; color:#022C22;">V26.9 ONLINE</span>
+              </div>
+              <p style="font-size:0.82rem; color:#94A3B8; margin:0 0 1rem 0;">Los movimientos de la app y colillas se insertan en la <strong>fila 5 de MOVIMIENTOS</strong> en tiempo real.</p>
+              <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
+                <a href="https://docs.google.com/spreadsheets/d/1C9ifm7U8IYGOdY4IwAji9Z3McSlNy3B-e_2Jo-zvBFk/edit" target="_blank" rel="noopener noreferrer" class="btn-sheet-submit" style="font-size:0.8rem; padding:0.55rem 1.1rem;">
+                  <i class="fa-solid fa-arrow-up-right-from-square"></i> Abrir Google Sheets en Drive
+                </a>
+                <button type="button" class="btn-cockpit-action" id="btn-view-test-connection" style="font-size:0.8rem; padding:0.55rem 1.1rem; background:rgba(255,255,255,0.05);">
+                  <i class="fa-solid fa-network-wired"></i> Probar Conexión
+                </button>
+              </div>
+            </div>
+
+            <!-- Escudo Cloud Anti-Spam -->
+            <div style="background:rgba(18,25,43,0.7); border:1px solid rgba(255,255,255,0.07); border-radius:18px; padding:1.5rem;">
+              <h4 style="font-size:1.05rem; font-weight:800; color:#fff; margin-bottom:0.4rem; display:flex; align-items:center; gap:0.5rem;">
+                <i class="fa-solid fa-shield-halved text-emerald"></i> Escudo GitHub & Google Sheets Anti-Spam
+              </h4>
+              <p style="font-size:0.82rem; color:#94A3B8; margin-bottom:1rem;">Protege tu hoja de cálculo contra escrituras públicas no autorizadas desde GitHub Pages mediante autenticación por token seguro.</p>
+              <div class="field-block">
+                <label style="font-size:0.75rem; color:#94A3B8; font-weight:700;">Tu Token de Escritura Autorizado:</label>
+                <div style="display:flex; gap:0.5rem; margin-top:0.35rem;">
+                  <input type="text" id="input-auth-token-view" class="custom-input" value="marlon_pardo_finanzas_2026_auth" style="font-family:monospace; font-size:0.82rem;">
+                  <button type="button" class="btn-sheet-submit" id="btn-save-auth-token-view" style="font-size:0.8rem; padding:0 1.25rem;">Guardar Token</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Auditoría por Correo -->
+            <div style="background:rgba(18,25,43,0.7); border:1px solid rgba(255,255,255,0.07); border-radius:18px; padding:1.5rem;">
+              <h4 style="font-size:1.05rem; font-weight:800; color:#fff; margin-bottom:0.4rem; display:flex; align-items:center; gap:0.5rem;">
+                <i class="fa-solid fa-envelope-circle-check text-cyan"></i> Auditoría Financiera 2026 por Correo
+              </h4>
+              <p style="font-size:0.82rem; color:#94A3B8; margin-bottom:1rem;">Genera y despacha el reporte financiero ejecutivo de los 12 meses directamente a tu bandeja de entrada en <strong>marlonpardo45@gmail.com</strong>.</p>
+              <button type="button" class="btn-sheet-submit" id="btn-send-email-audit-view" style="font-size:0.85rem; padding:0.65rem 1.5rem;">
+                <i class="fa-solid fa-paper-plane"></i> Enviar Reporte a mi Correo Ahora
+              </button>
+            </div>
+          </div>
+        </div>
+
       </main>
+
 
       <!-- BARRA DE NAVEGACIÓN INFERIOR (MÓVIL / CELULAR TIPO APP NATIVA) -->
       <nav class="mobile-bottom-bar" id="mobile-bottom-bar">
