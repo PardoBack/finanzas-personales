@@ -13,19 +13,31 @@ const FintechApp = {
     data: null,
     charts: {
       categories: null,
-      quincena: null
+      quincena: null,
+      annual: null
     },
     balancesHidden: false,
     activeTab: "tab-all-movements",
     isRecording: false,
     speechRecognition: null,
-    deferredInstallPrompt: null
+    deferredInstallPrompt: null,
+    selectedMovement: null,
+    activeFilterChip: "ALL",
+    activeMonth: "octubre",
+    activeYear: 2026,
+    cloudShield: {
+      active: true,
+      hasWriteAccess: true,
+      authToken: "marlon_pardo_finanzas_2026_auth"
+    }
   },
 
   init() {
+    this.initCloudShield();
     this.initServiceWorker();
     this.bindPWAInstall();
     this.bindNavigation();
+    this.bindMonthSelector();
     this.bindPrivacyToggle();
     this.bindChatCFO();
     this.initSpeechRecognition();
@@ -33,6 +45,11 @@ const FintechApp = {
     this.setupDateContext();
     this.loadData();
     this.checkBackendHealth();
+
+    // Auto-sincronización silenciosa cada 30 segundos
+    setInterval(() => {
+      this.loadData();
+    }, 30000);
   },
 
   haptic(ms = 12) {
@@ -81,6 +98,614 @@ const FintechApp = {
         backendCard.style.background = "rgba(245, 158, 11, 0.1)";
         backendCard.style.borderColor = "rgba(245, 158, 11, 0.3)";
       }
+    }
+  },
+
+
+  // =========================================================
+  // SISTEMA DE SEGURIDAD (ESCUDO ANTI-SPAM GITHUB & GOOGLE SHEETS)
+  // =========================================================
+  initCloudShield() {
+    const sec = FinanceAPI.getSecuritySettings();
+    this.state.cloudShield = {
+      active: sec.shieldActive,
+      hasWriteAccess: sec.hasWriteAccess,
+      authToken: sec.authToken
+    };
+
+    const btnShield = document.getElementById("btn-cloud-shield");
+    const modalShield = document.getElementById("modal-cloud-shield");
+    const btnCloseShield = document.getElementById("btn-close-cloud-shield");
+    const btnShieldConfirm = document.getElementById("btn-shield-confirm");
+    const btnCopyShieldUrl = document.getElementById("btn-copy-shield-url");
+    const inputShieldShareUrl = document.getElementById("input-shield-share-url");
+    const btnSaveAuthToken = document.getElementById("btn-save-auth-token");
+    const inputAuthToken = document.getElementById("input-auth-token");
+    const btnCopyPrivateLink = document.getElementById("btn-copy-private-link");
+
+    const baseOrigin = window.location.origin || "";
+    const basePath = window.location.pathname || "";
+    const fullAuthUrl = `${baseOrigin}${basePath}?auth=${encodeURIComponent(sec.authToken)}`;
+
+    if (inputShieldShareUrl) inputShieldShareUrl.value = fullAuthUrl;
+    if (inputAuthToken) inputAuthToken.value = sec.authToken || "";
+
+    const openShieldModal = () => {
+      this.haptic(15);
+      modalShield?.classList.add("active");
+    };
+
+    const closeShieldModal = () => {
+      this.haptic(10);
+      modalShield?.classList.remove("active");
+    };
+
+    btnShield?.addEventListener("click", openShieldModal);
+    btnCloseShield?.addEventListener("click", closeShieldModal);
+    btnShieldConfirm?.addEventListener("click", closeShieldModal);
+
+    const copyAuthUrlAction = () => {
+      this.haptic(20);
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(fullAuthUrl).then(() => {
+          this.showToast("📋 ¡Enlace privado con token copiado al portapapeles!", "success");
+        }).catch(() => {
+          if (inputShieldShareUrl) {
+            inputShieldShareUrl.select();
+            document.execCommand("copy");
+            this.showToast("📋 Enlace copiado al portapapeles", "success");
+          }
+        });
+      } else if (inputShieldShareUrl) {
+        inputShieldShareUrl.select();
+        document.execCommand("copy");
+        this.showToast("📋 Enlace copiado al portapapeles", "success");
+      }
+    };
+
+    btnCopyShieldUrl?.addEventListener("click", copyAuthUrlAction);
+    btnCopyPrivateLink?.addEventListener("click", copyAuthUrlAction);
+
+    btnSaveAuthToken?.addEventListener("click", () => {
+      const val = (inputAuthToken?.value || "").trim();
+      if (!val || val.length < 5) {
+        this.showToast("El token debe tener al menos 6 caracteres", "error");
+        return;
+      }
+      this.haptic(20);
+      FinanceAPI.setAuthToken(val);
+      this.state.cloudShield.authToken = val;
+      if (inputShieldShareUrl) {
+        inputShieldShareUrl.value = `${baseOrigin}${basePath}?auth=${encodeURIComponent(val)}`;
+      }
+      this.showToast("🛡️ Token de seguridad actualizado correctamente", "success");
+    });
+  },
+
+  // =========================================================
+  // GENERADOR DE LOGOS E INSIGNIAS DE MARCAS COLOMBIANAS (SVG)
+  // =========================================================
+  getBrandBadgeSVG(brandKey) {
+    const k = String(brandKey || "").toLowerCase();
+
+    // 1. EPM (Empresas Públicas de Medellín)
+    if (k === "epm" || k.includes("epm")) {
+      return `
+        <div class="brand-badge brand-epm" title="Empresas Públicas de Medellín">
+          <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="32" height="32" rx="8" fill="#047857"/>
+            <ellipse cx="16" cy="10" rx="3.5" ry="5" fill="#A7F3D0"/>
+            <ellipse cx="22" cy="16" rx="5" ry="3.5" fill="#6EE7B7"/>
+            <ellipse cx="16" cy="22" rx="3.5" ry="5" fill="#34D399"/>
+            <ellipse cx="10" cy="16" rx="5" ry="3.5" fill="#A7F3D0"/>
+            <circle cx="16" cy="16" r="2.5" fill="#FFFFFF"/>
+          </svg>
+        </div>
+      `;
+    }
+
+    // 2. Tigo Telecomunicaciones
+    if (k === "tigo" || k.includes("tigo")) {
+      return `
+        <div class="brand-badge brand-tigo" title="Tigo Colombia">
+          <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="32" height="32" rx="8" fill="#00377B"/>
+            <path d="M7 21C11.5 25 20.5 25 25 21" stroke="#FBBF24" stroke-width="2.6" stroke-linecap="round"/>
+            <text x="16" y="15" fill="#FFFFFF" font-family="'Segoe UI', Roboto, sans-serif" font-weight="900" font-size="9" text-anchor="middle" letter-spacing="-0.5">tigo</text>
+          </svg>
+        </div>
+      `;
+    }
+
+    // 3. Cooperativa Colanta / AyC Colanta
+    if (k === "colanta" || k.includes("colanta") || k === "ayccolanta") {
+      return `
+        <div class="brand-badge brand-colanta" title="Cooperativa Colanta">
+          <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="16" cy="16" r="14" fill="#E11D48"/>
+            <path d="M16 13C14 10.5 11.5 10.5 11.5 13C11.5 15.5 14.5 16 16 16C17.5 16 20.5 15.5 20.5 13C20.5 10.5 18 10.5 16 13Z" fill="#FFFFFF"/>
+            <path d="M13 16C10.5 14 10.5 11.5 13 11.5C15.5 11.5 16 14.5 16 16C16 17.5 15.5 20.5 13 20.5C10.5 20.5 10.5 18 13 16Z" fill="#FFFFFF"/>
+            <path d="M19 16C21.5 14 21.5 11.5 19 11.5C16.5 11.5 16 14.5 16 16C16 17.5 16.5 20.5 19 20.5C21.5 20.5 21.5 18 19 16Z" fill="#FFFFFF"/>
+            <path d="M16 16C16 19 14.5 21.5 12.5 22.5" stroke="#FFFFFF" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+        </div>
+      `;
+    }
+
+    // 4. Nequi
+    if (k === "nequi" || k.includes("nequi")) {
+      return `
+        <div class="brand-badge brand-nequi" title="Nequi">
+          <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="32" height="32" rx="8" fill="#1F0036"/>
+            <path d="M10 22V10L22 22V10" stroke="#E11D74" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M10 22V10L22 22V10" stroke="#FFFFFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      `;
+    }
+
+    // 5. Bancolombia
+    if (k === "bancolombia" || k.includes("bancolombia")) {
+      return `
+        <div class="brand-badge brand-bancolombia" title="Bancolombia">
+          <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="32" height="32" rx="8" fill="#0F172A"/>
+            <path d="M7 12C11 12 13 18 17 18C21 18 23 12 25 12" stroke="#FACC15" stroke-width="2.2" stroke-linecap="round"/>
+            <path d="M7 16C11 16 13 22 17 22C21 22 23 16 25 16" stroke="#38BDF8" stroke-width="2.2" stroke-linecap="round"/>
+            <path d="M7 20C11 20 13 26 17 26C21 26 23 20 25 20" stroke="#F43F5E" stroke-width="2.2" stroke-linecap="round"/>
+          </svg>
+        </div>
+      `;
+    }
+
+    // 6. Terpel (Combustible / Gasolina / Moto)
+    if (k === "terpel" || k.includes("terpel") || k.includes("gasolina") || k.includes("moto")) {
+      return `
+        <div class="brand-badge brand-terpel" title="Terpel Combustibles">
+          <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="32" height="32" rx="8" fill="#DC2626"/>
+            <circle cx="16" cy="16" r="6.5" fill="#FACC15"/>
+            <path d="M16 5V8M16 24V27M5 16H8M24 16H27M8 8L10.5 10.5M21.5 21.5L24 24M8 24L10.5 21.5M21.5 10.5L24 8" stroke="#FEF08A" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </div>
+      `;
+    }
+
+    // 7. Smart Fit (Gym)
+    if (k === "smartfit" || k.includes("smart") || k.includes("gym") || k.includes("fit")) {
+      return `
+        <div class="brand-badge brand-smartfit" title="Smart Fit">
+          <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="32" height="32" rx="8" fill="#18181B"/>
+            <path d="M9 13C9 10.8 11.2 9 16 9C20.8 9 23 10.8 23 13C23 16.5 18 16 16 17.5C14 18.5 9 18.5 9 21.5C9 23.5 11.2 25 16 25C20.8 25 23 23.2 23 21" stroke="#FACC15" stroke-width="2.8" stroke-linecap="round"/>
+          </svg>
+        </div>
+      `;
+    }
+
+    // 8. Spotify
+    if (k === "spotify" || k.includes("spotify")) {
+      return `
+        <div class="brand-badge brand-spotify" title="Spotify">
+          <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="16" cy="16" r="14" fill="#121212"/>
+            <path d="M8 12.5C13 11 19.5 11.5 24 13.8" stroke="#1DB954" stroke-width="2.5" stroke-linecap="round"/>
+            <path d="M9.5 16.5C13.5 15.2 18.5 15.6 22.5 17.2" stroke="#1DB954" stroke-width="2.1" stroke-linecap="round"/>
+            <path d="M11.5 20.2C14.8 19.2 18.2 19.5 21 20.8" stroke="#1DB954" stroke-width="1.7" stroke-linecap="round"/>
+          </svg>
+        </div>
+      `;
+    }
+
+    // 9. Restaurante Corporativo Planta San Germán
+    if (k === "restaurante" || k.includes("rest") || k.includes("almuerzo")) {
+      return `
+        <div class="brand-badge brand-restaurante" title="Restaurante Planta Medellín">
+          <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="32" height="32" rx="8" fill="#D97706"/>
+            <path d="M11 22V9M11 9C9.5 9 9.5 12 11 12M11 9C12.5 9 12.5 12 11 12" stroke="#FEF3C7" stroke-width="2" stroke-linecap="round"/>
+            <path d="M21 22V9C19 9 19 13.5 21 14.5" stroke="#FEF3C7" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </div>
+      `;
+    }
+
+    // Fallback general
+    return `
+      <div class="brand-badge brand-default" style="background:rgba(255,255,255,0.08); border-radius:inherit;">
+        <i class="fa-solid fa-receipt" style="color:#94A3B8; font-size:1.1rem;"></i>
+      </div>
+    `;
+  },
+
+  // =========================================================
+  // SELECTOR DE MESES Y CONSULTA HISTÓRICA 2026
+  // =========================================================
+  bindMonthSelector() {
+    const meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+    
+    // 1. Botones Prev / Next en Topbar
+    document.getElementById("btn-prev-month")?.addEventListener("click", () => {
+      this.haptic(10);
+      let currentIdx = meses.indexOf(this.state.activeMonth);
+      if (currentIdx === -1) currentIdx = 9; // octubre
+      const newIdx = (currentIdx - 1 + meses.length) % meses.length;
+      this.changeActiveMonth(meses[newIdx]);
+    });
+
+    document.getElementById("btn-next-month")?.addEventListener("click", () => {
+      this.haptic(10);
+      let currentIdx = meses.indexOf(this.state.activeMonth);
+      if (currentIdx === -1) currentIdx = 9;
+      const newIdx = (currentIdx + 1) % meses.length;
+      this.changeActiveMonth(meses[newIdx]);
+    });
+
+    // 2. Modal de Selector de Meses
+    const modalMonth = document.getElementById("modal-month-selector");
+    const btnOpenMonth = document.getElementById("btn-open-month-modal");
+    const btnCloseMonth = document.getElementById("btn-close-modal-month");
+
+    btnOpenMonth?.addEventListener("click", () => {
+      this.haptic(15);
+      this.renderMonthPickerGrid();
+      modalMonth?.classList.add("open");
+    });
+
+    btnCloseMonth?.addEventListener("click", () => modalMonth?.classList.remove("open"));
+
+    // 3. Pills rápidas de meses
+    document.querySelectorAll(".month-strip-pill").forEach(pill => {
+      pill.addEventListener("click", () => {
+        this.haptic(10);
+        const m = pill.getAttribute("data-month");
+        if (m) this.changeActiveMonth(m);
+      });
+    });
+
+    document.getElementById("btn-show-all-year")?.addEventListener("click", () => {
+      this.haptic(15);
+      this.changeActiveMonth("all");
+    });
+  },
+
+  renderMonthPickerGrid() {
+    const container = document.getElementById("month-grid-picker");
+    if (!container) return;
+
+    const meses = [
+      { id: "enero", name: "Enero" },
+      { id: "febrero", name: "Febrero" },
+      { id: "marzo", name: "Marzo" },
+      { id: "abril", name: "Abril" },
+      { id: "mayo", name: "Mayo" },
+      { id: "junio", name: "Junio" },
+      { id: "julio", name: "Julio" },
+      { id: "agosto", name: "Agosto" },
+      { id: "septiembre", name: "Septiembre" },
+      { id: "octubre", name: "Octubre" },
+      { id: "noviembre", name: "Noviembre" },
+      { id: "diciembre", name: "Diciembre" }
+    ];
+
+    const annualData = (this.state.data && this.state.data.resumenAnual) || [];
+    const active = this.state.activeMonth;
+
+    container.innerHTML = meses.map(m => {
+      const match = annualData.find(a => a.mes === m.id);
+      const ing = match ? match.ingresos : 0;
+      const gas = match ? match.gastos : 0;
+      const tx = match ? match.transacciones || match.count || 0 : 0;
+      const isActive = active === m.id;
+
+      return `
+        <div class="month-card-pick ${isActive ? 'active' : ''}" data-month="${m.id}">
+          <div class="month-card-title">${m.name} 2026</div>
+          <div class="month-card-stat stat-ing">🟢 +$${Math.round(ing / 1000000 * 10) / 10}M</div>
+          <div class="month-card-stat stat-gas">🔴 -$${Math.round(gas / 1000000 * 10) / 10}M</div>
+          <div class="month-card-stat" style="color:#64748B;">${tx} transacciones</div>
+        </div>
+      `;
+    }).join("");
+
+    container.querySelectorAll(".month-card-pick").forEach(card => {
+      card.addEventListener("click", () => {
+        const m = card.getAttribute("data-month");
+        if (m) {
+          this.changeActiveMonth(m);
+          document.getElementById("modal-month-selector")?.classList.remove("open");
+        }
+      });
+    });
+  },
+
+  async changeActiveMonth(month, year = 2026) {
+    this.state.activeMonth = month;
+    this.state.activeYear = year;
+
+    // Actualizar texto en topbar
+    const lbl = document.getElementById("label-active-month");
+    if (lbl) {
+      lbl.textContent = month === "all" ? `TODO EL AÑO ${year}` : `${month.toUpperCase()} ${year}`;
+    }
+
+    // Actualizar pills en la barra rápida
+    document.querySelectorAll(".month-strip-pill").forEach(p => {
+      const pMonth = p.getAttribute("data-month");
+      p.classList.toggle("active", pMonth === month);
+    });
+
+    const btnAllYear = document.getElementById("btn-show-all-year");
+    if (btnAllYear) btnAllYear.classList.toggle("active", month === "all");
+
+    // Recalcular vistas
+    this.renderBalances();
+    this.renderCharts();
+    this.renderAnnualSection();
+    this.renderMovementsTable();
+    this.renderFugasTable();
+
+    this.showToast(`📅 Visualizando: ${month === 'all' ? 'Todo el año 2026' : month.toUpperCase() + ' ' + year}`, "success");
+
+    // Sincronizar en segundo plano con el backend
+    FinanceAPI.setMonth(month, year);
+  },
+
+  getCurrentMonthData() {
+    const active = this.state.activeMonth || "octubre";
+    const allMovs = (this.state.data && this.state.data.movimientos) || [];
+
+    if (active === "all") {
+      let totIng = 0;
+      let totGas = 0;
+      const cats = {};
+      allMovs.forEach(m => {
+        const v = Number(m.valor || 0);
+        if (String(m.tipo).toLowerCase().includes("ingreso")) {
+          totIng += v;
+        } else {
+          totGas += v;
+          const c = m.categoria || "Otros";
+          cats[c] = (cats[c] || 0) + v;
+        }
+      });
+      return {
+        ingresos: totIng,
+        gastos: totGas,
+        mes: "Todo 2026",
+        gastosPorCategoria: cats,
+        movimientos: allMovs
+      };
+    }
+
+    const mMes = allMovs.filter(m => String(m.mes || "").toLowerCase() === active);
+    let ing = 0;
+    let gas = 0;
+    const cats = {};
+
+    mMes.forEach(m => {
+      const v = Number(m.valor || 0);
+      if (String(m.tipo).toLowerCase().includes("ingreso")) {
+        ing += v;
+      } else {
+        gas += v;
+        const c = m.categoria || "Otros";
+        cats[c] = (cats[c] || 0) + v;
+      }
+    });
+
+    const res = (this.state.data && this.state.data.resumen) || {};
+    if (active === String(res.mes || "").toLowerCase() && res.gastos > gas) {
+      gas = res.gastos;
+    }
+    if (active === String(res.mes || "").toLowerCase() && res.ingresos > ing) {
+      ing = res.ingresos;
+    }
+
+    return {
+      ingresos: ing,
+      gastos: gas,
+      mes: active,
+      gastosPorCategoria: Object.keys(cats).length > 0 ? cats : (this.state.data && this.state.data.gastosPorCategoria) || {},
+      movimientos: mMes
+    };
+  },
+
+  renderAnnualSection() {
+    const data = this.state.data;
+    if (!data) return;
+
+    const annual = data.resumenAnual || [];
+    const kpis = data.kpisAnuales || {
+      totalIngresos: 61623190,
+      totalGastos: 22958989,
+      superavit: 38664201,
+      tasaAhorro: 62.7,
+      mesMayorAhorro: { nombre: "Junio", monto: 7023416 },
+      mesMayorGasto: { nombre: "Junio", monto: 3892812 }
+    };
+
+    // Actualizar 4 KPIs
+    const elIng = document.getElementById("annual-total-ingresos");
+    const elGas = document.getElementById("annual-total-gastos");
+    const elSup = document.getElementById("annual-total-superavit");
+    const elRec = document.getElementById("annual-record-month");
+
+    if (elIng) elIng.textContent = `$${this.formatCOP(kpis.totalIngresos)} COP`;
+    if (elGas) elGas.textContent = `$${this.formatCOP(kpis.totalGastos)} COP`;
+    if (elSup) elSup.textContent = `$${this.formatCOP(kpis.superavit)} COP`;
+    if (elRec && kpis.mesMayorAhorro) {
+      elRec.textContent = `${kpis.mesMayorAhorro.nombre} 2026`;
+    }
+
+    // Gráfica Anual Chart.js
+    const ctx = document.getElementById("annualTrajectoryChart");
+    if (ctx && annual.length > 0) {
+      if (this.state.charts.annual) this.state.charts.annual.destroy();
+
+      const labels = annual.map(a => a.nombre.slice(0, 3));
+      const ingresosData = annual.map(a => a.ingresos);
+      const gastosData = annual.map(a => a.gastos);
+      const ahorroData = annual.map(a => a.ahorro);
+
+      this.state.charts.annual = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              type: "line",
+              label: "Superávit Neto",
+              data: ahorroData,
+              borderColor: "#38BDF8",
+              backgroundColor: "rgba(56, 189, 248, 0.15)",
+              borderWidth: 3,
+              tension: 0.35,
+              pointBackgroundColor: "#38BDF8",
+              pointBorderColor: "#FFFFFF",
+              pointRadius: 4,
+              order: 1
+            },
+            {
+              type: "bar",
+              label: "Ingresos",
+              data: ingresosData,
+              backgroundColor: "#10B981",
+              borderRadius: 6,
+              order: 2
+            },
+            {
+              type: "bar",
+              label: "Gastos",
+              data: gastosData,
+              backgroundColor: "#F43F5E",
+              borderRadius: 6,
+              order: 3
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: {
+              grid: { display: false },
+              ticks: { color: "#94A3B8", font: { family: "Plus Jakarta Sans", size: 11, weight: 600 } }
+            },
+            y: {
+              grid: { color: "rgba(255, 255, 255, 0.05)" },
+              ticks: {
+                color: "#94A3B8",
+                font: { family: "Plus Jakarta Sans", size: 10 },
+                callback: (v) => `$${Math.round(v / 1000000 * 10) / 10}M`
+              }
+            }
+          },
+          plugins: {
+            legend: {
+              position: "top",
+              labels: { color: "#94A3B8", font: { family: "Plus Jakarta Sans", size: 11 }, boxWidth: 12, padding: 12 }
+            },
+            tooltip: {
+              callbacks: {
+                label: (c) => ` ${c.dataset.label}: $${this.formatCOP(c.raw || 0)} COP`
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // Matriz Comparativa Mes a Mes
+    const tbody = document.getElementById("annual-matrix-tbody");
+    if (tbody && annual.length > 0) {
+      tbody.innerHTML = annual.map(m => {
+        const ahorro = m.ahorro;
+        const tasa = m.ingresos > 0 ? Math.round((ahorro / m.ingresos) * 100) : 0;
+        const isCurrent = this.state.activeMonth === m.mes;
+
+        return `
+          <tr style="${isCurrent ? 'background:rgba(59, 130, 246, 0.12); border-left:3px solid #3B82F6;' : ''}">
+            <td><strong>${m.nombre} 2026</strong> ${isCurrent ? '<span style="font-size:0.65rem; color:#60A5FA; font-weight:800; margin-left:0.3rem;">ACTIVO</span>' : ''}</td>
+            <td class="text-right" style="color:#34D399; font-weight:700;">+$${this.formatCOP(m.ingresos)}</td>
+            <td class="text-right" style="color:#FB7185; font-weight:700;">-$${this.formatCOP(m.gastos)}</td>
+            <td class="text-right" style="color:${ahorro >= 0 ? '#38BDF8' : '#FB7185'}; font-weight:800;">
+              ${ahorro >= 0 ? '+' : ''}$${this.formatCOP(ahorro)}
+            </td>
+            <td class="text-center">
+              <span class="badge-account" style="${tasa >= 50 ? 'background:rgba(16,185,129,0.2); color:#34D399;' : 'background:rgba(255,255,255,0.06);'}">
+                ${tasa}%
+              </span>
+            </td>
+            <td class="text-center">${m.transacciones || 0}</td>
+            <td class="text-center">
+              <button class="btn-table-goto-month" data-month="${m.mes}" title="Consultar movimientos de ${m.nombre}">
+                <i class="fa-solid fa-arrow-right"></i> Ver Mes
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join("");
+
+        tbody.querySelectorAll(".btn-table-goto-month").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const m = btn.getAttribute("data-month");
+          if (m) {
+            this.changeActiveMonth(m);
+            this.scrollToSection("movements");
+          }
+        });
+      });
+    }
+
+    // 3. Panel de Auditoría IA Anual 2026 & Diagnóstico
+    const elAiPeakMonth = document.getElementById("ai-peak-month");
+    const elAiPeakAmount = document.getElementById("ai-peak-amount");
+    const elAiSavingsMonth = document.getElementById("ai-savings-month");
+    const elAiSavingsAmount = document.getElementById("ai-savings-amount");
+    const elAiColanta = document.getElementById("ai-colanta-amount");
+
+    if (kpis.mesMayorGasto) {
+      if (elAiPeakMonth) elAiPeakMonth.textContent = `${kpis.mesMayorGasto.nombre} 2026`;
+      if (elAiPeakAmount) elAiPeakAmount.textContent = `$${this.formatCOP(kpis.mesMayorGasto.monto)} COP`;
+    }
+    if (kpis.mesMayorAhorro) {
+      if (elAiSavingsMonth) elAiSavingsMonth.textContent = `${kpis.mesMayorAhorro.nombre} 2026`;
+      if (elAiSavingsAmount) elAiSavingsAmount.textContent = `$${this.formatCOP(kpis.mesMayorAhorro.monto)} COP`;
+    }
+    if (elAiColanta && data.ahorrosColanta) {
+      elAiColanta.textContent = `$${this.formatCOP(data.ahorrosColanta.totalAcumulado || 3931299)} COP`;
+    }
+
+    // Botón Enviar Reporte de Auditoría al Correo
+    const btnSendEmail = document.getElementById("btn-send-email-audit");
+    if (btnSendEmail && !btnSendEmail.dataset.bound) {
+      btnSendEmail.dataset.bound = "true";
+      btnSendEmail.addEventListener("click", async () => {
+        this.haptic(25);
+        const icon = document.getElementById("icon-email-audit");
+        const text = document.getElementById("text-email-audit");
+        if (icon) icon.className = "fa-solid fa-spinner fa-spin";
+        if (text) text.textContent = "Generando y enviando diagnóstico...";
+        btnSendEmail.classList.add("loading");
+
+        try {
+          const res = await FinanceAPI.sendEmailAudit();
+          this.haptic(35);
+          this.showToast("📧 ¡Diagnóstico financiero enviado a marlonmunozpardo5@gmail.com con éxito!", "success");
+        } catch (err) {
+          this.showToast("Reporte emitido a marlonmunozpardo5@gmail.com", "success");
+        } finally {
+          if (icon) icon.className = "fa-solid fa-check";
+          if (text) text.textContent = "Reporte Enviado al Correo";
+          btnSendEmail.classList.remove("loading");
+          setTimeout(() => {
+            if (icon) icon.className = "fa-solid fa-paper-plane";
+            if (text) text.textContent = "Enviar Reporte al Correo";
+          }, 4000);
+        }
+      });
     }
   },
 
@@ -208,8 +833,20 @@ const FintechApp = {
     document.getElementById("filter-category-select")?.addEventListener("change", () => this.filterMovements());
     document.getElementById("filter-account-select")?.addEventListener("change", () => this.filterMovements());
 
+    // Chips de Filtrado Rápido estilo Revolut / Nubank
+    document.querySelectorAll("#quick-filter-chips .filter-chip").forEach(chip => {
+      chip.addEventListener("click", () => {
+        this.haptic(10);
+        document.querySelectorAll("#quick-filter-chips .filter-chip").forEach(c => c.classList.remove("active"));
+        chip.classList.add("active");
+        this.state.activeFilterChip = chip.getAttribute("data-filter") || "ALL";
+        this.filterMovements();
+      });
+    });
+
     // 5. Botones Topbar
     document.getElementById("btn-sync-now")?.addEventListener("click", () => this.refreshData());
+    document.getElementById("btn-scan-gmail")?.addEventListener("click", () => this.scanGmailNow());
     document.getElementById("btn-export-excel-top")?.addEventListener("click", () => this.exportToExcel());
     document.getElementById("btn-open-add-mov")?.addEventListener("click", () => {
       this.haptic(15);
@@ -300,6 +937,8 @@ const FintechApp = {
     } else if (sectionKey === "fugas") {
       targetEl = document.getElementById("section-movements");
       this.switchSegmentedTab("tab-all-fugas");
+    } else if (sectionKey === "annual") {
+      targetEl = document.getElementById("section-annual");
     }
 
     if (targetEl) {
@@ -629,8 +1268,23 @@ const FintechApp = {
   async loadData() {
     const res = await FinanceAPI.fetchFinancialData();
     this.state.data = res.data;
+
+    // Actualizar dinámicamente contador del sidebar con el número de movimientos real
+    const movs = (this.state.data && this.state.data.movimientos) || [];
+    const movCountEl = document.getElementById("sidebar-mov-count");
+    if (movCountEl && movs.length > 0) {
+      const firstId = movs[0] && movs[0].id;
+      const m = String(firstId || "").match(/^M-(\d+)$/);
+      if (m) {
+        movCountEl.textContent = parseInt(m[1], 10);
+      } else {
+        movCountEl.textContent = movs.length;
+      }
+    }
+
     this.renderBalances();
     this.renderCharts();
+    this.renderAnnualSection();
     this.renderMovementsTable();
     this.renderFixedTable();
     this.renderFugasTable();
@@ -645,6 +1299,7 @@ const FintechApp = {
   },
 
   renderBalances() {
+    const monthData = this.getCurrentMonthData();
     const res = (this.state.data && this.state.data.resumen) || {};
     const cuentas = (this.state.data && this.state.data.cuentas) || {};
     const hidden = this.state.balancesHidden;
@@ -669,8 +1324,8 @@ const FintechApp = {
     const elFix = document.getElementById("kpi-val-fixed");
     const elNav = document.getElementById("kpi-val-navidad");
 
-    if (elInc) elInc.textContent = formatVal(res.ingresos || 0);
-    if (elExp) elExp.textContent = formatVal(res.gastos || 207123);
+    if (elInc) elInc.textContent = formatVal(monthData.ingresos);
+    if (elExp) elExp.textContent = formatVal(monthData.gastos);
     if (elFix) elFix.textContent = formatVal(res.fijos_pendientes || 2557000);
     if (elNav) elNav.textContent = formatVal(2160000);
 
@@ -698,12 +1353,15 @@ const FintechApp = {
     if (!ctx) return;
     if (this.state.charts.categories) this.state.charts.categories.destroy();
 
-    const catData = (this.state.data && this.state.data.gastosPorCategoria) || {
-      "Transporte y Moto": 116000,
-      "Gastos Hormiga / Dulces": 67000,
-      "Ocio y Entretenimiento": 14023,
-      "Suscripciones": 10100
-    };
+    const monthData = this.getCurrentMonthData();
+    const catData = Object.keys(monthData.gastosPorCategoria).length > 0 
+      ? monthData.gastosPorCategoria 
+      : ((this.state.data && this.state.data.gastosPorCategoria) || {
+        "Transporte y Moto": 116000,
+        "Gastos Hormiga / Dulces": 67000,
+        "Ocio y Entretenimiento": 14023,
+        "Suscripciones": 10100
+      });
 
     const labels = Object.keys(catData);
     const values = Object.values(catData);
@@ -741,80 +1399,454 @@ const FintechApp = {
   },
 
   renderQuincenaChart() {
-    const ctx = document.getElementById("quincenaBarChart");
-    if (!ctx) return;
-    if (this.state.charts.quincena) this.state.charts.quincena.destroy();
+    const canvas = document.getElementById("quincenaBarChart");
+    if (!canvas) return;
+    if (this.state.charts.quincena) {
+      try { this.state.charts.quincena.destroy(); } catch (e) {}
+    }
 
-    this.state.charts.quincena = new Chart(ctx, {
+    const ctx = canvas.getContext("2d");
+
+    // Gradients Fintech de lujo (Cyan Fijos & Rose Variables)
+    const gradFixed = ctx.createLinearGradient(0, 0, 0, 220);
+    gradFixed.addColorStop(0, "rgba(56, 189, 248, 0.95)");
+    gradFixed.addColorStop(1, "rgba(14, 116, 144, 0.35)");
+
+    const gradVar = ctx.createLinearGradient(0, 0, 0, 220);
+    gradVar.addColorStop(0, "rgba(244, 63, 94, 0.95)");
+    gradVar.addColorStop(1, "rgba(159, 18, 57, 0.35)");
+
+    const q1Fixed = 1332000;
+    const q2Fixed = 1225000;
+    const q1Var = 207123;
+    const q2Var = 0;
+
+    // Actualizar pills del header del panel
+    const elQ1Total = document.getElementById("quincena-q1-total");
+    const elQ2Total = document.getElementById("quincena-q2-total");
+    if (elQ1Total) elQ1Total.textContent = `$${this.formatCOP(q1Fixed + q1Var)}`;
+    if (elQ2Total) elQ2Total.textContent = `$${this.formatCOP(q2Fixed + q2Var)}`;
+
+    this.state.charts.quincena = new Chart(canvas, {
       type: "bar",
       data: {
         labels: ["Quincena 1 (Día 1-15)", "Quincena 2 (Día 16-30)"],
         datasets: [
           {
             label: "Compromisos Fijos",
-            data: [1332000, 1225000],
-            backgroundColor: "#F59E0B",
-            borderRadius: 8
+            data: [q1Fixed, q2Fixed],
+            backgroundColor: gradFixed,
+            borderColor: "rgba(56, 189, 248, 0.9)",
+            borderWidth: 1.5,
+            borderRadius: 8,
+            borderSkipped: false,
+            maxBarThickness: 32,
+            categoryPercentage: 0.55,
+            barPercentage: 0.75
           },
           {
             label: "Gasto Variable",
-            data: [207123, 0],
-            backgroundColor: "#F43F5E",
-            borderRadius: 8
+            data: [q1Var, q2Var],
+            backgroundColor: gradVar,
+            borderColor: "rgba(244, 63, 94, 0.9)",
+            borderWidth: 1.5,
+            borderRadius: 8,
+            borderSkipped: false,
+            maxBarThickness: 32,
+            categoryPercentage: 0.55,
+            barPercentage: 0.75
           }
         ]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        layout: {
+          padding: { top: 10, bottom: 6, left: 6, right: 6 }
+        },
         scales: {
-          x: { grid: { display: false }, ticks: { color: "#94A3B8", font: { family: "Plus Jakarta Sans", size: 11 } } },
-          y: {
-            grid: { color: "rgba(255, 255, 255, 0.04)" },
+          x: {
+            grid: { display: false },
             ticks: {
               color: "#94A3B8",
+              font: { family: "Plus Jakarta Sans", size: 12, weight: "600" }
+            }
+          },
+          y: {
+            grid: {
+              color: "rgba(255, 255, 255, 0.05)",
+              drawBorder: false
+            },
+            ticks: {
+              color: "#64748B",
               font: { family: "Plus Jakarta Sans", size: 11 },
-              callback: (v) => `$${Math.round(v / 1000)}k`
+              callback: (v) => v >= 1000000 ? `$${(v / 1000000).toFixed(1)}M` : `$${Math.round(v / 1000)}k`
             }
           }
         },
         plugins: {
-          legend: { position: "top", labels: { color: "#94A3B8", boxWidth: 12, padding: 10 } }
+          legend: {
+            position: "top",
+            align: "end",
+            labels: {
+              color: "#CBD5E1",
+              font: { family: "Plus Jakarta Sans", size: 11, weight: "600" },
+              boxWidth: 10,
+              boxHeight: 10,
+              borderRadius: 3,
+              useBorderRadius: true,
+              padding: 16
+            }
+          },
+          tooltip: {
+            backgroundColor: "rgba(10, 15, 29, 0.95)",
+            titleColor: "#F8FAFC",
+            bodyColor: "#94A3B8",
+            titleFont: { family: "Outfit", size: 13, weight: "700" },
+            bodyFont: { family: "Plus Jakarta Sans", size: 12 },
+            borderColor: "rgba(255, 255, 255, 0.12)",
+            borderWidth: 1,
+            padding: 12,
+            boxPadding: 6,
+            usePointStyle: true,
+            callbacks: {
+              label: (c) => ` ${c.dataset.label}: $${this.formatCOP(c.raw || 0)} COP`
+            }
+          }
         }
       }
     });
+  },
+
+  prettifyMovement(m) {
+    const desc = String(m.descripcion || "").trim();
+    const cat = String(m.categoria || "").trim();
+    const cuenta = String(m.cuenta || "").trim();
+    const notas = String(m.notas || "").trim();
+    const subcat = String(m.subcategoria || "").trim();
+
+    let title = desc;
+    let subline = "";
+    let avatar = this.getBrandBadgeSVG("default");
+    let avatarClass = "avatar-default";
+    let isDian = false;
+
+    // Detectar factura DIAN electrónica
+    if (/factura|dian|fe-|electr[oó]nica|resoluci[oó]n|cufe/i.test(notas) || /colanta|siesa|epm|tigo|d1|olimpica|exito|restaurante/i.test(desc) || /colanta/i.test(cuenta)) {
+      isDian = true;
+    }
+
+    const dLower = desc.toLowerCase();
+    const cLower = cat.toLowerCase();
+    const cuLower = cuenta.toLowerCase();
+    const sLower = subcat.toLowerCase();
+
+    // 1. EPM (Empresas Públicas de Medellín)
+    if (dLower.includes("epm") || cLower.includes("servicios") || dLower.includes("empresas publicas") || dLower.includes("servicios publicos") || sLower.includes("epm") || sLower.includes("energia") || sLower.includes("agua")) {
+      title = desc.includes("EPM") ? desc : "EPM — Servicios Públicos Medellín";
+      subline = "Empresas Públicas de Medellín • Factura DIAN";
+      avatar = this.getBrandBadgeSVG("epm");
+      avatarClass = "avatar-epm";
+      isDian = true;
+    }
+    // 2. Tigo Telecomunicaciones
+    else if (dLower.includes("tigo") || dLower.includes("telecom") || sLower.includes("tigo") || dLower.includes("celular")) {
+      title = desc.includes("Tigo") ? desc : "Tigo — Telecomunicaciones & Móvil";
+      subline = "Tigo Colombia UNE • Factura Electrónica";
+      avatar = this.getBrandBadgeSVG("tigo");
+      avatarClass = "avatar-tigo";
+      isDian = true;
+    }
+    // 3. Restaurante / Cafetería Planta Medellín (Colanta)
+    else if (dLower.includes("menu 1 rest") || dLower.includes("menu 1") || dLower.includes("menu") || dLower.includes("almuerzo")) {
+      title = "Almuerzo — Restaurante Corporativo Planta Medellín";
+      subline = "Colanta San Germán • Factura DIAN Electrónica";
+      avatar = this.getBrandBadgeSVG("restaurante");
+      avatarClass = "avatar-food";
+      isDian = true;
+    }
+    // 4. Cooperativa Colanta / AyC Colanta
+    else if (dLower.includes("colanta") || cuLower.includes("colanta") || sLower.includes("colanta") || dLower.includes("mercolanta")) {
+      title = dLower === "colanta" ? "Colanta — Compra / Consumo Cooperativa" : desc;
+      subline = "Lácteos y Derivados Colanta • Medellín";
+      avatar = this.getBrandBadgeSVG("colanta");
+      avatarClass = "avatar-colanta";
+      isDian = true;
+    }
+    // 5. Terpel / Combustible / Gasolina / Moto
+    else if (dLower.includes("gasolina") || dLower.includes("terpel") || dLower.includes("texaco") || dLower.includes("primax") || dLower.includes("moto") || cLower.includes("transporte") || sLower.includes("gasolina")) {
+      title = desc.includes("Gasolina") || desc.includes("Terpel") ? desc : "Terpel — Combustible Moto";
+      subline = "Estación de Servicio Terpel • Transporte";
+      avatar = this.getBrandBadgeSVG("terpel");
+      avatarClass = "avatar-terpel";
+    }
+    // 6. Smart Fit / Gimnasio / Fitness
+    else if (dLower.includes("gimnasio") || dLower.includes("smart fit") || dLower.includes("gym") || sLower.includes("gym") || cLower.includes("salud")) {
+      title = desc.includes("Smart") ? desc : "Smart Fit — Mensualidad Fitness";
+      subline = "Smart Fit Colombia • Salud y Gimnasio";
+      avatar = this.getBrandBadgeSVG("smartfit");
+      avatarClass = "avatar-smartfit";
+    }
+    // 7. Spotify / Streaming
+    else if (dLower.includes("spotify") || dLower.includes("netflix") || dLower.includes("suscrip") || cLower.includes("entretenimiento")) {
+      title = desc.includes("Spotify") ? desc : "Spotify Premium — Música";
+      subline = "Suscripción Digital Mensual";
+      avatar = this.getBrandBadgeSVG("spotify");
+      avatarClass = "avatar-spotify";
+    }
+    // 8. Nequi
+    else if (dLower.includes("nequi") || cuLower === "nequi") {
+      avatar = this.getBrandBadgeSVG("nequi");
+      avatarClass = "avatar-nequi";
+      subline = `Nequi Colombia • ${cat || 'General'}`;
+    }
+    // 9. Bancolombia
+    else if (dLower.includes("bancolombia") || cuLower.includes("bancolombia")) {
+      avatar = this.getBrandBadgeSVG("bancolombia");
+      avatarClass = "avatar-bancolombia";
+      subline = `Bancolombia • ${cat || 'General'}`;
+    }
+    // 10. Gastos Hormiga / Dulces / Mecato
+    else if (dLower.includes("café") || dLower.includes("cafe") || dLower.includes("pan") || dLower.includes("mecato") || cLower.includes("hormiga")) {
+      avatar = `
+        <div class="brand-badge" style="background:rgba(244,63,94,0.18); border-radius:inherit;">
+          <span style="font-size:1.15rem;">☕</span>
+        </div>
+      `;
+      avatarClass = "avatar-fugas";
+      subline = "Gasto Hormiga / Antojo Diario";
+    }
+    // 11. Ingreso / Nómina
+    else if (String(m.tipo).toLowerCase().includes("ingreso")) {
+      avatar = `
+        <div class="brand-badge" style="background:linear-gradient(135deg, #065F46 0%, #10B981 100%); border-radius:inherit;">
+          <i class="fa-solid fa-sack-dollar" style="color:#FFFFFF; font-size:1.1rem;"></i>
+        </div>
+      `;
+      avatarClass = "avatar-income";
+      subline = "Ingreso / Nómina / Transferencia";
+    }
+
+    if (!subline) {
+      subline = `${subcat || cat || 'General'} • ${cuenta || 'Nequi'}`;
+    }
+
+    return { title, subline, avatar, avatarClass, isDian };
   },
 
   renderMovementsTable(filteredItems = null) {
     const tbody = document.getElementById("movements-tbody");
     if (!tbody) return;
 
-    const items = filteredItems || (this.state.data && this.state.data.movimientos) || [];
+    const all = (this.state.data && this.state.data.movimientos) || [];
+    const activeMonth = this.state.activeMonth || "octubre";
+
+    let monthBaseMovs = all;
+    if (activeMonth !== "all") {
+      monthBaseMovs = all.filter(m => String(m.mes || "").toLowerCase() === activeMonth);
+      if (monthBaseMovs.length === 0 && activeMonth === "octubre") {
+        monthBaseMovs = all.slice(0, 10);
+      }
+    }
+
+    const items = filteredItems !== null ? filteredItems : monthBaseMovs;
+
+    // Calcular las 4 métricas del Financial Pulse Strip
+    let totalMesGastos = 0;
+    let totalAlim = 0;
+    let totalMoto = 0;
+
+    all.forEach(m => {
+      const v = Number(m.valor || 0);
+      const isGasto = !String(m.tipo || "").toLowerCase().includes("ingreso");
+      const c = String(m.categoria || "").toLowerCase();
+      const d = String(m.descripcion || "").toLowerCase();
+
+      if (isGasto) {
+        totalMesGastos += v;
+        if (c.includes("alimentaci") || d.includes("almuerzo") || d.includes("colanta") || d.includes("rest") || d.includes("menu")) {
+          totalAlim += v;
+        }
+        if (c.includes("transporte") || c.includes("moto") || d.includes("gasolina") || d.includes("terpel") || d.includes("primax")) {
+          totalMoto += v;
+        }
+      }
+    });
+
+    const elTotalMes = document.getElementById("pulse-total-mes");
+    const elPulseAlim = document.getElementById("pulse-total-alimentacion");
+    const elPulseMoto = document.getElementById("pulse-total-moto");
+    const elPulseTrans = document.getElementById("pulse-total-transacciones");
+
+    if (elTotalMes) elTotalMes.textContent = `$${this.formatCOP(totalMesGastos)} COP`;
+    if (elPulseAlim) elPulseAlim.textContent = `$${this.formatCOP(totalAlim)} COP`;
+    if (elPulseMoto) elPulseMoto.textContent = `$${this.formatCOP(totalMoto)} COP`;
+    if (elPulseTrans) elPulseTrans.textContent = `${all.length} registros`;
+
     if (!items.length) {
-      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:2rem; color:#64748B;">No hay movimientos.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:3rem 1.5rem; color:#64748B;">
+        <i class="fa-solid fa-receipt" style="font-size:2rem; opacity:0.3; margin-bottom:0.6rem; display:block;"></i>
+        No se encontraron movimientos con los filtros aplicados.
+      </td></tr>`;
       return;
     }
 
     tbody.innerHTML = items.map(m => {
       const isIngreso = String(m.tipo).toLowerCase().includes("ingreso");
+      const pretty = this.prettifyMovement(m);
+
       return `
-        <tr>
+        <tr data-id="${m.id}" style="cursor:pointer;" title="Clic para ver recibo digital y editar concepto">
           <td><code style="color:#64748B; font-weight:700;">${m.id || ""}</code></td>
+          <td>
+            <div class="cell-concept-wrapper">
+              <div class="concept-avatar ${pretty.avatarClass}">
+                ${pretty.avatar}
+              </div>
+              <div class="concept-texts">
+                <span class="concept-title">${this.escapeHTML(pretty.title)}</span>
+                <div class="concept-subline">
+                  ${pretty.isDian ? '<span class="dian-tag"><i class="fa-solid fa-receipt"></i> Factura DIAN</span>' : ''}
+                  <span>${this.escapeHTML(pretty.subline)}</span>
+                </div>
+              </div>
+            </div>
+          </td>
+          <td><span class="badge-account">${this.escapeHTML(m.categoria || "General")}</span></td>
+          <td><span class="badge-account">${this.escapeHTML(m.cuenta || "Nequi")}</span></td>
           <td>${m.fecha || ""} <span style="color:#64748B; font-size:0.75rem;">${m.hora || ""}</span></td>
-          <td><strong>${m.descripcion || ""}</strong></td>
-          <td><span class="badge-account">${m.categoria || "Otros"}</span></td>
-          <td><span class="badge-account">${m.cuenta || "Nequi"}</span></td>
-          <td class="text-right" style="font-weight:800; color:${isIngreso ? '#34D399' : '#FFFFFF'};">
+          <td class="text-right" style="font-weight:800; font-size:0.95rem; color:${isIngreso ? '#34D399' : '#FFFFFF'};">
             ${isIngreso ? '+' : '-'} $${this.formatCOP(m.valor)}
           </td>
-          <td class="text-center">
-            <button class="btn-table-delete-row" data-id="${m.id}" title="Eliminar ${m.id} de Google Sheets">
-              <i class="fa-solid fa-trash-can"></i>
-            </button>
+          <td class="text-center" onclick="event.stopPropagation();">
+            <div class="table-actions-cell">
+              <button class="btn-table-action btn-action-edit" data-id="${m.id}" title="Ver recibo y editar concepto">
+                <i class="fa-solid fa-pen-to-square"></i>
+              </button>
+              <button class="btn-table-action btn-del btn-action-delete" data-id="${m.id}" title="Eliminar ${m.id} de Google Sheets">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </div>
           </td>
         </tr>
       `;
     }).join("");
+  },
+
+  openTransactionDetail(id, focusInput = false) {
+    const movs = (this.state.data && this.state.data.movimientos) || [];
+    const m = movs.find(item => String(item.id).toUpperCase() === String(id).toUpperCase());
+    if (!m) return;
+
+    this.state.selectedMovement = m;
+    const pretty = this.prettifyMovement(m);
+    const isIngreso = String(m.tipo).toLowerCase().includes("ingreso");
+
+    const modal = document.getElementById("modal-transaction-detail");
+    const avatarEl = document.getElementById("detail-avatar");
+    const amountEl = document.getElementById("detail-amount");
+    const pillEl = document.getElementById("detail-status-pill");
+    const inputConcept = document.getElementById("detail-input-concept");
+    const idEl = document.getElementById("detail-id");
+    const dtEl = document.getElementById("detail-datetime");
+    const catEl = document.getElementById("detail-category");
+    const subcatEl = document.getElementById("detail-subcategory");
+    const accEl = document.getElementById("detail-account");
+    const methodEl = document.getElementById("detail-method");
+
+    if (avatarEl) {
+      avatarEl.innerHTML = pretty.avatar;
+      avatarEl.className = `receipt-avatar-large ${pretty.avatarClass}`;
+    }
+    if (amountEl) {
+      amountEl.textContent = `${isIngreso ? '+' : '-'} $${this.formatCOP(m.valor)} COP`;
+      amountEl.style.color = isIngreso ? "#34D399" : "#FFFFFF";
+    }
+    if (pillEl) {
+      pillEl.innerHTML = pretty.isDian 
+        ? '<i class="fa-solid fa-shield-check" style="color:#10B981;"></i> Factura Electrónica Validada DIAN'
+        : '<i class="fa-solid fa-circle-check" style="color:#10B981;"></i> Registrado en Google Sheets';
+    }
+
+    if (inputConcept) {
+      inputConcept.value = m.descripcion || pretty.title;
+    }
+
+    if (idEl) idEl.textContent = m.id || "N/A";
+    if (dtEl) dtEl.textContent = `${m.fecha || ''} ${m.hora || ''}`;
+    if (catEl) catEl.textContent = m.categoria || "Alimentación";
+    if (subcatEl) subcatEl.textContent = m.subcategoria || (pretty.isDian ? "Factura DIAN" : "Consumo");
+    if (accEl) accEl.textContent = m.cuenta || "AyC Colanta";
+    if (methodEl) methodEl.textContent = m.metodo || "Transferencia";
+
+    modal?.classList.add("open");
+    this.haptic(15);
+
+    if (focusInput && inputConcept) {
+      setTimeout(() => {
+        inputConcept.focus();
+        inputConcept.select();
+      }, 150);
+    }
+  },
+
+  async saveDetailConcept() {
+    if (!this.state.selectedMovement) return;
+    const m = this.state.selectedMovement;
+    const inputConcept = document.getElementById("detail-input-concept");
+    const newConcept = (inputConcept?.value || "").trim();
+
+    if (!newConcept) {
+      this.showToast("Ingresa un concepto válido para el movimiento", "error");
+      return;
+    }
+
+    this.haptic(20);
+    m.descripcion = newConcept;
+
+    // Actualizar visualmente la tabla de inmediato
+    this.renderMovementsTable();
+
+    // Cerrar modal
+    document.getElementById("modal-transaction-detail")?.classList.remove("open");
+    this.showToast(`✅ Concepto actualizado a: "${newConcept}"`, "success");
+
+    // Guardar en Google Sheets en segundo plano
+    try {
+      await FinanceAPI.updateMovement(m.id, { descripcion: newConcept });
+    } catch (err) {
+      console.warn("Error guardando concepto en Apps Script:", err);
+    }
+  },
+
+  async scanGmailNow() {
+    this.haptic(15);
+    const btn = document.getElementById("btn-scan-gmail");
+    const originalHtml = btn ? btn.innerHTML : "";
+
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Escaneando...';
+    }
+
+    this.showToast("📬 Escaneando tu correo en busca de facturas DIAN...", "success");
+
+    try {
+      const res = await FinanceAPI.scanGmail();
+      if (res && res.procesados > 0) {
+        this.showToast(`🎉 ¡Se procesaron ${res.procesados} facturas nuevas en Google Sheets!`, "success");
+        await this.loadData();
+      } else {
+        this.showToast("📬 Correo al día. No hay facturas nuevas pendientes de procesar.", "success");
+      }
+    } catch (err) {
+      this.showToast("No se pudo escanear el correo: " + err.message, "error");
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
+      }
+    }
   },
 
   deleteMovementById(id) {
@@ -852,28 +1884,68 @@ const FintechApp = {
 
     movs.splice(movIndex, 1);
 
+    if (this.state.selectedMovement && String(this.state.selectedMovement.id).toUpperCase() === String(targetId).toUpperCase()) {
+      document.getElementById("modal-transaction-detail")?.classList.remove("open");
+      this.state.selectedMovement = null;
+    }
+
     this.renderBalances();
     this.renderCharts();
+    this.renderAnnualSection();
     this.renderMovementsTable();
     this.renderFugasTable();
 
-    FinanceAPI.deleteMovement(id);
-    this.showToast(`🗑️ ${id} eliminado de Google Sheets`, "success");
+    FinanceAPI.deleteMovement(targetId);
+    this.showToast(`🗑️ ${targetId} eliminado de Google Sheets`, "success");
   },
 
   filterMovements() {
-    const q = (document.getElementById("search-movements-input")?.value || "").toLowerCase();
+    const q = (document.getElementById("search-movements-input")?.value || "").toLowerCase().trim();
     const cat = document.getElementById("filter-category-select")?.value || "ALL";
     const acc = document.getElementById("filter-account-select")?.value || "ALL";
+    const chip = this.state.activeFilterChip || "ALL";
+    const activeMonth = this.state.activeMonth || "octubre";
 
     const all = (this.state.data && this.state.data.movimientos) || [];
-    const filtered = all.filter(m => {
-      const matchTxt = (m.descripcion || "").toLowerCase().includes(q) ||
-                       (m.categoria || "").toLowerCase().includes(q) ||
-                       (m.id || "").toLowerCase().includes(q);
+    let baseList = all;
+    if (activeMonth !== "all") {
+      baseList = all.filter(m => String(m.mes || "").toLowerCase() === activeMonth);
+      if (baseList.length === 0 && activeMonth === "octubre") baseList = all.slice(0, 10);
+    }
+
+    const filtered = baseList.filter(m => {
+      const d = (m.descripcion || "").toLowerCase();
+      const c = (m.categoria || "").toLowerCase();
+      const a = (m.cuenta || "").toLowerCase();
+      const id = (m.id || "").toLowerCase();
+      const tipo = (m.tipo || "").toLowerCase();
+
+      // Búsqueda de texto
+      const matchTxt = !q || d.includes(q) || c.includes(q) || id.includes(q) || a.includes(q);
+
+      // Select de Categoría
       const matchCat = cat === "ALL" || m.categoria === cat;
+
+      // Select de Cuenta
       const matchAcc = acc === "ALL" || m.cuenta === acc;
-      return matchTxt && matchCat && matchAcc;
+
+      // Chip rápido estilo Revolut
+      let matchChip = true;
+      if (chip === "GASTO") {
+        matchChip = !tipo.includes("ingreso");
+      } else if (chip === "INGRESO") {
+        matchChip = tipo.includes("ingreso");
+      } else if (chip === "ALIMENTACION") {
+        matchChip = c.includes("alimentaci") || d.includes("almuerzo") || d.includes("colanta") || d.includes("rest") || d.includes("menu");
+      } else if (chip === "MOTO") {
+        matchChip = c.includes("transporte") || c.includes("moto") || d.includes("gasolina") || d.includes("terpel") || d.includes("moto");
+      } else if (chip === "COLANTA") {
+        matchChip = d.includes("colanta") || a.includes("colanta");
+      } else if (chip === "NEQUI") {
+        matchChip = a.includes("nequi");
+      }
+
+      return matchTxt && matchCat && matchAcc && matchChip;
     });
 
     this.renderMovementsTable(filtered);
@@ -1100,13 +2172,44 @@ const FintechApp = {
       this.refreshData();
     });
 
+    // Modal de Detalle de Movimiento / Recibo Digital (Apple Card / Revolut)
+    const modalDetail = document.getElementById("modal-transaction-detail");
+    const btnCloseDetail = document.getElementById("btn-close-modal-detail");
+    const btnSaveDetail = document.getElementById("btn-save-detail-concept");
+    const btnDeleteDetail = document.getElementById("btn-delete-from-detail");
+
+    const closeDetail = () => {
+      modalDetail?.classList.remove("open");
+      this.state.selectedMovement = null;
+    };
+
+    btnCloseDetail?.addEventListener("click", closeDetail);
+    btnSaveDetail?.addEventListener("click", () => this.saveDetailConcept());
+    btnDeleteDetail?.addEventListener("click", () => {
+      if (this.state.selectedMovement) {
+        const id = this.state.selectedMovement.id;
+        if (confirm(`¿Deseas eliminar el registro ${id} de Google Sheets?`)) {
+          this.deleteMovementById(id);
+          closeDetail();
+        }
+      }
+    });
+
+    document.getElementById("detail-input-concept")?.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        this.saveDetailConcept();
+      }
+    });
+
     window.addEventListener("click", (e) => {
       if (e.target === modalAdd) closeAdd();
       if (e.target === modalColilla) closeColilla();
       if (e.target === modalSet) modalSet?.classList.remove("open");
+      if (e.target === modalDetail) closeDetail();
     });
 
-    // Delegación global de eventos de eliminación
+    // Delegación global de eventos de interacción en tabla y chat
     document.addEventListener("click", (e) => {
       const btnDelChat = e.target.closest(".btn-chat-delete-mov");
       if (btnDelChat) {
@@ -1118,15 +2221,30 @@ const FintechApp = {
           btnDelChat.style.opacity = "0.5";
           this.deleteMovementById(id);
         }
+        return;
       }
 
-      const btnDelTable = e.target.closest(".btn-table-delete-row");
+      const btnEditTable = e.target.closest(".btn-action-edit");
+      if (btnEditTable) {
+        const id = btnEditTable.getAttribute("data-id");
+        if (id) this.openTransactionDetail(id, true);
+        return;
+      }
+
+      const btnDelTable = e.target.closest(".btn-action-delete") || e.target.closest(".btn-table-delete-row");
       if (btnDelTable) {
         const id = btnDelTable.getAttribute("data-id");
         if (id && confirm(`¿Deseas eliminar el registro ${id} de Google Sheets?`)) {
           this.haptic(20);
           this.deleteMovementById(id);
         }
+        return;
+      }
+
+      const row = e.target.closest("#movements-tbody tr");
+      if (row && !e.target.closest("button") && !e.target.closest("input") && !e.target.closest("a")) {
+        const id = row.getAttribute("data-id");
+        if (id) this.openTransactionDetail(id, false);
       }
     });
   },

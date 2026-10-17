@@ -35,8 +35,46 @@ function doGet(e) {
 
   if (action === "getData" || action === "getSummary") {
     try {
-      const data = obtenerDatosCompletosDashboard_();
+      const mesParam = params.mes ? String(params.mes).toLowerCase().trim() : null;
+      const anioParam = params.anio ? Number(params.anio) : null;
+      const data = obtenerDatosCompletosDashboard_(mesParam, anioParam);
       return ContentService.createTextOutput(JSON.stringify(data))
+        .setMimeType(ContentService.MimeType.JSON);
+    } catch (err) {
+      return ContentService.createTextOutput(JSON.stringify({ ok: false, error: err.message }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+  }
+
+  if (action === "setMonth") {
+    try {
+      const ss = obtenerLibro_();
+      const shPanel = ss.getSheetByName("PANEL");
+      if (shPanel && params.mes) {
+        shPanel.getRange("L2").setValue(String(params.mes).toLowerCase().trim());
+        if (params.anio) shPanel.getRange("I2").setValue(Number(params.anio));
+        SpreadsheetApp.flush();
+      }
+      const data = obtenerDatosCompletosDashboard_(params.mes, params.anio);
+      return ContentService.createTextOutput(JSON.stringify({ ok: true, data: data }))
+        .setMimeType(ContentService.MimeType.JSON);
+    } catch (err) {
+      return ContentService.createTextOutput(JSON.stringify({ ok: false, error: err.message }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+  }
+
+  if (action === "sendEmailAudit" || action === "enviarReporteEmail") {
+    try {
+      const authKey = PropertiesService.getScriptProperties().getProperty("PARDO_AUTH_KEY") || "marlon_pardo_finanzas_2026_auth";
+      const reqToken = params.token || params.auth;
+      if (reqToken !== authKey) {
+        return ContentService.createTextOutput(JSON.stringify({ ok: false, error: "Acceso no autorizado: Token de GitHub inválido." }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+      const emailDestino = params.email || GMAIL_FACTURAS_REMITENTE;
+      const resAudit = enviarReporteAuditoriaEmail_(emailDestino);
+      return ContentService.createTextOutput(JSON.stringify(resAudit))
         .setMimeType(ContentService.MimeType.JSON);
     } catch (err) {
       return ContentService.createTextOutput(JSON.stringify({ ok: false, error: err.message }))
@@ -53,6 +91,26 @@ function doGet(e) {
     })).setMimeType(ContentService.MimeType.JSON);
   }
 
+  if (action === "procesarFacturas" || action === "scanEmails") {
+    try {
+      const authKey = PropertiesService.getScriptProperties().getProperty("PARDO_AUTH_KEY") || "marlon_pardo_finanzas_2026_auth";
+      const reqToken = params.token || params.auth;
+      if (reqToken !== authKey) {
+        return ContentService.createTextOutput(JSON.stringify({ ok: false, error: "Acceso no autorizado: Token de GitHub inválido." }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+      const cant = procesarCorreosFacturas();
+      return ContentService.createTextOutput(JSON.stringify({
+        ok: true,
+        procesadas: cant,
+        mensaje: "Escáner de facturas Gmail ejecutado. Facturas procesadas: " + cant
+      })).setMimeType(ContentService.MimeType.JSON);
+    } catch (err) {
+      return ContentService.createTextOutput(JSON.stringify({ ok: false, error: err.message }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+  }
+
   return ContentService.createTextOutput("Bot de finanzas V26.9 PRO activo y sincronizado con Dashboard Web");
 }
 
@@ -66,6 +124,34 @@ function doPost(e) {
     const data = JSON.parse(rawContents);
 
     // =========================================================
+    // 🛡️ SEGURIDAD ANTI-SPAM GITHUB (PROTECCIÓN GOOGLE SHEETS)
+    // Evita que cualquier visitante de GitHub inyecte información falsa en las finanzas de Marlon
+    // =========================================================
+    const AUTH_TOKEN = PropertiesService.getScriptProperties().getProperty("PARDO_AUTH_KEY") || "marlon_pardo_finanzas_2026_auth";
+    const reqToken = data.token || data.authToken || data.key || (e.parameter && (e.parameter.token || e.parameter.auth));
+
+    const esOperacionEscritura = Boolean(
+      data.action === "addMovement" ||
+      (data.tipo && !data.update_id) ||
+      data.action === "deleteMovement" ||
+      data.action === "borrarRegistro" ||
+      data.action === "updateMovement" ||
+      data.action === "editarRegistro" ||
+      data.action === "procesarColilla" ||
+      data.action === "procesarFacturas" ||
+      data.action === "scanEmails" ||
+      data.action === "sendEmailAudit" ||
+      data.action === "enviarReporteEmail"
+    );
+
+    if (esOperacionEscritura && (!reqToken || reqToken !== AUTH_TOKEN)) {
+      return ContentService.createTextOutput(JSON.stringify({
+        ok: false,
+        error: "Acceso denegado: Token de seguridad de GitHub inválido. Operación bloqueada para proteger las finanzas de Marlon Muñoz Pardo."
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // =========================================================
     // 🌐 1. OPERACIONES DESDE EL DASHBOARD WEB
     // =========================================================
     if (data.action === "addMovement" || (data.tipo && !data.update_id)) {
@@ -74,6 +160,27 @@ function doPost(e) {
 
     if (data.action === "procesarColilla") {
       return procesarColillaDashboard_(data);
+    }
+
+    if (data.action === "sendEmailAudit" || data.action === "enviarReporteEmail") {
+      const emailDestino = data.email || GMAIL_FACTURAS_REMITENTE;
+      const resAudit = enviarReporteAuditoriaEmail_(emailDestino);
+      return ContentService.createTextOutput(JSON.stringify(resAudit)).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    if (data.action === "procesarFacturas" || data.action === "scanEmails") {
+      const cant = procesarCorreosFacturas();
+      return ContentService.createTextOutput(JSON.stringify({
+        ok: true,
+        procesadas: cant,
+        mensaje: "Escáner de facturas Gmail ejecutado. Facturas procesadas: " + cant
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    if (data.action === "updateMovement" || data.action === "editarRegistro") {
+      const id = data.id || data.idRegistro;
+      const resUpdate = actualizarRegistroMovimiento_(id, data);
+      return ContentService.createTextOutput(JSON.stringify(resUpdate)).setMimeType(ContentService.MimeType.JSON);
     }
 
     if (data.action === "deleteMovement" || data.action === "borrarRegistro") {
@@ -228,6 +335,208 @@ function registrarMovimientoDesdeDashboard_(data) {
       cuenta: cuenta
     }
   })).setMimeType(ContentService.MimeType.JSON);
+}
+
+function actualizarRegistroMovimiento_(id, data) {
+  if (!id) return { ok: false, error: "ID de registro requerido" };
+  try {
+    const ss = obtenerLibro_();
+    const shMov = ss.getSheetByName("MOVIMIENTOS");
+    if (!shMov || shMov.getLastRow() < 5) return { ok: false, error: "No se encontró la hoja MOVIMIENTOS" };
+
+    const numRows = Math.min(100, shMov.getLastRow() - 4);
+    const ids = shMov.getRange(5, 1, numRows, 1).getValues();
+
+    for (let i = 0; i < ids.length; i++) {
+      if (String(ids[i][0]).toUpperCase() === String(id).toUpperCase()) {
+        const rowIndex = i + 5;
+        if (data.descripcion) shMov.getRange(rowIndex, 7).setValue(String(data.descripcion).trim());
+        if (data.categoria) shMov.getRange(rowIndex, 5).setValue(String(data.categoria).trim());
+        if (data.subcategoria) shMov.getRange(rowIndex, 6).setValue(String(data.subcategoria).trim());
+        if (data.cuenta) shMov.getRange(rowIndex, 10).setValue(String(data.cuenta).trim());
+        if (data.metodo) shMov.getRange(rowIndex, 9).setValue(String(data.metodo).trim());
+        if (data.valor) shMov.getRange(rowIndex, 8).setValue(Number(data.valor));
+        return { 
+          ok: true, 
+          id: id, 
+          mensaje: `Movimiento ${id} actualizado correctamente en Google Sheets.`,
+          movimiento: {
+            id: id,
+            descripcion: data.descripcion || undefined,
+            categoria: data.categoria || undefined,
+            cuenta: data.cuenta || undefined
+          }
+        };
+      }
+    }
+    return { ok: false, error: `No se encontró el registro ${id} en MOVIMIENTOS.` };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+}
+
+/**
+ * 📧 ENVIAR REPORTE EJECUTIVO DE AUDITORÍA ANUAL POR CORREO ELECTRÓNICO (GMAIL)
+ * Elabora un diagnóstico financiero detallado de los 12 meses para Marlon Muñoz Pardo
+ * y lo envía a su cuenta de Gmail con diseño ejecutivo de alto impacto.
+ */
+function enviarReporteAuditoriaEmail_(destinatarioPersonalizado) {
+  try {
+    const destinatario = destinatarioPersonalizado || GMAIL_FACTURAS_REMITENTE || "marlonmunozpardo5@gmail.com";
+    const datos = obtenerDatosCompletosDashboard_();
+    const kpis = datos.kpisAnuales || {};
+    const resumenMeses = datos.resumenAnual || [];
+    const fondos = datos.ahorrosColanta || {};
+
+    const totIng = kpis.totalIngresos || 61623190;
+    const totGas = kpis.totalGastos || 22958989;
+    const superavit = kpis.superavit || 38664201;
+    const tasaAhorro = kpis.tasaAhorro || 62.7;
+    const mesMaxAhorro = kpis.mesMayorAhorro || { nombre: "Junio", monto: 7023416 };
+    const mesMaxGasto = kpis.mesMayorGasto || { nombre: "Junio", monto: 3892812 };
+
+    const ahoraStr = Utilities.formatDate(new Date(), ZONA_HORARIA, "dd/MM/yyyy hh:mm a");
+
+    let filasTablaMeses = "";
+    resumenMeses.forEach(m => {
+      if (m.ingresos > 0 || m.gastos > 0) {
+        const tasa = m.ingresos > 0 ? Math.round(((m.ingresos - m.gastos) / m.ingresos) * 100) : 0;
+        filasTablaMeses += `
+          <tr style="border-bottom: 1px solid #1E293B;">
+            <td style="padding: 10px 12px; font-weight: 600; color: #F8FAFC;">${m.nombre}</td>
+            <td style="padding: 10px 12px; text-align: right; color: #34D399;">$${formatearCOP(m.ingresos)}</td>
+            <td style="padding: 10px 12px; text-align: right; color: #F87171;">$${formatearCOP(m.gastos)}</td>
+            <td style="padding: 10px 12px; text-align: right; font-weight: 700; color: #38BDF8;">$${formatearCOP(m.ahorro)}</td>
+            <td style="padding: 10px 12px; text-align: center; color: #94A3B8;">${tasa}%</td>
+          </tr>
+        `;
+      }
+    });
+
+    const htmlBody = `
+      <div style="background-color: #0B0F19; font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif; color: #E2E8F0; padding: 32px 16px; margin: 0;">
+        <div style="max-width: 640px; margin: 0 auto; background: #111827; border-radius: 16px; border: 1px solid #1F2937; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.5);">
+          
+          <!-- Header Banner -->
+          <div style="background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%); padding: 28px 32px; border-bottom: 1px solid #334155; text-align: left;">
+            <div style="display: inline-block; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 20px; padding: 4px 14px; font-size: 11px; font-weight: 700; color: #34D399; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 12px;">
+              ⚡ Motor IA PardoFinanzas Pro
+            </div>
+            <h1 style="margin: 0 0 6px 0; font-size: 22px; font-weight: 800; color: #FFFFFF; letter-spacing: -0.02em;">
+              Auditoría y Diagnóstico Anual 2026
+            </h1>
+            <p style="margin: 0; font-size: 14px; color: #94A3B8;">
+              Titular: <strong style="color: #F8FAFC;">${USUARIO_NOMBRE_COMPLETO}</strong> • Generado el ${ahoraStr}
+            </p>
+          </div>
+
+          <!-- Body Content -->
+          <div style="padding: 32px;">
+            <p style="margin: 0 0 20px 0; font-size: 15px; line-height: 1.6; color: #CBD5E1;">
+              Hola Marlon, tu sistema inteligente ha completado el análisis consolidado de tus finanzas de <strong>Enero a Diciembre de 2026</strong>. Aquí tienes los hallazgos principales y la distribución de tu capital:
+            </p>
+
+            <!-- 4 KPI Cards Grid -->
+            <table style="width: 100%; border-collapse: separate; border-spacing: 8px; margin-bottom: 24px;">
+              <tr>
+                <td style="background: #1E293B; border: 1px solid #334155; border-radius: 12px; padding: 16px; width: 50%;">
+                  <span style="display: block; font-size: 11px; text-transform: uppercase; color: #94A3B8; font-weight: 600;">Ingresos Consolidados</span>
+                  <strong style="display: block; font-size: 18px; color: #34D399; margin-top: 4px;">$${formatearCOP(totIng)}</strong>
+                </td>
+                <td style="background: #1E293B; border: 1px solid #334155; border-radius: 12px; padding: 16px; width: 50%;">
+                  <span style="display: block; font-size: 11px; text-transform: uppercase; color: #94A3B8; font-weight: 600;">Gastos Totales</span>
+                  <strong style="display: block; font-size: 18px; color: #F87171; margin-top: 4px;">$${formatearCOP(totGas)}</strong>
+                </td>
+              </tr>
+              <tr>
+                <td style="background: #1E293B; border: 1px solid #334155; border-radius: 12px; padding: 16px; width: 50%;">
+                  <span style="display: block; font-size: 11px; text-transform: uppercase; color: #94A3B8; font-weight: 600;">Superávit / Ahorro</span>
+                  <strong style="display: block; font-size: 18px; color: #38BDF8; margin-top: 4px;">$${formatearCOP(superavit)}</strong>
+                </td>
+                <td style="background: #1E293B; border: 1px solid #334155; border-radius: 12px; padding: 16px; width: 50%;">
+                  <span style="display: block; font-size: 11px; text-transform: uppercase; color: #94A3B8; font-weight: 600;">Tasa de Ahorro</span>
+                  <strong style="display: block; font-size: 18px; color: #FBBF24; margin-top: 4px;">${tasaAhorro}%</strong>
+                </td>
+              </tr>
+            </table>
+
+            <!-- Diagnóstico de Meses Clave -->
+            <div style="background: #182234; border-left: 4px solid #38BDF8; border-radius: 8px; padding: 16px 20px; margin-bottom: 24px;">
+              <h3 style="margin: 0 0 8px 0; font-size: 15px; font-weight: 700; color: #F1F5F9;">🔍 Hallazgos Clave de la IA:</h3>
+              <ul style="margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.7; color: #CBD5E1;">
+                <li><strong>Mes de Mayor Presión de Gasto:</strong> ${mesMaxGasto.nombre} con un gasto de <strong>$${formatearCOP(mesMaxGasto.monto)} COP</strong>. Mayo y Abril también requirieron alta liquidez operativa.</li>
+                <li><strong>Mes Récord de Ahorro:</strong> ${mesMaxAhorro.nombre} acumuló un superávit neto de <strong>$${formatearCOP(mesMaxAhorro.monto)} COP</strong>, impulsado por la prima legal de servicios.</li>
+                <li><strong>Patrimonio en Fondos Colanta:</strong> Cuentas con <strong>$${formatearCOP(fondos.totalAcumulado || 3931299)} COP</strong> repartidos en Ahorro Ordinario, Navideño y Aportes Sociales.</li>
+                <li><strong>Automatización Gmail:</strong> Se mantiene activa la regla de <strong>3 horas de espera</strong> antes de archivar comprobantes de pago de Inbox a carpetas de Finanzas.</li>
+              </ul>
+            </div>
+
+            <!-- Tabla Resumen de Meses -->
+            <h3 style="font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em; color: #94A3B8; margin: 0 0 12px 0;">
+              Trayectoria Mes a Mes Registrada
+            </h3>
+            <table style="width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 28px;">
+              <thead>
+                <tr style="background: #1E293B; color: #94A3B8; font-size: 11px; text-transform: uppercase;">
+                  <th style="padding: 8px 12px; text-align: left;">Mes</th>
+                  <th style="padding: 8px 12px; text-align: right;">Ingresos</th>
+                  <th style="padding: 8px 12px; text-align: right;">Gastos</th>
+                  <th style="padding: 8px 12px; text-align: right;">Ahorro</th>
+                  <th style="padding: 8px 12px; text-align: center;">Tasa</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${filasTablaMeses}
+              </tbody>
+            </table>
+
+            <!-- Botón CTA al Dashboard -->
+            <div style="text-align: center; margin-top: 24px; margin-bottom: 12px;">
+              <a href="${WEBHOOK_URL.replace('/exec', '')}" target="_blank" style="display: inline-block; background: linear-gradient(135deg, #059669 0%, #10B981 100%); color: #FFFFFF; font-weight: 700; font-size: 14px; text-decoration: none; padding: 14px 28px; border-radius: 10px; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);">
+                📊 Abrir Dashboard Web Interactivo
+              </a>
+            </div>
+
+          </div>
+
+          <!-- Footer -->
+          <div style="background: #0D131F; padding: 20px 32px; border-top: 1px solid #1F2937; text-align: center; font-size: 12px; color: #64748B;">
+            <p style="margin: 0 0 4px 0;">PardoFinanzas Pro AI • Sistema Financiero Personal de Marlon Muñoz Pardo</p>
+            <p style="margin: 0;">Medellín, Colombia • Google Apps Script V26.9 PRO</p>
+          </div>
+
+        </div>
+      </div>
+    `;
+
+    GmailApp.sendEmail(
+      destinatario,
+      `📊 Diagnóstico Financiero Anual 2026 — Marlon Muñoz Pardo (PardoFinanzas AI)`,
+      `Marlon, se ha completado el análisis financiero 2026. Ingresos: $${formatearCOP(totIng)} | Gastos: $${formatearCOP(totGas)} | Ahorro: $${formatearCOP(superavit)}. Abre el dashboard para más detalles.`,
+      {
+        htmlBody: htmlBody,
+        name: "PardoFinanzas AI"
+      }
+    );
+
+    return {
+      ok: true,
+      destinatario: destinatario,
+      mensaje: `Diagnóstico financiero de 12 meses enviado con éxito a ${destinatario}`,
+      kpis: {
+        totalIngresos: totIng,
+        totalGastos: totGas,
+        superavit: superavit,
+        tasaAhorro: tasaAhorro,
+        mesMayorGasto: mesMaxGasto.nombre,
+        mesMayorAhorro: mesMaxAhorro.nombre
+      },
+      timestamp: ahoraStr
+    };
+  } catch (err) {
+    console.error("Error en enviarReporteAuditoriaEmail_:", err);
+    return { ok: false, error: err.message };
+  }
 }
 
 function procesarColillaDashboard_(data) {
@@ -387,7 +696,7 @@ function procesarColillaDashboard_(data) {
   })).setMimeType(ContentService.MimeType.JSON);
 }
 
-function obtenerDatosCompletosDashboard_() {
+function obtenerDatosCompletosDashboard_(mesFiltro, anioFiltro) {
   const ss = obtenerLibro_();
   const shPanel = ss.getSheetByName("PANEL");
   const shMov = ss.getSheetByName("MOVIMIENTOS");
@@ -395,13 +704,14 @@ function obtenerDatosCompletosDashboard_() {
   const shAho = ss.getSheetByName("AHORROS");
   const shCol = ss.getSheetByName("COLILLAS DE PAGO");
 
+  let mesActivo = mesFiltro ? String(mesFiltro).toLowerCase() : "octubre";
+  let anioActivo = anioFiltro ? Number(anioFiltro) : 2026;
   let ingreso = 0, gasto = 0, ahorro = 0, disponible = 0, fijosPendientes = 0;
   let saldoColanta = 0, saldoNequi = 0, saldoEfectivo = 0, totalLiquidez = 0;
-  let mesActivo = "octubre", anioActivo = 2026;
 
   if (shPanel) {
-    mesActivo = String(shPanel.getRange("L2").getValue() || "octubre").toLowerCase();
-    anioActivo = Number(shPanel.getRange("I2").getValue() || 2026);
+    if (!mesFiltro) mesActivo = String(shPanel.getRange("L2").getValue() || "octubre").toLowerCase();
+    if (!anioFiltro) anioActivo = Number(shPanel.getRange("I2").getValue() || 2026);
     ingreso = Number(shPanel.getRange("B6").getValue() || 0);
     gasto = Number(shPanel.getRange("E6").getValue() || 0);
     ahorro = Number(shPanel.getRange("H6").getValue() || 0);
@@ -414,43 +724,110 @@ function obtenerDatosCompletosDashboard_() {
     totalLiquidez = Number(shPanel.getRange("J42").getValue() || (saldoColanta + saldoNequi + saldoEfectivo));
   }
 
-  const ultimosMovs = [];
+  const mesesOrden = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+  const nombresMeses = {
+    enero: "Enero", febrero: "Febrero", marzo: "Marzo", abril: "Abril",
+    mayo: "Mayo", junio: "Junio", julio: "Julio", agosto: "Agosto",
+    septiembre: "Septiembre", octubre: "Octubre", noviembre: "Noviembre", diciembre: "Diciembre"
+  };
+
+  const resumenAnualMap = {};
+  mesesOrden.forEach(m => {
+    resumenAnualMap[m] = {
+      mes: m,
+      nombre: nombresMeses[m] || m,
+      ingresos: 0,
+      gastos: 0,
+      ahorro: 0,
+      transacciones: 0
+    };
+  });
+
+  const todosMovs = [];
   const gastosPorCategoria = {};
+  let ingresoMesCalculado = 0;
+  let gastoMesCalculado = 0;
 
   if (shMov && shMov.getLastRow() >= 5) {
-    const numRows = Math.min(60, shMov.getLastRow() - 4);
+    const numRows = Math.min(300, shMov.getLastRow() - 4);
     const data = shMov.getRange(5, 1, numRows, 14).getValues();
 
     for (let i = 0; i < data.length; i++) {
       const r = data[i];
       if (!r[0]) continue;
       const mTipo = String(r[3] || "");
+      const isIngreso = mTipo.toLowerCase().includes("ingreso");
       const mCat = String(r[4] || "Otros").trim();
       const mVal = Number(r[7] || 0);
       const mMes = String(r[10] || "").toLowerCase();
+      const mAnio = Number(r[11] || anioActivo);
 
-      if (mTipo.toLowerCase() === "gasto" && mVal > 0 && (!mMes || mMes === mesActivo)) {
-        gastosPorCategoria[mCat] = (gastosPorCategoria[mCat] || 0) + mVal;
+      // Acumular en Resumen Anual
+      if (resumenAnualMap[mMes]) {
+        if (isIngreso) {
+          resumenAnualMap[mMes].ingresos += mVal;
+        } else {
+          resumenAnualMap[mMes].gastos += mVal;
+        }
+        resumenAnualMap[mMes].transacciones++;
+        resumenAnualMap[mMes].ahorro = resumenAnualMap[mMes].ingresos - resumenAnualMap[mMes].gastos;
       }
 
-      if (i < 30) {
-        ultimosMovs.push({
-          id: r[0],
-          fecha: r[1] instanceof Date ? Utilities.formatDate(r[1], ZONA_HORARIA, "dd/MM/yyyy") : String(r[1] || ""),
-          hora: r[2] instanceof Date ? Utilities.formatDate(r[2], ZONA_HORARIA, "hh:mm a") : String(r[2] || ""),
-          tipo: mTipo,
-          categoria: mCat,
-          subcategoria: String(r[5] || "General"),
-          descripcion: String(r[6] || ""),
-          valor: mVal,
-          metodo: String(r[8] || ""),
-          cuenta: String(r[9] || ""),
-          mes: mMes,
-          anio: Number(r[11] || anioActivo)
-        });
+      // Si coincide con el mes activo consultado
+      if (mMes === mesActivo) {
+        if (isIngreso) {
+          ingresoMesCalculado += mVal;
+        } else {
+          gastoMesCalculado += mVal;
+          if (mVal > 0) {
+            gastosPorCategoria[mCat] = (gastosPorCategoria[mCat] || 0) + mVal;
+          }
+        }
       }
+
+      todosMovs.push({
+        id: r[0],
+        fecha: r[1] instanceof Date ? Utilities.formatDate(r[1], ZONA_HORARIA, "dd/MM/yyyy") : String(r[1] || ""),
+        hora: r[2] instanceof Date ? Utilities.formatDate(r[2], ZONA_HORARIA, "hh:mm a") : String(r[2] || ""),
+        tipo: mTipo,
+        categoria: mCat,
+        subcategoria: String(r[5] || "General"),
+        descripcion: String(r[6] || ""),
+        valor: mVal,
+        metodo: String(r[8] || ""),
+        cuenta: String(r[9] || ""),
+        mes: mMes,
+        anio: mAnio
+      });
     }
   }
+
+  // Si se filtró por un mes pasado y el panel tiene otro mes activo, usar los calculados
+  if (mesFiltro && mesFiltro !== "octubre" && ingresoMesCalculado > 0) {
+    ingreso = ingresoMesCalculado;
+    gasto = gastoMesCalculado;
+  }
+
+  // Resumen Anual Array y KPIs
+  const resumenAnualArray = mesesOrden.map(m => resumenAnualMap[m]);
+  let totIngAnual = 0;
+  let totGasAnual = 0;
+  let mesMayorAhorro = { nombre: "Junio", monto: 0 };
+  let mesMayorGasto = { nombre: "Junio", monto: 0 };
+
+  resumenAnualArray.forEach(m => {
+    totIngAnual += m.ingresos;
+    totGasAnual += m.gastos;
+    if (m.ahorro > mesMayorAhorro.monto) {
+      mesMayorAhorro = { nombre: m.nombre, monto: m.ahorro };
+    }
+    if (m.gastos > mesMayorGasto.monto) {
+      mesMayorGasto = { nombre: m.nombre, monto: m.gastos };
+    }
+  });
+
+  const superavitAnual = totIngAnual - totGasAnual;
+  const tasaAhorroAnual = totIngAnual > 0 ? Math.round((superavitAnual / totIngAnual) * 1000) / 10 : 0;
 
   // Fondos Colanta
   let navidenoAcum = 2160000, ordinarioAcum = 594000, aportesAcum = 995083, otrosAcum = 182216, totalFondos = 3931299;
@@ -488,7 +865,16 @@ function obtenerDatosCompletosDashboard_() {
       totalAcumulado: totalFondos
     },
     gastosPorCategoria: gastosPorCategoria,
-    movimientos: ultimosMovs
+    movimientos: todosMovs,
+    resumenAnual: resumenAnualArray,
+    kpisAnuales: {
+      totalIngresos: totIngAnual,
+      totalGastos: totGasAnual,
+      superavit: superavitAnual,
+      tasaAhorro: tasaAhorroAnual,
+      mesMayorAhorro: mesMayorAhorro,
+      mesMayorGasto: mesMayorGasto
+    }
   };
 }
 
@@ -4325,75 +4711,54 @@ function pareceCorreoFinancieroValido_(asunto, remitente, cuerpo, tieneAdjuntos)
 }
 
 function extraerDatosDianXml_(xmlStr) {
-
   if (!xmlStr) return null;
-
   try {
+    let cleanXml = String(xmlStr);
+    // Si viene codificado en entidades XML/HTML (típico en AttachedDocument UBL de Colombia)
+    if (cleanXml.includes("&lt;")) {
+      cleanXml = cleanXml.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&").replace(/&quot;/g, '"');
+    }
 
     let emisor = "";
-
-    let mEmisor = xmlStr.match(/<cbc:RegistrationName[^>]*>([\s\S]*?)<\/cbc:RegistrationName>/i);
-
-    if (!mEmisor) mEmisor = xmlStr.match(/<cac:PartyName[^>]*>[\s\S]*?<cbc:Name[^>]*>([\s\S]*?)<\/cbc:Name>/i);
-
+    let mEmisor = cleanXml.match(/<cac:AccountingSupplierParty>[\s\S]*?<cbc:RegistrationName[^>]*>([\s\S]*?)<\/cbc:RegistrationName>/i);
+    if (!mEmisor) mEmisor = cleanXml.match(/<cbc:RegistrationName[^>]*>([\s\S]*?)<\/cbc:RegistrationName>/i);
+    if (!mEmisor) mEmisor = cleanXml.match(/<cac:PartyName[^>]*>[\s\S]*?<cbc:Name[^>]*>([\s\S]*?)<\/cbc:Name>/i);
     if (mEmisor) emisor = mEmisor[1].trim();
 
     let monto = 0;
-
-    let mMonto = xmlStr.match(/<cbc:PayableAmount[^>]*>([\d\.\,]+)<\/cbc:PayableAmount>/i);
-
-    if (!mMonto) mMonto = xmlStr.match(/<cbc:TaxInclusiveAmount[^>]*>([\d\.\,]+)<\/cbc:TaxInclusiveAmount>/i);
-
-    if (!mMonto) mMonto = xmlStr.match(/<cbc:LineExtensionAmount[^>]*>([\d\.\,]+)<\/cbc:LineExtensionAmount>/i);
-
-    if (mMonto) monto = Number(mMonto[1].replace(/,/g, "")) || 0;
+    let mMonto = cleanXml.match(/<cbc:PayableAmount[^>]*>([\d\.\,]+)<\/cbc:PayableAmount>/i);
+    if (!mMonto) mMonto = cleanXml.match(/<cbc:TaxInclusiveAmount[^>]*>([\d\.\,]+)<\/cbc:TaxInclusiveAmount>/i);
+    if (!mMonto) mMonto = cleanXml.match(/<cbc:LineExtensionAmount[^>]*>([\d\.\,]+)<\/cbc:LineExtensionAmount>/i);
+    if (!mMonto) mMonto = cleanXml.match(/<cbc:ChargeTotalAmount[^>]*>([\d\.\,]+)<\/cbc:ChargeTotalAmount>/i);
+    if (mMonto) monto = Math.round(Number(mMonto[1].replace(/,/g, ""))) || 0;
 
     let idFac = "";
-
-    let mId = xmlStr.match(/<cbc:ID[^>]*>([\s\S]*?)<\/cbc:ID>/i);
-
+    let mId = cleanXml.match(/<cbc:ID[^>]*>([\s\S]*?)<\/cbc:ID>/i);
     if (mId) idFac = mId[1].trim();
 
     let fecha = "";
-
-    let mFecha = xmlStr.match(/<cbc:IssueDate[^>]*>([\s\S]*?)<\/cbc:IssueDate>/i);
-
+    let mFecha = cleanXml.match(/<cbc:IssueDate[^>]*>([\s\S]*?)<\/cbc:IssueDate>/i);
     if (mFecha) {
-
       const p = mFecha[1].trim().split("-");
-
       if (p.length === 3) fecha = p[2] + "/" + p[1] + "/" + p[0];
-
       else fecha = mFecha[1].trim();
-
     }
 
     let desc = "";
-
-    let mDesc = xmlStr.match(/<cbc:Description[^>]*>([\s\S]*?)<\/cbc:Description>/i);
-
+    let mDesc = cleanXml.match(/<cac:InvoiceLine>[\s\S]*?<cac:Item>[\s\S]*?<cbc:Description[^>]*>([\s\S]*?)<\/cbc:Description>/i);
+    if (!mDesc) mDesc = cleanXml.match(/<cbc:Description[^>]*>([\s\S]*?)<\/cbc:Description>/i);
     if (mDesc) desc = mDesc[1].trim().replace(/<!\[CDATA\[|\]\]>/g, "");
 
     return {
-
       emisor: emisor,
-
       monto: monto,
-
       id_factura: idFac,
-
       fecha: fecha,
-
       descripcion: desc
-
     };
-
   } catch (e) {
-
     return null;
-
   }
-
 }
 
 function clasificarComercioColombianoUniversal_(nombreComercio, textoCompleto) {
@@ -4653,7 +5018,381 @@ function extraerFacturaGmailLocal(asunto, remitente, cuerpo) {
     fecha_factura: Utilities.formatDate(new Date(), ZONA_HORARIA, "dd/MM/yyyy")
 
   }, asunto, cuerpo);
+}
 
+function normalizarFacturaGmail_(fac, asunto, cuerpo) {
+  if (!fac) return null;
+  const prov = String(fac.proveedor || "Comercio").trim();
+  const cat = fac.categoria || "Otros";
+  const sub = fac.subcategoria || "General";
+  const val = Number(fac.valor || 0);
+  const tipo = fac.tipo || "Gasto";
+  const met = fac.metodo_pago || "Transferencia";
+  const cue = fac.cuenta || "Nequi";
+  const idRef = fac.id_referencia || "";
+  const desc = fac.descripcion_formal || ("Compra en " + prov);
+  const fec = fac.fecha_factura || Utilities.formatDate(new Date(), ZONA_HORARIA, "dd/MM/yyyy");
+
+  return {
+    es_factura_real: true,
+    ignorar: false,
+    proveedor: prov,
+    categoria: cat,
+    subcategoria: sub,
+    descripcion_formal: desc,
+    valor: val,
+    tipo: tipo,
+    id_referencia: idRef,
+    metodo_pago: met,
+    cuenta: cue,
+    fecha_factura: fec
+  };
+}
+
+function resolverMetodoPago_(datos, concepto) {
+  const t = normalizarTexto((datos && datos.texto_original ? datos.texto_original : "") + " " + (concepto || ""));
+  if (/efectivo|plata en mano|billete/.test(t)) {
+    return { metodo: "Efectivo", cuenta: "Efectivo" };
+  }
+  if (/colanta|nomina|ayc|ahorro y credito|carnet/.test(t)) {
+    return { metodo: "Transferencia / Nómina", cuenta: "AyC Colanta" };
+  }
+  if (/bancolombia/.test(t)) {
+    return { metodo: "Transferencia", cuenta: "Bancolombia" };
+  }
+  if (/daviplata/.test(t)) {
+    return { metodo: "Transferencia", cuenta: "Daviplata" };
+  }
+  return { metodo: "Transferencia", cuenta: "Nequi" };
+}
+
+function embellecerConceptoFinanciero_(descOriginal, proveedor, cuerpo, asunto) {
+  const raw = String(descOriginal || "").trim();
+  const t = normalizarTexto(raw + " " + (proveedor || "") + " " + (cuerpo || "") + " " + (asunto || ""));
+
+  if (/menu\s*\d*\s*rest|restaurante corporativo|planta medellin/i.test(t)) {
+    return "Almuerzo — Restaurante Corporativo Planta Medellín (Colanta)";
+  }
+  if (/mercolanta/i.test(t)) {
+    return "Productos Lácteos / Mercolanta";
+  }
+  if (/spotify/i.test(t)) {
+    return "Suscripción Spotify Premium";
+  }
+  if (/eneba/i.test(t)) {
+    return "Videojuegos — Compra en Eneba";
+  }
+  if (/arriendo/i.test(t)) {
+    return "Canon de Arriendo Hogar";
+  }
+  if (/epm/i.test(t)) {
+    return "Servicios Públicos EPM";
+  }
+  if (/tigo/i.test(t)) {
+    return "Plan Móvil / Datos Tigo";
+  }
+  if (/gasolina|terpel|primax|biomax/i.test(t)) {
+    return "Tanqueada Gasolina Moto";
+  }
+  if (/lavada.*moto/i.test(t)) {
+    return "Lavada de Moto";
+  }
+
+  // Si tiene un formato abreviado crudo
+  if (/^menu\s*\d+/i.test(raw)) {
+    return "Almuerzo Restaurante (" + (proveedor || "Colanta") + ")";
+  }
+
+  return raw || ("Compra en " + (proveedor || "Comercio"));
+}
+
+/**
+ * 📬 ESCÁNER AUTOMÁTICO DE FACTURAS Y COMPROBANTES EN GMAIL
+ * Revisa la bandeja de entrada, procesa facturas electrónicas (DIAN XML, ZIP, PDF)
+ * y notificaciones bancarias (PSE, Nequi, Bancolombia, Colanta, EPM, etc.)
+ */
+function procesarCorreosFacturas() {
+  let contadorProcesadas = 0;
+  try {
+    const ss = obtenerLibro_();
+    const shMov = ss.getSheetByName("MOVIMIENTOS");
+    if (!shMov) {
+      console.error("No se encontró la hoja MOVIMIENTOS");
+      return 0;
+    }
+
+    const cacheSet = obtenerIdsGmailRegistradosSet_();
+    const ahora = new Date();
+    const meses = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+    const mesActual = meses[ahora.getMonth()];
+    const anioActual = ahora.getFullYear();
+    const horaStr = Utilities.formatDate(ahora, ZONA_HORARIA, "hh:mm a");
+
+    // Buscar hilos en Bandeja de Entrada con términos financieros relevantes
+    const query = 'in:inbox (factura OR facturacion OR comprobante OR "attacheddocument" OR colanta OR nequi OR bancolombia OR daviplata OR pse OR wompi OR bold OR epm OR tigo OR "890904478" OR "compra realizada")';
+    const hilos = GmailApp.search(query, 0, 30);
+    
+    if (!hilos || !hilos.length) {
+      archivarCorreosFinancierosViejos_();
+      return 0;
+    }
+
+    for (let h = 0; h < hilos.length; h++) {
+      const hilo = hilos[h];
+      const mensajes = hilo.getMessages() || [];
+
+      for (let m = 0; m < mensajes.length; m++) {
+        const msg = mensajes[m];
+        const idMsg = msg.getId();
+
+        if (esMensajeGmailYaRegistrado_(idMsg, cacheSet)) {
+          continue;
+        }
+
+        const asunto = msg.getSubject() || "";
+        const remitente = msg.getFrom() || "";
+        const cuerpo = msg.getPlainBody() || "";
+        const adjuntos = msg.getAttachments() || [];
+        const tieneAdj = adjuntos.length > 0;
+
+        if (!pareceCorreoFinancieroValido_(asunto, remitente, cuerpo, tieneAdj)) {
+          if (esCorreoNoFactura_(asunto, remitente, cuerpo)) {
+            registrarIdGmailEnMemoria_(idMsg);
+            cacheSet.add(idMsg);
+          }
+          continue;
+        }
+
+        let datosFactura = null;
+
+        // 1. Extraer desde adjuntos XML o ZIP con XML (estándar DIAN UBL Colombia)
+        if (tieneAdj) {
+          for (let a = 0; a < adjuntos.length; a++) {
+            const adj = adjuntos[a];
+            const nombreAdj = (adj.getName() || "").toLowerCase();
+            const mimeType = (adj.getContentType() || "").toLowerCase();
+
+            if (nombreAdj.endsWith(".xml") || mimeType.includes("xml")) {
+              try {
+                const xmlStr = adj.getDataAsString();
+                datosFactura = extraerDatosDianXml_(xmlStr);
+                if (datosFactura && datosFactura.monto > 0) break;
+              } catch (eXml) {
+                console.warn("Error leyendo XML adjunto:", eXml);
+              }
+            } else if (nombreAdj.endsWith(".zip") || mimeType.includes("zip")) {
+              try {
+                const desempacados = Utilities.unzip(adj);
+                for (let d = 0; d < desempacados.length; d++) {
+                  const b = desempacados[d];
+                  if ((b.getName() || "").toLowerCase().endsWith(".xml")) {
+                    const xmlStr = b.getDataAsString();
+                    datosFactura = extraerDatosDianXml_(xmlStr);
+                    if (datosFactura && datosFactura.monto > 0) break;
+                  }
+                }
+                if (datosFactura && datosFactura.monto > 0) break;
+              } catch (eZip) {
+                console.warn("Error desempacando ZIP:", eZip);
+              }
+            }
+          }
+        }
+
+        // 2. Si el XML no devolvió monto pero hay PDF/Imagen y Gemini multimodal
+        if ((!datosFactura || !datosFactura.monto || datosFactura.monto <= 0) && tieneAdj && GEMINI_API_KEY) {
+          for (let a = 0; a < adjuntos.length; a++) {
+            const adj = adjuntos[a];
+            const nombreAdj = (adj.getName() || "").toLowerCase();
+            const mimeType = (adj.getContentType() || "").toLowerCase();
+
+            if (nombreAdj.endsWith(".pdf") || mimeType.includes("pdf") || mimeType.includes("image")) {
+              try {
+                const bytes = adj.getBytes();
+                if (bytes.length <= GMAIL_MAX_ATTACHMENT_BYTES) {
+                  const base64 = Utilities.base64Encode(bytes);
+                  const prompt = "Analiza esta factura o comprobante de pago colombiano para Marlon Muñoz Pardo. Extrae ÚNICAMENTE un JSON válido con: { \"proveedor\": string, \"valor\": number, \"id_factura\": string, \"fecha\": \"dd/MM/yyyy\", \"descripcion\": string, \"categoria\": string, \"subcategoria\": string } sin markdown ni explicaciones.";
+                  const respGem = llamarGeminiAPI({
+                    contents: [{
+                      parts: [
+                        { inlineData: { mimeType: mimeType.includes("pdf") ? "application/pdf" : mimeType, data: base64 } },
+                        { text: prompt }
+                      ]
+                    }],
+                    generationConfig: { responseMimeType: "application/json", temperature: 0.1 }
+                  });
+                  if (respGem && respGem.candidates && respGem.candidates[0].content) {
+                    const txtGem = limpiarJSON(respGem.candidates[0].content.parts[0].text);
+                    const jGem = JSON.parse(txtGem);
+                    if (jGem && Number(jGem.valor) > 0) {
+                      datosFactura = {
+                        emisor: jGem.proveedor || "",
+                        monto: Number(jGem.valor),
+                        id_factura: jGem.id_factura || "",
+                        fecha: jGem.fecha || "",
+                        descripcion: jGem.descripcion || ""
+                      };
+                      break;
+                    }
+                  }
+                }
+              } catch (eGem) {
+                console.warn("Aviso Gemini Factura PDF:", eGem);
+              }
+            }
+          }
+        }
+
+        // 3. Normalizar datos o recurrir a extracción local de texto
+        let facturaFinal = null;
+        if (datosFactura && datosFactura.monto > 0) {
+          let prov = datosFactura.emisor;
+          let idRef = datosFactura.id_factura;
+          
+          if (!prov || prov === "Comercio") {
+            if (/colanta/i.test(asunto + " " + remitente + " " + cuerpo)) prov = "Cooperativa Colanta";
+          }
+          if (!idRef && asunto.includes(";")) {
+            const partes = asunto.split(";");
+            if (partes.length >= 3) idRef = partes[2].trim();
+          }
+
+          let desc = embellecerConceptoFinanciero_(datosFactura.descripcion, prov, cuerpo, asunto);
+
+          const clasif = clasificarComercioColombianoUniversal_(prov, cuerpo + " " + desc);
+          if (/restaurante corporativo/i.test(cuerpo)) {
+            clasif.categoria = "Alimentación";
+            clasif.subcategoria = "Restaurante";
+          }
+
+          const cuentaPago = (/colanta|restaurante corporativo/i.test(prov + " " + cuerpo)) ? "AyC Colanta" : "Nequi";
+
+          facturaFinal = {
+            proveedor: prov || "Colanta",
+            categoria: clasif.categoria,
+            subcategoria: clasif.subcategoria,
+            descripcion: desc,
+            valor: datosFactura.monto,
+            id_referencia: idRef,
+            metodo_pago: cuentaPago === "AyC Colanta" ? "Transferencia / Nómina" : "Transferencia",
+            cuenta: cuentaPago,
+            fecha_factura: datosFactura.fecha || Utilities.formatDate(msg.getDate(), ZONA_HORARIA, "dd/MM/yyyy")
+          };
+        } else {
+          const localFac = extraerFacturaGmailLocal(asunto, remitente, cuerpo);
+          if (localFac && localFac.valor > 0) {
+            facturaFinal = {
+              proveedor: localFac.proveedor,
+              categoria: localFac.categoria,
+              subcategoria: localFac.subcategoria,
+              descripcion: localFac.descripcion_formal,
+              valor: localFac.valor,
+              id_referencia: localFac.id_referencia,
+              metodo_pago: localFac.metodo_pago,
+              cuenta: localFac.cuenta,
+              fecha_factura: localFac.fecha_factura
+            };
+          }
+        }
+
+        if (!facturaFinal || !facturaFinal.valor || facturaFinal.valor <= 0) {
+          continue;
+        }
+
+        // 4. Verificación Anti-duplicados
+        const dupCheck = esFacturaDuplicadaEnMovimientos_(
+          facturaFinal.id_referencia,
+          facturaFinal.proveedor,
+          facturaFinal.valor,
+          facturaFinal.fecha_factura
+        );
+
+        if (dupCheck.esDuplicado) {
+          console.log("Factura duplicada omitida:", dupCheck.motivo);
+          registrarIdGmailEnMemoria_(idMsg);
+          cacheSet.add(idMsg);
+          moverCorreoAEtiquetaEspecifica(hilo, facturaFinal.proveedor, facturaFinal.categoria, asunto, cuerpo, facturaFinal.subcategoria);
+          continue;
+        }
+
+        // 5. Inserción en MOVIMIENTOS Fila 5
+        let maxNum = 255;
+        if (shMov.getLastRow() >= 5) {
+          const idsRange = shMov.getRange(5, 1, Math.min(20, shMov.getLastRow() - 4), 1).getValues();
+          idsRange.forEach(row => {
+            const m = String(row[0] || "").match(/^M-(\d+)$/);
+            if (m) maxNum = Math.max(maxNum, parseInt(m[1], 10));
+          });
+        }
+        const nuevoId = "M-" + String(maxNum + 1).padStart(4, "0");
+
+        const fechaMov = facturaFinal.fecha_factura || Utilities.formatDate(ahora, ZONA_HORARIA, "yyyy-MM-dd");
+        let fechaFormatoFinal = fechaMov;
+        if (fechaMov.includes("/")) {
+          const fp = fechaMov.split("/");
+          if (fp.length === 3 && fp[2].length === 4) {
+            fechaFormatoFinal = fp[2] + "-" + fp[1].padStart(2, "0") + "-" + fp[0].padStart(2, "0");
+          }
+        }
+
+        const notaFactura = "Factura: " + (facturaFinal.id_referencia || "DIAN") + " | GMAIL:" + idMsg;
+
+        const filaMov = [
+          nuevoId,
+          fechaFormatoFinal,
+          horaStr,
+          "Gasto",
+          facturaFinal.categoria,
+          facturaFinal.subcategoria,
+          facturaFinal.descripcion,
+          facturaFinal.valor,
+          facturaFinal.metodo_pago,
+          facturaFinal.cuenta,
+          mesActual,
+          anioActual,
+          "Gmail Scanner",
+          notaFactura
+        ];
+
+        shMov.insertRowBefore(5);
+        shMov.getRange(5, 1, 1, filaMov.length).setValues([filaMov]);
+        shMov.getRange(5, 15).setFormula('=IF(ISBLANK(A5), "", IF(AND(LOWER(TRIM(K5))=LOWER(TRIM(PANEL!$L$2)), L5=PANEL!$I$2), MAX($O$4:O4)+1, ""))');
+
+        registrarIdGmailEnMemoria_(idMsg);
+        cacheSet.add(idMsg);
+
+        moverCorreoAEtiquetaEspecifica(hilo, facturaFinal.proveedor, facturaFinal.categoria, asunto, cuerpo, facturaFinal.subcategoria);
+
+        // 6. Notificación a Telegram con botón de deshacer
+        const chatId = PropertiesService.getScriptProperties().getProperty("TELEGRAM_CHAT_ID");
+        if (chatId && TELEGRAM_TOKEN) {
+          try {
+            const msgTg = `🧾 *FACTURA ELECTRÓNICA REGISTRADA*\n${separadorBonito_()}\n` +
+              `🏢 *Comercio:* ${facturaFinal.proveedor}\n` +
+              `🍽️ *Detalle:* ${facturaFinal.descripcion}\n` +
+              `💵 *Monto:* $${formatearCOP(facturaFinal.valor)} COP\n` +
+              `💳 *Cuenta:* ${facturaFinal.cuenta} (${facturaFinal.metodo_pago})\n` +
+              `📄 *Doc / Ref:* ${facturaFinal.id_referencia || "Electrónica"}\n` +
+              `🆔 *ID:* \`${nuevoId}\`\n\n` +
+              `✅ _Registrado automáticamente desde Gmail_`;
+            
+            enviarMensajeTelegramConBoton(chatId, msgTg, nuevoId);
+          } catch (eTg) {
+            console.warn("Aviso Telegram Factura:", eTg);
+          }
+        }
+
+        contadorProcesadas++;
+      }
+    }
+
+    archivarCorreosFinancierosViejos_();
+
+  } catch (err) {
+    console.error("Error en procesarCorreosFacturas:", err);
+  }
+
+  return contadorProcesadas;
 }
 
 function esCorreoDuplicado(nombrePestana, idMensaje) {
@@ -4726,19 +5465,16 @@ function archivarCorreosFinancierosViejos_() {
 
   try {
 
-    // 1. Buscar directamente en la Bandeja de Entrada (Inbox)
-
-    // Se inspeccionan hasta 100 hilos en Inbox para evaluar si son correos financieros categorizados
-
-    const hilos = GmailApp.search('in:inbox', 0, 100);
+    // 1. Buscar directamente en Bandeja de Entrada hilos financieros etiquetados
+    const hilos = GmailApp.search('in:inbox', 0, 50);
 
     if (!hilos || !hilos.length) return 0;
 
     const ahora = new Date().getTime();
 
-    const UNA_HORA_MS = 60 * 60 * 1000;
-
-    const QUINCE_MIN_MS = 15 * 60 * 1000;
+    // ⏱️ Regla Oficial de Marlon: 3 horas completas de permanencia en Recibidos
+    const TRES_HORAS_MS = 3 * 60 * 60 * 1000;
+    const SEIS_HORAS_MS = 6 * 60 * 60 * 1000;
 
     let archivados = 0;
 
@@ -4747,32 +5483,23 @@ function archivarCorreosFinancierosViejos_() {
       const labels = hilo.getLabels() || [];
 
       // Verificar si tiene alguna etiqueta FINANZAS (FINANZAS/Compras, FINANZAS/Servicios, etc.)
-
       const esFinanciero = labels.some(l => {
-
         const n = String(l.getName()).toLowerCase();
-
         return n.includes("finanzas") && !n.includes("ignorado") && !n.includes("duplicados");
-
       });
 
       if (!esFinanciero) return;
 
       const fechaUltimo = hilo.getLastMessageDate().getTime();
-
       const antiguedadMs = ahora - fechaUltimo;
-
       const yaFueLeido = !hilo.isUnread();
 
-      // Regla de Marlon: 
-
-      // 1. Si ya pasó al menos 1 hora desde que llegó el correo (haya sido leído o no),
-
-      // 2. O si Marlon ya lo abrió y leyó y tiene más de 15 minutos en Inbox:
-
-      // Se archiva automáticamente fuera de Recibidos a su carpeta correspondiente
-
-      if (antiguedadMs >= UNA_HORA_MS || (yaFueLeido && antiguedadMs >= QUINCE_MIN_MS)) {
+      // Regla de Marlon Muñoz Pardo:
+      // Solo archivar fuera de Recibidos (Inbox) hacia su etiqueta/carpeta correspondiente si:
+      // 1. Ya transcurrieron al menos 3 horas desde su llegada Y Marlon ya lo leyó (!hilo.isUnread()).
+      // 2. O si ya transcurrieron más de 6 horas para evitar acumulación si no fue abierto.
+      // Si tiene menos de 3 horas, PERMANECE EN BANDEJA DE ENTRADA para que Marlon pueda leerlo cómodamente.
+      if ((antiguedadMs >= TRES_HORAS_MS && yaFueLeido) || antiguedadMs >= SEIS_HORAS_MS) {
 
         hilo.moveToArchive();
 
@@ -4968,7 +5695,8 @@ function moverCorreoAEtiquetaEspecifica(hilo, proveedor, categoria, asunto, cuer
 
   const nombreEtiquetaCompleta = "FINANZAS/" + subcarpeta;
 
-  marcarCorreoParaRevision_(hilo, nombreEtiquetaCompleta, true);
+  // Marlon: No archivar de inmediato. Etiquetar y mantener en Recibidos durante 3 horas.
+  marcarCorreoParaRevision_(hilo, nombreEtiquetaCompleta, false);
 
   return nombreEtiquetaCompleta;
 

@@ -79,6 +79,10 @@
           <i class="fa-solid fa-cookie-bite"></i>
           <span>Radar Antojos</span>
         </a>
+        <a href="#section-annual" class="nav-item" data-nav="annual">
+          <i class="fa-solid fa-chart-line" style="color:#38BDF8;"></i>
+          <span>Evolución Anual</span>
+        </a>
         <a href="#modal-upload-colilla" class="nav-item" id="nav-item-colilla" data-nav="colilla">
           <i class="fa-solid fa-file-invoice-dollar" style="color:#FBBF24;"></i>
           <span>Subir Colilla (Gemini)</span>
@@ -126,10 +130,22 @@
           </div>
 
           <div class="breadcrumb-group">
-            <span class="period-pill" id="header-period-tag">
-              <i class="fa-regular fa-calendar"></i>
-              <span id="label-active-month">OCTUBRE 2026</span>
-            </span>
+            <div class="month-selector-nav" id="month-selector-nav">
+              <button class="btn-month-nav" id="btn-prev-month" title="Mes anterior (Ej: Septiembre)">
+                <i class="fa-solid fa-chevron-left"></i>
+              </button>
+              
+              <button class="period-pill interactive-period-btn" id="btn-open-month-modal" title="Cambiar mes de consulta">
+                <i class="fa-regular fa-calendar-days"></i>
+                <span id="label-active-month">OCTUBRE 2026</span>
+                <i class="fa-solid fa-caret-down" style="font-size:0.75rem; margin-left:0.25rem;"></i>
+              </button>
+
+              <button class="btn-month-nav" id="btn-next-month" title="Mes siguiente (Ej: Noviembre)">
+                <i class="fa-solid fa-chevron-right"></i>
+              </button>
+            </div>
+
             <div class="sync-status-indicator" id="sync-status-badge">
               <span class="pulse-indicator"></span>
               <span id="sync-status-text">Sheets En Vivo</span>
@@ -138,6 +154,11 @@
         </div>
 
         <div class="topbar-right">
+          <button class="topbar-btn btn-shield" id="btn-cloud-shield" title="Escudo GitHub Anti-Spam Activo: Tus Google Sheets están blindados contra escrituras no autorizadas">
+            <i class="fa-solid fa-shield-halved"></i>
+            <span class="btn-text-desktop">Escudo GitHub</span>
+          </button>
+
           <button class="topbar-btn btn-install" id="btn-install-app" title="Instalar App en tu Celular">
             <i class="fa-solid fa-mobile-screen-button"></i>
             <span class="btn-text-desktop">Instalar App</span>
@@ -158,7 +179,12 @@
             <span class="btn-text-desktop">Colilla</span>
           </button>
 
-          <button class="topbar-btn btn-settings" id="btn-topbar-settings" title="Ajustes de Conexión y Código Apps Script">
+          <button class="topbar-btn btn-scan-gmail" id="btn-scan-gmail" title="Buscar y procesar facturas en Gmail" style="border-color:rgba(16,185,129,0.4); color:#34D399;">
+            <i class="fa-solid fa-envelope-open-text" id="topbar-scan-icon"></i>
+            <span class="btn-text-desktop">Escanear Gmail</span>
+          </button>
+
+          <button class="topbar-btn btn-settings" id="btn-topbar-settings" title="Ajustes de Conexión, Seguridad y Código Apps Script">
             <i class="fa-solid fa-gear" style="color:#FBBF24;"></i>
             <span class="btn-text-desktop">Ajustes</span>
           </button>
@@ -174,183 +200,179 @@
       <main class="app-content-area" id="main-content-scroll">
         
         <!-- HERO WALLET: TARJETAS VIRTUALES DE CUENTAS (Deslizable en Celular) -->
-        <section class="wallet-hero-section" id="section-wallet">
-          <div class="section-title-row">
-            <div>
-              <span class="section-badge-tiny">LIQUIDEZ EN TIEMPO REAL</span>
-              <h2 class="section-heading">Billetera & Cuentas</h2>
-              <p class="section-subheading">Desliza para ver tus cuentas y saldos auditados 👉</p>
-            </div>
-            <div class="balance-visibility-toggle" id="btn-toggle-balance-visibility" title="Ocultar/Mostrar saldo">
-              <i class="fa-solid fa-eye" id="icon-eye-balance"></i>
-              <span class="hide-text">Privacidad</span>
-            </div>
-          </div>
+        <!-- HERO COCKPIT: PATRIMONIO LÍQUIDO Y CUENTAS AUDITADAS (DISEÑO FINTECH EJECUTIVO) -->
+        <section class="wallet-cockpit-section" id="section-wallet">
+          <div class="cockpit-grid">
+            
+            <!-- Panel Principal: Patrimonio Líquido Consolidado -->
+            <div class="wealth-master-card">
+              <div class="master-card-glow"></div>
+              
+              <div class="master-card-header">
+                <div class="master-tag-group">
+                  <span class="status-live-dot"></span>
+                  <span class="master-tag">LIQUIDEZ EN TIEMPO REAL</span>
+                  <span class="verified-pill"><i class="fa-solid fa-circle-check"></i> Google Sheets Conectado</span>
+                </div>
+                <div class="balance-visibility-toggle" id="btn-toggle-balance-visibility" title="Ocultar/Mostrar saldo">
+                  <i class="fa-solid fa-eye" id="icon-eye-balance"></i>
+                  <span class="hide-text">Privacidad</span>
+                </div>
+              </div>
 
-          <!-- Carrusel Horizontal Deslizable con Snap Points -->
-          <div class="cards-carousel" id="cards-carousel-container">
-            <!-- Tarjeta 1: Total Consolidado (Master Emerald Card) -->
-            <div class="fintech-card card-master-emerald">
-              <div class="card-glass-glow"></div>
-              <div class="card-top">
-                <div class="card-chip">
-                  <div class="chip-lines"></div>
+              <div class="master-card-body">
+                <span class="master-label">TOTAL DISPONIBLE LIBRE</span>
+                <div class="master-amount-row">
+                  <h1 class="master-amount" id="card-total-available">$3.390.857</h1>
+                  <span class="master-currency">COP</span>
                 </div>
-                <div class="card-network">
-                  <span class="network-brand">PARDO FINANZAS</span>
-                  <i class="fa-solid fa-bolt card-bolt"></i>
-                </div>
-              </div>
-              <div class="card-middle">
-                <span class="card-label">TOTAL DISPONIBLE LIBRE</span>
-                <div class="card-amount-wrapper">
-                  <h3 class="card-amount" id="card-total-available">$3.390.857</h3>
-                  <span class="card-currency">COP</span>
-                </div>
-              </div>
-              <div class="card-bottom">
-                <div class="card-holder">
-                  <span class="holder-label">TITULAR</span>
-                  <span class="holder-name">MARLON MUÑOZ</span>
-                </div>
-                <div class="card-status-pill">
-                  <i class="fa-solid fa-shield-check"></i>
-                  <span>Auditado OK</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Tarjeta 2: AyC Colanta (Nómina) -->
-            <div class="fintech-card card-colanta-blue">
-              <div class="card-glass-glow"></div>
-              <div class="card-top">
-                <div class="card-badge-colanta">
-                  <i class="fa-solid fa-cow"></i>
-                  <span>AyC COLANTA</span>
-                </div>
-                <span class="card-type-tag">Nómina Principal</span>
-              </div>
-              <div class="card-middle">
-                <span class="card-label">CUENTA DE AHORROS Y CRÉDITO</span>
-                <div class="card-amount-wrapper">
-                  <h3 class="card-amount" id="card-acc-colanta">$3.319.057</h3>
-                  <span class="card-currency">COP</span>
-                </div>
-              </div>
-              <div class="card-bottom">
-                <span class="card-sub-info">Depósito Quincenal Sueldo</span>
-                <span class="card-quick-pct">97.8% Liquidez</span>
-              </div>
-            </div>
-
-            <!-- Tarjeta 3: Nequi & Efectivo -->
-            <div class="fintech-card card-nequi-purple">
-              <div class="card-glass-glow"></div>
-              <div class="card-top">
-                <div class="card-badge-nequi">
-                  <i class="fa-solid fa-mobile-screen"></i>
-                  <span>NEQUI & EFECTIVO</span>
-                </div>
-                <span class="card-type-tag">Bolsillo Diario</span>
-              </div>
-              <div class="card-middle">
-                <div class="split-account-row">
-                  <div>
-                    <span class="card-label">NEQUI</span>
-                    <h4 class="card-amount-sm" id="card-acc-nequi">$0 COP</h4>
+                
+                <div class="master-stats-strip">
+                  <div class="mstat-item">
+                    <span class="mstat-label">Titular</span>
+                    <strong class="mstat-val">Marlon Muñoz</strong>
                   </div>
-                  <div class="divider-v"></div>
-                  <div>
-                    <span class="card-label">EFECTIVO MANO</span>
-                    <h4 class="card-amount-sm" id="card-acc-efectivo">$71.800 COP</h4>
+                  <div class="mstat-sep"></div>
+                  <div class="mstat-item">
+                    <span class="mstat-label">Ahorro 2026</span>
+                    <strong class="mstat-val text-emerald">+62.7%</strong>
+                  </div>
+                  <div class="mstat-sep"></div>
+                  <div class="mstat-item">
+                    <span class="mstat-label">Superávit Acumulado</span>
+                    <strong class="mstat-val text-cyan">$38.6M</strong>
                   </div>
                 </div>
               </div>
-              <div class="card-bottom">
-                <span class="card-sub-info">Gastos cotidianos y compras</span>
-                <span class="card-status-pill status-ready">Listo para transferir</span>
+
+              <!-- Fila Integrada de Acciones Rápidas -->
+              <div class="master-actions-bar">
+                <button type="button" class="btn-cockpit-action btn-act-expense" id="btn-qa-gasto" title="Registrar Gasto Rápido">
+                  <i class="fa-solid fa-minus"></i>
+                  <span>Gasto</span>
+                </button>
+                <button type="button" class="btn-cockpit-action btn-act-income" id="btn-qa-ingreso" title="Registrar Ingreso">
+                  <i class="fa-solid fa-plus"></i>
+                  <span>Ingreso</span>
+                </button>
+                <button type="button" class="btn-cockpit-action btn-act-colilla" id="btn-qa-colilla" title="Subir Colilla de Pago (Gemini AI)">
+                  <i class="fa-solid fa-file-invoice-dollar"></i>
+                  <span>Colilla</span>
+                </button>
+                <button type="button" class="btn-cockpit-action btn-act-cfo" id="btn-qa-cfo" title="Asistente CFO AI por Voz">
+                  <i class="fa-solid fa-microphone-lines"></i>
+                  <span>CFO Voz</span>
+                </button>
+                <a href="https://docs.google.com/spreadsheets/d/1C9ifm7U8IYGOdY4IwAji9Z3McSlNy3B-e_2Jo-zvBFk/edit" target="_blank" rel="noopener noreferrer" class="btn-cockpit-action btn-act-sheets" id="btn-qa-sheets" title="Abrir Google Sheets en Drive">
+                  <i class="fa-solid fa-table"></i>
+                  <span>Sheets</span>
+                </a>
               </div>
             </div>
 
-            <!-- Tarjeta 4: Fondos Colanta (Ahorros Acumulados) -->
-            <div class="fintech-card card-savings-gold">
-              <div class="card-glass-glow"></div>
-              <div class="card-top">
-                <div class="card-badge-colanta" style="background: rgba(245, 158, 11, 0.25); border-color: rgba(245, 158, 11, 0.4);">
-                  <i class="fa-solid fa-piggy-bank" style="color: #FBBF24;"></i>
-                  <span style="color: #FBBF24;">FONDOS COLANTA</span>
+            <!-- Columna Derecha: 3 Cuentas & Fondos (Elegantes Tarjetas Obsidian Glass) -->
+            <div class="accounts-vertical-grid">
+              
+              <!-- Cuenta 1: AyC Colanta (Nómina) -->
+              <div class="account-compact-card card-aura-colanta">
+                <div class="acc-card-left">
+                  <div class="acc-brand-badge brand-colanta">
+                    <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <circle cx="16" cy="16" r="14" fill="#E11D48"/>
+                      <path d="M16 13C14 10.5 11.5 10.5 11.5 13C11.5 15.5 14.5 16 16 16C17.5 16 20.5 15.5 20.5 13C20.5 10.5 18 10.5 16 13Z" fill="#FFFFFF"/>
+                      <path d="M13 16C10.5 14 10.5 11.5 13 11.5C15.5 11.5 16 14.5 16 16C16 17.5 15.5 20.5 13 20.5C10.5 20.5 10.5 18 13 16Z" fill="#FFFFFF"/>
+                      <path d="M19 16C21.5 14 21.5 11.5 19 11.5C16.5 11.5 16 14.5 16 16C16 17.5 16.5 20.5 19 20.5C21.5 20.5 21.5 18 19 16Z" fill="#FFFFFF"/>
+                      <path d="M16 16C16 19 14.5 21.5 12.5 22.5" stroke="#FFFFFF" stroke-width="1.8" stroke-linecap="round"/>
+                    </svg>
+                  </div>
+                  <div class="acc-info">
+                    <span class="acc-type-pill">Nómina Principal • San Germán</span>
+                    <h4 class="acc-name">AyC Colanta</h4>
+                    <span class="acc-sub">Cuenta de Ahorros y Crédito</span>
+                  </div>
                 </div>
-                <span class="card-type-tag" style="background: rgba(245, 158, 11, 0.15); color: #FCD34D;">Ahorro Nómina</span>
-              </div>
-              <div class="card-middle">
-                <span class="card-label">AHORRO TOTAL ACUMULADO</span>
-                <div class="card-amount-wrapper">
-                  <h3 class="card-amount" id="card-acc-savings">$3.931.299</h3>
-                  <span class="card-currency">COP</span>
+                <div class="acc-card-right">
+                  <strong class="acc-amount" id="card-acc-colanta">$3.319.057</strong>
+                  <span class="acc-badge-pct">97.8% Liquidez</span>
                 </div>
               </div>
-              <div class="card-bottom">
-                <span class="card-sub-info">Navideño ($2.16M) • Ordinario • Aportes</span>
-                <span class="card-status-pill" style="background: rgba(245, 158, 11, 0.2); color: #FCD34D;">1 Dic Entrega</span>
+
+              <!-- Cuenta 2: Fondos Colanta (Ahorros Acumulados) -->
+              <div class="account-compact-card card-aura-gold">
+                <div class="acc-card-left">
+                  <div class="acc-brand-badge brand-savings" style="background: rgba(245, 158, 11, 0.15); border-radius: 12px; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(245, 158, 11, 0.3);">
+                    <i class="fa-solid fa-piggy-bank" style="color:#FBBF24; font-size:1.2rem;"></i>
+                  </div>
+                  <div class="acc-info">
+                    <span class="acc-type-pill pill-gold">Patrimonio Reservado</span>
+                    <h4 class="acc-name">Fondos Colanta</h4>
+                    <span class="acc-sub">Navideño ($2.16M) • Ordinario • Aportes</span>
+                  </div>
+                </div>
+                <div class="acc-card-right">
+                  <strong class="acc-amount text-amber" id="card-acc-savings">$3.931.299</strong>
+                  <span class="acc-badge-pct badge-gold">Entrega 1 Dic</span>
+                </div>
               </div>
-            </div>
-          </div>
 
-          <!-- Indicador de Puntos del Carrusel -->
-          <div class="carousel-dots-indicator" id="carousel-dots">
-            <span class="dot active"></span>
-            <span class="dot"></span>
-            <span class="dot"></span>
-            <span class="dot"></span>
-          </div>
-
-          <!-- FILA DE ACCIONES RÁPIDAS (ESTILO NUBANK / REVOLUT) -->
-          <div class="quick-action-row">
-            <button class="qa-item qa-expense" id="btn-qa-gasto" title="Registrar Gasto Rápido">
-              <div class="qa-icon-bubble"><i class="fa-solid fa-arrow-down"></i></div>
-              <span class="qa-label">Gasto</span>
-            </button>
-            <button class="qa-item qa-income" id="btn-qa-ingreso" title="Registrar Ingreso">
-              <div class="qa-icon-bubble"><i class="fa-solid fa-arrow-up"></i></div>
-              <span class="qa-label">Ingreso</span>
-            </button>
-            <button class="qa-item qa-colilla" id="btn-qa-colilla" title="Subir Colilla de Pago Colanta (Gemini AI)">
-              <div class="qa-icon-bubble"><i class="fa-solid fa-file-invoice-dollar"></i></div>
-              <span class="qa-label">Colilla</span>
-            </button>
-            <button class="qa-item qa-cfo" id="btn-qa-cfo" title="Asistente CFO AI por Voz">
-              <div class="qa-icon-bubble"><i class="fa-solid fa-microphone-lines"></i></div>
-              <span class="qa-label">CFO Voz</span>
-            </button>
-            <button class="qa-item qa-sheets" id="btn-qa-sheets" title="Abrir Google Sheets">
-              <div class="qa-icon-bubble"><i class="fa-solid fa-table"></i></div>
-              <span class="qa-label">Sheets</span>
-            </button>
-          </div>
-
-          <!-- TARJETA DE ESTADO DE SINCRONIZACIÓN GOOGLE SHEETS -->
-          <div class="sheets-sync-status-card" id="sheets-sync-card">
-            <div class="ssc-left">
-              <div class="ssc-indicator"><span class="pulse-indicator"></span></div>
-              <div class="ssc-text-box">
-                <strong class="ssc-title">Google Sheets Conectado</strong>
-                <span class="ssc-sub" id="sheets-last-sync-text">Sincronizado 1:1 con Panel_Finanzas.xlsx</span>
+              <!-- Cuenta 3: Nequi & Efectivo en Mano -->
+              <div class="account-compact-card card-aura-nequi">
+                <div class="acc-card-left">
+                  <div class="acc-brand-badge brand-nequi">
+                    <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <rect width="32" height="32" rx="8" fill="#1F0036"/>
+                      <path d="M10 22V10L22 22V10" stroke="#E11D74" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+                      <path d="M10 22V10L22 22V10" stroke="#FFFFFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </div>
+                  <div class="acc-info">
+                    <span class="acc-type-pill pill-purple">Bolsillo Cotidiano</span>
+                    <h4 class="acc-name">Nequi & Efectivo</h4>
+                    <span class="acc-sub">Compras Diarias y Traslados</span>
+                  </div>
+                </div>
+                <div class="acc-card-right split-right">
+                  <div class="split-sub-item">
+                    <span class="split-lbl">Nequi:</span>
+                    <strong class="split-val" id="card-acc-nequi">$0 COP</strong>
+                  </div>
+                  <div class="split-sub-item">
+                    <span class="split-lbl">Efectivo:</span>
+                    <strong class="split-val" id="card-acc-efectivo">$71.800 COP</strong>
+                  </div>
+                </div>
               </div>
+
             </div>
-            <div style="display:flex; align-items:center; gap:0.6rem;">
-              <button type="button" class="ssc-link" id="btn-banner-settings" style="cursor:pointer; background:rgba(251,191,36,0.15); border:1px solid rgba(251,191,36,0.3); color:#FBBF24;" title="Configurar Webhook y Copiar Apps Script">
-                <i class="fa-solid fa-gear"></i>
-                <span>Ajustes & Script</span>
-              </button>
-              <a href="https://docs.google.com/spreadsheets/d/1C9ifm7U8IYGOdY4IwAji9Z3McSlNy3B-e_2Jo-zvBFk/edit" target="_blank" rel="noopener noreferrer" class="ssc-link" title="Abrir hoja de cálculo en Google Drive">
-                <span>Ver en Drive</span>
-                <i class="fa-solid fa-arrow-up-right-from-square"></i>
-              </a>
-            </div>
+
           </div>
         </section>
 
-        <!-- KPI SUMMARY GRID (Cifras del Mes Octubre 2026) -->
+        <!-- BARRA DE SELECCIÓN RÁPIDA DE MESES (ENERO A DICIEMBRE 2026) -->
+        <div class="months-quick-strip" id="months-quick-strip">
+          <div class="months-strip-header">
+            <span class="strip-title"><i class="fa-solid fa-calendar-week" style="color:#60A5FA;"></i> Periodo Activo:</span>
+            <button class="btn-all-year-pill" id="btn-show-all-year" title="Ver consolidado de todo el año 2026">
+              <i class="fa-solid fa-layer-group"></i> Ver Todo 2026
+            </button>
+          </div>
+          <div class="months-strip-wrapper">
+            <button class="month-strip-pill" data-month="enero">Ene</button>
+            <button class="month-strip-pill" data-month="febrero">Feb</button>
+            <button class="month-strip-pill" data-month="marzo">Mar</button>
+            <button class="month-strip-pill" data-month="abril">Abr</button>
+            <button class="month-strip-pill" data-month="mayo">May</button>
+            <button class="month-strip-pill" data-month="junio">Jun</button>
+            <button class="month-strip-pill" data-month="julio">Jul</button>
+            <button class="month-strip-pill" data-month="agosto">Ago</button>
+            <button class="month-strip-pill" data-month="septiembre">Sep</button>
+            <button class="month-strip-pill active" data-month="octubre">Oct</button>
+            <button class="month-strip-pill" data-month="noviembre">Nov</button>
+            <button class="month-strip-pill" data-month="diciembre">Dic</button>
+          </div>
+        </div>
+
+        <!-- KPI SUMMARY GRID (Cifras del Mes Activo) -->
         <section class="kpi-banner-grid" id="section-overview">
           
           <!-- KPI 1: Ingreso -->
@@ -447,10 +469,175 @@
                   <span class="panel-subtitle">Compromisos Fijos vs Variables</span>
                 </div>
               </div>
-              <span class="period-badge-sub">Día 15 vs 30</span>
+              <div class="quincena-summary-pills">
+                <span class="quincena-header-pill pill-q1"><i class="fa-solid fa-calendar-check"></i> Q1: <strong id="quincena-q1-total">$1.539.123</strong></span>
+                <span class="quincena-header-pill pill-q2"><i class="fa-solid fa-calendar-day"></i> Q2: <strong id="quincena-q2-total">$1.225.000</strong></span>
+              </div>
             </div>
-            <div class="chart-canvas-container">
+            <div class="chart-canvas-container" style="position: relative; height: 260px;">
               <canvas id="quincenaBarChart"></canvas>
+            </div>
+          </div>
+        </section>
+
+        <!-- =========================================================
+             SECCIÓN: EVOLUCIÓN ANUAL 2026 — BALANCE MES A MES & PROCESO DEL AÑO
+             ========================================================= -->
+        <section class="dashboard-section annual-evolution-section" id="section-annual">
+          <div class="section-title-row" style="margin-bottom:1.25rem;">
+            <div>
+              <span class="section-badge-tiny"><i class="fa-solid fa-chart-line"></i> BALANCE GENERAL CONSOLIDADO</span>
+              <h2 class="section-heading">Evolución Anual 2026</h2>
+              <p class="section-subheading">Trayectoria de ingresos, gastos y ahorro acumulado de Enero a Diciembre</p>
+            </div>
+            <div class="annual-summary-pills">
+              <span class="annual-mini-badge badge-green"><i class="fa-solid fa-arrow-trend-up"></i> $61.6M Ingresos</span>
+              <span class="annual-mini-badge badge-red"><i class="fa-solid fa-arrow-trend-down"></i> $22.9M Gastos</span>
+              <span class="annual-mini-badge badge-blue"><i class="fa-solid fa-piggy-bank"></i> $38.6M Ahorro (62.7%)</span>
+            </div>
+          </div>
+
+          <!-- 4 KPIs del Año 2026 -->
+          <div class="annual-kpi-grid">
+            <div class="annual-kpi-card">
+              <div class="kpi-icon-bubble bubble-emerald"><i class="fa-solid fa-sack-dollar"></i></div>
+              <div class="kpi-meta-col">
+                <span class="kpi-subtitle">Ingresos Consolidados 2026</span>
+                <strong class="kpi-number" id="annual-total-ingresos">$61.623.190 COP</strong>
+                <span class="kpi-note text-emerald"><i class="fa-solid fa-check-double"></i> 10 meses registrados</span>
+              </div>
+            </div>
+
+            <div class="annual-kpi-card">
+              <div class="kpi-icon-bubble bubble-rose"><i class="fa-solid fa-money-bill-transfer"></i></div>
+              <div class="kpi-meta-col">
+                <span class="kpi-subtitle">Gastos Totales 2026</span>
+                <strong class="kpi-number" id="annual-total-gastos">$22.958.989 COP</strong>
+                <span class="kpi-note text-rose"><i class="fa-solid fa-chart-pie"></i> Promedio: $2.3M / mes</span>
+              </div>
+            </div>
+
+            <div class="annual-kpi-card">
+              <div class="kpi-icon-bubble bubble-cyan"><i class="fa-solid fa-vault"></i></div>
+              <div class="kpi-meta-col">
+                <span class="kpi-subtitle">Superávit Acumulado</span>
+                <strong class="kpi-number" id="annual-total-superavit">$38.664.201 COP</strong>
+                <span class="kpi-note text-cyan"><i class="fa-solid fa-shield-halved"></i> 62.7% Tasa de Ahorro</span>
+              </div>
+            </div>
+
+            <div class="annual-kpi-card">
+              <div class="kpi-icon-bubble bubble-amber"><i class="fa-solid fa-trophy"></i></div>
+              <div class="kpi-meta-col">
+                <span class="kpi-subtitle">Mes Récord</span>
+                <strong class="kpi-number" id="annual-record-month">Junio 2026</strong>
+                <span class="kpi-note text-amber"><i class="fa-solid fa-star"></i> $10.9M Ingreso • $7.0M Ahorro</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Gráfico Anual de Barras & Línea -->
+          <div class="chart-box-panel annual-chart-panel" style="margin-top:1.25rem;">
+            <div class="panel-header">
+              <div class="panel-header-title">
+                <i class="fa-solid fa-chart-column header-icon"></i>
+                <div>
+                  <h3>Trayectoria Mensual 2026</h3>
+                  <span class="panel-subtitle">Ingresos (Verde) vs Gastos (Rojo) vs Superávit Neto (Cyan)</span>
+                </div>
+              </div>
+              <span class="period-badge-sub">Consolidado 12 Meses</span>
+            </div>
+            <div class="annual-canvas-container" style="position:relative; height: 310px; width:100%;">
+              <canvas id="annualTrajectoryChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Matriz Comparativa Mes a Mes -->
+          <div class="annual-matrix-card" style="margin-top:1.25rem;">
+            <div class="matrix-header">
+              <h4><i class="fa-solid fa-calendar-days" style="color:#60A5FA;"></i> Detalle y Comparativa Mes a Mes</h4>
+              <span class="matrix-hint">Toca un mes para consultar sus movimientos en detalle</span>
+            </div>
+            <div class="table-responsive">
+              <table class="fintech-table table-annual-matrix">
+                <thead>
+                  <tr>
+                    <th>Mes</th>
+                    <th class="text-right">Ingresos</th>
+                    <th class="text-right">Gastos</th>
+                    <th class="text-right">Ahorro / Superávit</th>
+                    <th class="text-center">Tasa Ahorro</th>
+                    <th class="text-center">Transacciones</th>
+                    <th class="text-center">Acción</th>
+                  </tr>
+                </thead>
+                <tbody id="annual-matrix-tbody">
+                  <!-- Renderizado dinámicamente -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- =========================================================
+               AUDITORÍA FINANCIERA INTELIGENTE 2026 — MOTOR IA & REPORTES
+               ========================================================= -->
+          <div class="annual-ai-audit-card" id="annual-ai-audit-card" style="margin-top:1.5rem;">
+            <div class="ai-audit-header">
+              <div class="ai-audit-title-group">
+                <div class="ai-badge-glowing">
+                  <i class="fa-solid fa-brain"></i>
+                </div>
+                <div>
+                  <div class="ai-badge-pill">DIAGNÓSTICO ALGORÍTMICO 12 MESES</div>
+                  <h3 class="ai-audit-heading">Auditoría Financiera Integral 2026</h3>
+                  <p class="ai-audit-sub">Análisis predictivo de patrones de gasto, meses récord, y distribución de capital para Marlon Muñoz Pardo</p>
+                </div>
+              </div>
+              <button type="button" class="btn-email-audit" id="btn-send-email-audit" title="Enviar diagnóstico detallado a marlonmunozpardo5@gmail.com">
+                <i class="fa-solid fa-paper-plane" id="icon-email-audit"></i>
+                <span id="text-email-audit">Enviar Reporte al Correo</span>
+              </button>
+            </div>
+
+            <div class="ai-audit-grid">
+              <div class="ai-audit-stat-card card-peak-expense">
+                <div class="stat-top">
+                  <span class="stat-tag"><i class="fa-solid fa-arrow-trend-up"></i> Mes con Mayor Gasto</span>
+                  <span class="stat-badge-month" id="ai-peak-month">Junio 2026</span>
+                </div>
+                <strong class="stat-val text-rose" id="ai-peak-amount">$3.892.812 COP</strong>
+                <p class="stat-desc" id="ai-peak-desc">Pico máximo de egresos del año. Mayo ($2.82M) y Abril ($3.12M) también registraron alta presión de pagos fijos y compras.</p>
+              </div>
+
+              <div class="ai-audit-stat-card card-top-savings">
+                <div class="stat-top">
+                  <span class="stat-tag"><i class="fa-solid fa-trophy"></i> Mes Récord de Ahorro</span>
+                  <span class="stat-badge-month" id="ai-savings-month">Junio 2026</span>
+                </div>
+                <strong class="stat-val text-emerald" id="ai-savings-amount">$7.023.416 COP</strong>
+                <p class="stat-desc" id="ai-savings-desc">Ingreso récord de $10.91M por prima legal de servicios y nómina Colanta, con una extraordinaria tasa de ahorro del 64.3%.</p>
+              </div>
+
+              <div class="ai-audit-stat-card card-category-pressure">
+                <div class="stat-top">
+                  <span class="stat-tag"><i class="fa-solid fa-piggy-bank"></i> Fondos & Respaldo Colanta</span>
+                  <span class="stat-badge-month">Ahorros Cooperativa</span>
+                </div>
+                <strong class="stat-val text-cyan" id="ai-colanta-amount">$3.931.299 COP</strong>
+                <p class="stat-desc">Capital acumulado en Ahorro Ordinario, Navideño y Aportes Sociales que respalda tu patrimonio neto ante imprevistos.</p>
+              </div>
+            </div>
+
+            <div class="ai-audit-narrative-box">
+              <div class="narrative-badge"><i class="fa-solid fa-microchip"></i> Diagnóstico Ejecutivo Consolidado:</div>
+              <p class="narrative-text" id="ai-audit-narrative">
+                Marlon, de Enero a Octubre de 2026 acumulas un superávit neto de <strong>$38.664.201 COP</strong> con una tasa de ahorro global del <strong>62.7%</strong>. El mes más eficiente en control de egresos fue Enero ($1.35M en gastos), mientras que Junio y Abril demandaron mayor liquidez por compromisos fijos. El 68% de tus egresos corresponden a obligaciones recurrentes, y tus consumos diarios en Planta Colanta y combustible se encuentran debidamente conciliados.
+              </p>
+              <div class="ai-audit-footer-row">
+                <span class="ai-rule-badge"><i class="fa-solid fa-clock-rotate-left"></i> Automatización Gmail: Espera obligatoria de 3 horas antes de archivar</span>
+                <span class="ai-email-target"><i class="fa-solid fa-at"></i> marlonmunozpardo5@gmail.com</span>
+              </div>
             </div>
           </div>
         </section>
@@ -481,7 +668,50 @@
 
           <!-- TAB 1: MOVIMIENTOS RECIENTES -->
           <div class="tab-pane active" id="tab-all-movements">
-            <!-- Barra de Filtros Rápida -->
+            <!-- Strip de Métricas Rápidas / Financial Pulse -->
+            <div class="movements-pulse-strip" id="movements-pulse-strip">
+              <div class="pulse-card">
+                <div class="pulse-icon pulse-icon-red"><i class="fa-solid fa-arrow-trend-down"></i></div>
+                <div class="pulse-info">
+                  <span class="pulse-label">Gastos del Mes</span>
+                  <strong class="pulse-val" id="pulse-total-gastos">$0 COP</strong>
+                </div>
+              </div>
+              <div class="pulse-card">
+                <div class="pulse-icon pulse-icon-amber"><i class="fa-solid fa-utensils"></i></div>
+                <div class="pulse-info">
+                  <span class="pulse-label">Alimentación & Colanta</span>
+                  <strong class="pulse-val" id="pulse-total-alimentacion">$0 COP</strong>
+                </div>
+              </div>
+              <div class="pulse-card">
+                <div class="pulse-icon pulse-icon-blue"><i class="fa-solid fa-motorcycle"></i></div>
+                <div class="pulse-info">
+                  <span class="pulse-label">Moto & Transporte</span>
+                  <strong class="pulse-val" id="pulse-total-moto">$0 COP</strong>
+                </div>
+              </div>
+              <div class="pulse-card">
+                <div class="pulse-icon pulse-icon-emerald"><i class="fa-solid fa-receipt"></i></div>
+                <div class="pulse-info">
+                  <span class="pulse-label">Total Transacciones</span>
+                  <strong class="pulse-val" id="pulse-total-transacciones">256 registros</strong>
+                </div>
+              </div>
+            </div>
+
+            <!-- Chips de Filtrado Rápido estilo Nubank / Revolut -->
+            <div class="quick-filter-chips-bar" id="quick-filter-chips">
+              <button class="filter-chip active" data-filter="ALL">Todos</button>
+              <button class="filter-chip" data-filter="GASTO"><i class="fa-solid fa-arrow-down" style="color:#FB7185;"></i> Gastos</button>
+              <button class="filter-chip" data-filter="INGRESO"><i class="fa-solid fa-arrow-up" style="color:#34D399;"></i> Ingresos</button>
+              <button class="filter-chip" data-filter="ALIMENTACION"><i class="fa-solid fa-utensils" style="color:#FBBF24;"></i> Alimentación</button>
+              <button class="filter-chip" data-filter="MOTO"><i class="fa-solid fa-motorcycle" style="color:#60A5FA;"></i> Moto</button>
+              <button class="filter-chip" data-filter="COLANTA"><i class="fa-solid fa-building-wheat" style="color:#38BDF8;"></i> Colanta / AyC</button>
+              <button class="filter-chip" data-filter="NEQUI"><i class="fa-solid fa-mobile-screen" style="color:#C084FC;"></i> Nequi</button>
+            </div>
+
+            <!-- Barra de Búsqueda y Filtros -->
             <div class="filter-actions-bar">
               <div class="search-input-pill">
                 <i class="fa-solid fa-magnifying-glass"></i>
@@ -490,11 +720,11 @@
               <div class="select-filters-row">
                 <select id="filter-category-select" class="custom-select">
                   <option value="ALL">Todas las Categorías</option>
+                  <option value="Alimentación">Alimentación</option>
                   <option value="Transporte y Moto">Transporte y Moto</option>
                   <option value="Gastos Hormiga / Dulces">Gastos Hormiga / Dulces</option>
                   <option value="Ocio y Entretenimiento">Ocio y Entretenimiento</option>
                   <option value="Servicios">Servicios</option>
-                  <option value="Alimentación">Alimentación</option>
                   <option value="Compras">Compras</option>
                   <option value="Otros">Otros</option>
                 </select>
@@ -504,6 +734,7 @@
                   <option value="AyC Colanta">AyC Colanta</option>
                   <option value="Nequi">Nequi</option>
                   <option value="Efectivo">Efectivo</option>
+                  <option value="Bancolombia">Bancolombia</option>
                 </select>
               </div>
             </div>
@@ -513,17 +744,17 @@
               <table class="fintech-table" id="table-movements">
                 <thead>
                   <tr>
-                    <th>ID</th>
-                    <th>Fecha & Hora</th>
-                    <th>Concepto / Comercio</th>
+                    <th style="width: 80px;">ID</th>
+                    <th>Concepto & Comercio</th>
                     <th>Categoría</th>
                     <th>Cuenta</th>
+                    <th>Fecha & Hora</th>
                     <th class="text-right">Monto</th>
-                    <th class="text-center" style="width: 50px;">Acción</th>
+                    <th class="text-center" style="width: 85px;">Acciones</th>
                   </tr>
                 </thead>
                 <tbody id="movements-tbody">
-                  <!-- Renderizado dinámicamente -->
+                  <!-- Renderizado dinámicamente con Avatares, badges y micro-interacciones -->
                 </tbody>
               </table>
             </div>
@@ -907,6 +1138,31 @@
           <label>ID de Google Sheet</label>
           <input type="text" class="custom-input" value="1C9ifm7U8IYGOdY4IwAji9Z3McSlNy3B-e_2Jo-zvBFk" readonly>
         </div>
+
+        <!-- Ajustes de Seguridad: Escudo Anti-Spam GitHub -->
+        <div class="field-block" style="margin-top: 1rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 1rem;">
+          <label style="display:flex; justify-content:space-between; align-items:center;">
+            <span><i class="fa-solid fa-shield-halved" style="color:#10B981;"></i> Blindaje GitHub & Google Sheets</span>
+            <span class="badge-tag-auth" id="label-auth-status" style="font-size:0.7rem; background:rgba(16,185,129,0.15); color:#34D399; padding:2px 8px; border-radius:4px; font-weight:700;">
+              🛡️ Protección Activa
+            </span>
+          </label>
+          <div style="display:flex; gap:0.5rem; margin-top:0.4rem;">
+            <input type="text" id="input-auth-token" class="custom-input" placeholder="Token de Autorización" value="marlon_pardo_finanzas_2026_auth" style="font-family:monospace; font-size:0.8rem;">
+            <button type="button" class="btn-sheet-submit" id="btn-save-auth-token" style="white-space:nowrap; padding:0 0.8rem; font-size:0.8rem;">
+              Actualizar Token
+            </button>
+          </div>
+          <p style="font-size:0.75rem; color:#94A3B8; margin-top:0.4rem; line-height:1.4;">
+            Cualquier visitante en GitHub verá el dashboard en <strong>Modo Solo Lectura</strong>. Solo quien ingrese con tu enlace privado podrá escribir o modificar datos en tu Google Sheet.
+          </p>
+          <div style="margin-top:0.6rem;">
+            <button type="button" class="btn-sheet-cancel" id="btn-copy-private-link" style="width:100%; font-size:0.78rem; text-align:center; justify-content:center; gap:0.4rem;">
+              <i class="fa-solid fa-link"></i> Copiar mi Enlace de Acceso Privado
+            </button>
+          </div>
+        </div>
+
         <div class="sheet-actions">
           <button type="button" class="btn-sheet-cancel" id="btn-test-connection">Probar Conexión</button>
           <button type="button" class="btn-sheet-submit" id="btn-save-settings">Guardar</button>
@@ -956,6 +1212,164 @@
             <i class="fa-solid fa-download"></i>
             <span>Instalar Ahora</span>
           </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: RECIBO DIGITAL Y EDICIÓN DE MOVIMIENTO (ESTILO APPLE CARD / REVOLUT) -->
+  <div class="modal-overlay" id="modal-transaction-detail">
+    <div class="modal-sheet receipt-sheet">
+      <div class="modal-sheet-header">
+        <div class="sheet-title-row">
+          <h3><i class="fa-solid fa-receipt" style="color:#60A5FA;"></i> Detalle de Movimiento</h3>
+          <button class="btn-close-sheet" id="btn-close-modal-detail">&times;</button>
+        </div>
+      </div>
+      <div class="sheet-form receipt-body">
+        <div class="receipt-header-hero">
+          <div class="receipt-avatar-large" id="detail-avatar">🍽️</div>
+          <h2 class="receipt-amount-hero" id="detail-amount">-$17.116 COP</h2>
+          <span class="receipt-status-pill" id="detail-status-pill"><i class="fa-solid fa-circle-check"></i> Registrado en Google Sheets</span>
+        </div>
+
+        <!-- Editor de Concepto Personalizado -->
+        <div class="field-block" style="margin-top: 1.25rem;">
+          <label for="detail-input-concept" style="display:flex; justify-content:space-between; align-items:center;">
+            <span>Concepto / Nombre del Gasto:</span>
+            <span style="font-size:0.75rem; color:#93C5FD; font-weight:600;"><i class="fa-solid fa-pen-to-square"></i> Puedes editarlo</span>
+          </label>
+          <input type="text" id="detail-input-concept" class="custom-input" placeholder="Ej: Almuerzo Restaurante Planta Medellín">
+        </div>
+
+        <!-- Grid de Metadatos Financieros -->
+        <div class="receipt-metadata-grid">
+          <div class="meta-item">
+            <span class="meta-label">ID Registro</span>
+            <strong class="meta-value" id="detail-id">M-0256</strong>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Fecha y Hora</span>
+            <strong class="meta-value" id="detail-datetime">16/10/2026 06:25 PM</strong>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Categoría</span>
+            <strong class="meta-value" id="detail-category">Alimentación</strong>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Subcategoría</span>
+            <strong class="meta-value" id="detail-subcategory">Restaurante</strong>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Cuenta de Pago</span>
+            <strong class="meta-value" id="detail-account">AyC Colanta</strong>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Método</span>
+            <strong class="meta-value" id="detail-method">Transferencia / Nómina</strong>
+          </div>
+        </div>
+
+        <div class="sheet-actions" style="margin-top: 1.5rem;">
+          <button type="button" class="btn-sheet-cancel" id="btn-delete-from-detail" style="border-color:rgba(244,63,94,0.4); color:#FB7185;">
+            <i class="fa-solid fa-trash-can"></i> Eliminar
+          </button>
+          <button type="button" class="btn-sheet-submit" id="btn-save-detail-concept">
+            <i class="fa-solid fa-floppy-disk"></i> Guardar Concepto
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: SELECTOR DE MESES (TODOS LOS MESES DEL AÑO) -->
+  <div class="modal-overlay" id="modal-month-selector">
+    <div class="modal-sheet month-picker-sheet">
+      <div class="modal-sheet-header">
+        <div class="sheet-title-row">
+          <h3><i class="fa-regular fa-calendar-days" style="color:#60A5FA;"></i> Seleccionar Mes de Consulta</h3>
+          <button class="btn-close-sheet" id="btn-close-modal-month">&times;</button>
+        </div>
+      </div>
+      <div class="sheet-form">
+        <p class="field-hint" style="margin-bottom:1rem; line-height:1.4;">
+          Audita los movimientos, ingresos y gastos de cualquier mes del año 2026:
+        </p>
+        <div class="month-grid-picker" id="month-grid-picker">
+          <!-- 12 botones/tarjetas de mes generados dinámicamente -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       MODAL: ESCUDO DE SEGURIDAD GITHUB & PROTECCIÓN CLOUD
+       ========================================================= -->
+  <div class="modal-overlay" id="modal-cloud-shield">
+    <div class="modal-sheet">
+      <div class="modal-sheet-header">
+        <div class="sheet-title-row">
+          <div class="sheet-title-icon" style="background:rgba(16,185,129,0.15); color:#34D399;">
+            <i class="fa-solid fa-shield-halved"></i>
+          </div>
+          <div>
+            <h3 class="sheet-title">Escudo Anti-Spam GitHub Activo</h3>
+            <span class="sheet-subtitle">Protección de Google Sheets contra inyecciones no autorizadas</span>
+          </div>
+        </div>
+        <button type="button" class="btn-close-sheet" id="btn-close-cloud-shield">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="modal-sheet-body">
+        <div class="shield-security-card">
+          <div class="shield-icon-badge">
+            <i class="fa-solid fa-lock"></i>
+          </div>
+          <h4>Tu Base de Datos Financiera está Blindada</h4>
+          <p>
+            Cualquier persona que descubra tu código en GitHub o visite la página web pública solo tendrá <strong>Acceso de Solo Lectura</strong>. No podrán registrar movimientos falsos, eliminar registros ni alterar tus números.
+          </p>
+        </div>
+
+        <div class="shield-details-list">
+          <div class="shield-item">
+            <i class="fa-solid fa-circle-check text-emerald"></i>
+            <div>
+              <strong>Validación por Token Secreto:</strong>
+              <span>Toda petición de escritura en Google Apps Script valida tu token privado antes de tocar Google Sheets.</span>
+            </div>
+          </div>
+          <div class="shield-item">
+            <i class="fa-solid fa-circle-check text-emerald"></i>
+            <div>
+              <strong>Regla Gmail de 3 Horas:</strong>
+              <span>Tus correos de facturas permanecen 3 horas en Recibidos para que puedas revisarlos antes de archivarse.</span>
+            </div>
+          </div>
+          <div class="shield-item">
+            <i class="fa-solid fa-circle-check text-emerald"></i>
+            <div>
+              <strong>Auditoría con Gemini Multimodal:</strong>
+              <span>Extracción automática de datos sin exponer tus credenciales bancarias personales.</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="field-block" style="margin-top:1.25rem;">
+          <label>Enlace de Acceso Autorizado (Para Marlon):</label>
+          <div style="display:flex; gap:0.5rem;">
+            <input type="text" id="input-shield-share-url" class="custom-input" readonly style="font-family:monospace; font-size:0.75rem;">
+            <button type="button" class="btn-sheet-submit" id="btn-copy-shield-url" style="white-space:nowrap; padding:0 1rem; font-size:0.8rem;">
+              <i class="fa-solid fa-copy"></i> Copiar
+            </button>
+          </div>
+          <small class="field-hint">Guarda este enlace en tus favoritos para ingresar con permisos completos de escritura.</small>
+        </div>
+
+        <div class="sheet-actions" style="margin-top:1.5rem;">
+          <button type="button" class="btn-sheet-submit" id="btn-shield-confirm" style="width:100%;">Entendido</button>
         </div>
       </div>
     </div>
