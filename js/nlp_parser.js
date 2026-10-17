@@ -1,6 +1,7 @@
 /**
  * PARDOFINANZAS PRO — MOTOR DE PROCESAMIENTO DE LENGUAJE NATURAL (NLP LOCAL)
  * Responde y procesa en < 0.05 segundos directamente en el navegador.
+ * Compatible con modismos colombianos y variaciones flexibles de lenguaje.
  */
 
 const FinancialNLP = {
@@ -11,7 +12,7 @@ const FinancialNLP = {
     { regex: /\b(parqueadero moto|parking moto|parqueadero de moto)\b/i, category: "Moto", subcategory: "Parqueadero" },
     { regex: /\b(almuerzo|cena|desayuno|comida|restaurante|burger|pizza|corrientazo|frisby|kfc|mcdonalds|mondongo)\b/i, category: "Alimentación", subcategory: "Restaurante" },
     { regex: /\b(mercado|supermercado|d1|exito|carulla|euro|vaquita|mercatodo|viveres|plaza)\b/i, category: "Alimentación", subcategory: "Mercado" },
-    { regex: /\b(epm|energia|luz|agua|gas|alcantarillado)\b/i, category: "Servicios", subcategory: "EPM (Agua, Luz, Gas)" },
+    { regex: /\b(epm|energia|luz|agua|gas|alcantarillado|servicios\s*publicos|servicios)\b/i, category: "Servicios", subcategory: "EPM (Agua, Luz, Gas)" },
     { regex: /\b(tigo|internet|wifi|fibra|claro|datos|linea celular|plan celular|movistar)\b/i, category: "Servicios", subcategory: "Internet y Telefonía" },
     { regex: /\b(arriendo|alquiler|canon|administracion|apartamento|casa)\b/i, category: "Vivienda", subcategory: "Arriendo" },
     { regex: /\b(dulce|helado|paleta|chocolatina|granizado|mecato|empanada|chucheria|snack|golosina|tinto|cafecito|pan de queso|buñuelo)\b/i, category: "Gastos Hormiga / Dulces", subcategory: "Antojo / Mecato" },
@@ -21,11 +22,11 @@ const FinancialNLP = {
     { regex: /\b(sueldo|nomina|quincena|pago colanta|honorarios|prima|bono|consignacion sueldo)\b/i, category: "Salario", subcategory: "Nómina Colanta" }
   ],
 
-  // Extrae montos en pesos colombianos con soporte de modismos: "25 mil", "50 lucas", "1.5 millones", "1 palo"
+  // Extrae montos en pesos colombianos con soporte de modismos: "25 mil", "50 lucas", "1.5 millones", "1 palo", "197k"
   parseAmount(text) {
-    const t = text.toLowerCase();
+    const t = String(text || "").toLowerCase().trim();
     
-    // "25 mil", "50k", "100 lucas"
+    // "25 mil", "50k", "100 lucas", "197mil"
     const matchMil = t.match(/(\d+(?:[.,]\d+)?)\s*(?:mil|k|lucas?)\b/i);
     if (matchMil) {
       const val = parseFloat(matchMil[1].replace(",", "."));
@@ -49,12 +50,24 @@ const FinancialNLP = {
       return 1000;
     }
 
-    // "$ 25.000" o "25000" o "8500"
-    const matchDirecto = t.match(/\$?\s*(\d{1,3}(?:[.]\d{3})+|\d{3,})/);
+    // "$ 25.000", "197.000" o "25000" o "197000" o "8500"
+    const matchDirecto = t.match(/\$?\s*(\d{1,3}(?:[.]\d{3})+|\d{4,})/);
     if (matchDirecto) {
       const limpio = matchDirecto[1].replace(/\./g, "");
       const num = parseInt(limpio, 10) || 0;
       if (num !== 2026) return num;
+    }
+
+    // Soporte para abreviaciones coloquiales: "epm 197", "arriendo 900", "tigo 120"
+    // Si un número de 2 a 3 dígitos aparece junto a nombres de fijos, son miles (ej: 197 -> $197.000 COP)
+    const matchShorthand = t.match(/\b(\d{2,3})\b/);
+    if (matchShorthand) {
+      const rawNum = parseInt(matchShorthand[1], 10);
+      if (rawNum >= 10 && rawNum <= 999 && rawNum !== 15 && rawNum !== 30 && rawNum !== 31 && rawNum !== 28) {
+        if (/\b(epm|energia|luz|agua|gas|tigo|internet|wifi|arriendo|alquiler|comida|mercado|gasolina|moto|parqueadero|audifonos|samsung|google|datos|celular)\b/i.test(t)) {
+          return rawNum * 1000;
+        }
+      }
     }
 
     return 0;
@@ -62,45 +75,169 @@ const FinancialNLP = {
 
   // Detecta la cuenta bancaria (Nequi, AyC Colanta, Efectivo, Bancolombia)
   parseAccount(text) {
-    const t = text.toLowerCase();
+    const t = String(text || "").toLowerCase();
     if (/\b(colanta|ayc|cooperativa|cuenta nomina|n[oó]mina)\b/i.test(t)) return "AyC Colanta";
     if (/\b(efectivo|cash|plata en mano|en mano|monedas|billetes)\b/i.test(t)) return "Efectivo";
     if (/\b(bancolombia)\b/i.test(t)) return "Bancolombia";
     return "Nequi"; // Default en Colombia
   },
 
-  // Catálogo maestro de gastos fijos y compromisos de Marlon para reconciliación automática
+  // Catálogo maestro de gastos fijos y compromisos de Marlon para reconciliación automática ultra-inteligente
   fixedObligationsCatalog: [
-    { id: "F-0107", regex: /\b(epm|energ[ií]a|luz|agua|gas|factura epm|cuenta epm|servicios epm)\b/i, concepto: "EPM ENERGIA", cuota: 177000, variable: true, categoria: "Servicios", subcategoria: "EPM (Agua, Luz, Gas)" },
-    { id: "F-0108", regex: /\b(comida|mercado|alimentaci[oó]n|mercado quincena)\b/i, concepto: "COMIDA", cuota: 850000, variable: false, categoria: "Alimentación", subcategoria: "Mercado" },
-    { id: "F-0109", regex: /\b(tigo|internet|wifi|fibra|une)\b/i, concepto: "Internet Tigo", cuota: 120000, variable: true, categoria: "Servicios", subcategoria: "Internet" },
-    { id: "F-0110", regex: /\b(parqueadero trabajo|parking trabajo|parqueadero semana)\b/i, concepto: "Parqueadero Trabajo Semana", cuota: 40000, variable: false, categoria: "Transporte", subcategoria: "Parqueadero" },
-    { id: "F-0111", regex: /\b(aud[ií]fonos|samsung|galaxy buds)\b/i, concepto: "Cuota Audifonos Samsung", cuota: 50000, variable: false, categoria: "Otros", subcategoria: "Cuota" },
-    { id: "F-0112", regex: /\b(parqueadero moto|parking moto)\b/i, concepto: "PARQUEADERO MOTO", cuota: 60000, variable: false, categoria: "Moto", subcategoria: "Parqueadero" },
-    { id: "F-0113", regex: /\b(gasolina moto|gasolina|tanqueada)\b/i, concepto: "Gasolina Moto", cuota: 35000, variable: true, categoria: "Moto", subcategoria: "Gasolina" },
-    { id: "F-0114", regex: /\b(spotify|m[uú]sica)\b/i, concepto: "Spotify", cuota: 10100, variable: false, categoria: "Entretenimiento", subcategoria: "Suscripciones" },
-    { id: "F-0115", regex: /\b(celular|datos|plan celular|plan datos|claro|l[ií]nea m[oó]vil|cuota datos)\b/i, concepto: "CUOTA DATOS CELULAR", cuota: 43900, variable: false, categoria: "Servicios", subcategoria: "Telefonía" },
-    { id: "F-0116", regex: /\b(arriendo|casa|apartamento|canon|arriendo casa)\b/i, concepto: "ARRIENDO CASA", cuota: 900000, variable: false, categoria: "Vivienda", subcategoria: "Arriendo" },
-    { id: "F-0117", regex: /\b(google|google one|nube|almacenamiento)\b/i, concepto: "Google One", cuota: 20000, variable: false, categoria: "Servicios", subcategoria: "Suscripciones" },
-    { id: "F-0118", regex: /\b(gasolina moto q2|gasolina quincena 2)\b/i, concepto: "Gasolina Moto", cuota: 25000, variable: true, categoria: "Moto", subcategoria: "Gasolina" },
-    { id: "F-0119", regex: /\b(parqueadero trabajo q2)\b/i, concepto: "Parqueadero Trabajo Semana", cuota: 40000, variable: false, categoria: "Transporte", subcategoria: "Parqueadero" },
-    { id: "F-0120", regex: /\b(comida q2|mercado fin de mes)\b/i, concepto: "COMIDA", cuota: 200000, variable: false, categoria: "Alimentación", subcategoria: "Mercado" },
-    { id: "F-0121", regex: /\b(parqueadero moto q2)\b/i, concepto: "PARQUEADERO MOTO", cuota: 40000, variable: false, categoria: "Moto", subcategoria: "Parqueadero" }
+    {
+      id: "F-0107",
+      regex: /\b(epm|energ[ií]a|luz|agua|gas|alcantarillado|servicios\s*p[uú]blicos|servicios|factura\s*epm|cuenta\s*epm|factura\s*servicios|factura\s*de\s*(?:la\s*)?luz|cuenta\s*de\s*(?:la\s*)?luz|recibo\s*epm|recibo\s*de\s*(?:la\s*)?luz|cuenta\s*del?\s*agua)\b/i,
+      concepto: "EPM ENERGIA",
+      cuota: 177000,
+      variable: true,
+      categoria: "Servicios",
+      subcategoria: "EPM (Agua, Luz, Gas)"
+    },
+    {
+      id: "F-0108",
+      regex: /\b(comida(?:\s*q1)?|mercado(?:\s*q1)?|alimentaci[oó]n|mercado\s*quincena|mercado\s*del?\s*15|comida\s*del?\s*15|v[ií]veres|mercado\s*grande|mercado\s*colanta)\b/i,
+      concepto: "COMIDA",
+      cuota: 850000,
+      variable: false,
+      categoria: "Alimentación",
+      subcategoria: "Mercado"
+    },
+    {
+      id: "F-0109",
+      regex: /\b(tigo|internet|wifi|fibra|une|factura\s*tigo|cuenta\s*tigo|plan\s*tigo|recibo\s*tigo|internet\s*de\s*tigo|internet\s*casa|wifi\s*casa)\b/i,
+      concepto: "Internet Tigo",
+      cuota: 120000,
+      variable: true,
+      categoria: "Servicios",
+      subcategoria: "Internet"
+    },
+    {
+      id: "F-0110",
+      regex: /\b(parqueadero\s*(?:del?\s*)?trabajo|parking\s*(?:del?\s*)?trabajo|parqueadero\s*semana|parqueadero\s*laboral|parqueadero\s*oficina)\b/i,
+      concepto: "Parqueadero Trabajo Semana",
+      cuota: 40000,
+      variable: false,
+      categoria: "Transporte",
+      subcategoria: "Parqueadero"
+    },
+    {
+      id: "F-0111",
+      regex: /\b(aud[ií]fonos|samsung|galaxy\s*buds|cuota\s*aud[ií]fonos|auriculares|audifonos\s*samsung|cuota\s*samsung)\b/i,
+      concepto: "Cuota Audifonos Samsung",
+      cuota: 50000,
+      variable: false,
+      categoria: "Otros",
+      subcategoria: "Cuota"
+    },
+    {
+      id: "F-0112",
+      regex: /\b(parqueadero\s*(?:de\s*la\s*)?moto|parking\s*(?:de\s*la\s*)?moto|mensualidad\s*moto|parqueo\s*moto)\b/i,
+      concepto: "PARQUEADERO MOTO",
+      cuota: 60000,
+      variable: false,
+      categoria: "Moto",
+      subcategoria: "Parqueadero"
+    },
+    {
+      id: "F-0113",
+      regex: /\b(gasolina\s*(?:de\s*la\s*)?moto|gasolina|tanquead[ao]|tanqui[eé]|tanqueo|combustible(?:\s*moto)?|tanquear|eds|terpel\s*moto)\b/i,
+      concepto: "Gasolina Moto",
+      cuota: 35000,
+      variable: true,
+      categoria: "Moto",
+      subcategoria: "Gasolina"
+    },
+    {
+      id: "F-0114",
+      regex: /\b(spotify|m[uú]sica|streaming\s*m[uú]sica|cuenta\s*spotify|plan\s*spotify|suscripcion\s*spotify)\b/i,
+      concepto: "Spotify",
+      cuota: 10100,
+      variable: false,
+      categoria: "Entretenimiento",
+      subcategoria: "Suscripciones"
+    },
+    {
+      id: "F-0115",
+      regex: /\b(celular|datos(?:\s*celular)?|plan\s*(?:de\s*)?datos|plan\s*(?:de\s*)?celular|claro|cuota\s*datos|recarga\s*datos|l[ií]nea\s*m[oó]vil|paquete\s*datos|datos\s*claro|factura\s*celular)\b/i,
+      concepto: "CUOTA DATOS CELULAR",
+      cuota: 43900,
+      variable: false,
+      categoria: "Servicios",
+      subcategoria: "Telefonía"
+    },
+    {
+      id: "F-0116",
+      regex: /\b(arriendo|casa|apartamento|canon(?:\s*de\s*arrendamiento)?|arriendo\s*casa|alquiler|renta|pago\s*arriendo|casa\s*arriendo|arriendo\s*de\s*la\s*casa)\b/i,
+      concepto: "ARRIENDO CASA",
+      cuota: 900000,
+      variable: false,
+      categoria: "Vivienda",
+      subcategoria: "Arriendo"
+    },
+    {
+      id: "F-0117",
+      regex: /\b(google|google\s*one|nube(?:\s*google)?|almacenamiento\s*google|drive|google\s*drive|suscripcion\s*google)\b/i,
+      concepto: "Google One",
+      cuota: 20000,
+      variable: false,
+      categoria: "Servicios",
+      subcategoria: "Suscripciones"
+    },
+    {
+      id: "F-0118",
+      regex: /\b(gasolina\s*moto\s*q2|gasolina\s*quincena\s*2|gasolina\s*fin\s*de\s*mes|segunda\s*tanqueada\s*moto)\b/i,
+      concepto: "Gasolina Moto",
+      cuota: 25000,
+      variable: true,
+      categoria: "Moto",
+      subcategoria: "Gasolina"
+    },
+    {
+      id: "F-0119",
+      regex: /\b(parqueadero\s*trabajo\s*q2|parqueadero\s*fin\s*de\s*mes|parqueadero\s*trabajo\s*quincena\s*2)\b/i,
+      concepto: "Parqueadero Trabajo Semana",
+      cuota: 40000,
+      variable: false,
+      categoria: "Transporte",
+      subcategoria: "Parqueadero"
+    },
+    {
+      id: "F-0120",
+      regex: /\b(comida\s*q2|mercado\s*fin\s*de\s*mes|comida\s*quincena\s*2|mercado\s*quincena\s*2|mercado\s*30|comida\s*30)\b/i,
+      concepto: "COMIDA",
+      cuota: 200000,
+      variable: false,
+      categoria: "Alimentación",
+      subcategoria: "Mercado"
+    },
+    {
+      id: "F-0121",
+      regex: /\b(parqueadero\s*moto\s*q2|parqueadero\s*moto\s*fin\s*de\s*mes|parqueadero\s*moto\s*quincena\s*2)\b/i,
+      concepto: "PARQUEADERO MOTO",
+      cuota: 40000,
+      variable: false,
+      categoria: "Moto",
+      subcategoria: "Parqueadero"
+    }
   ],
 
+  // Búsqueda inteligente de coincidencias en el catálogo de fijos
   matchFixedObligation(text) {
-    const t = String(text || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    const raw = String(text || "").trim();
+    const clean = raw.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    
     for (const item of this.fixedObligationsCatalog) {
-      if (item.regex.test(t) || item.regex.test(text)) {
+      if (item.regex.test(clean) || item.regex.test(raw)) {
         return item;
       }
     }
     return null;
   },
 
-  // Detecta la intención principal del usuario
+  // Detecta la intención principal del usuario con máxima flexibilidad
   parseIntent(text) {
-    const t = text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    const raw = String(text || "").trim();
+    const t = raw.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
     // 1. Borrado / Anulación / Deshacer
     if (/\b(borrar|eliminar|deshacer|quitar|anular|\/borrar|\/deshacer)\b/i.test(t)) {
@@ -111,21 +248,32 @@ const FinancialNLP = {
       };
     }
 
-    // 2. Registro de movimiento (Prioridad si hay un monto numérico y no es una pregunta explícita)
-    const isExplicitQuestion = /[¿?]|\b(cuanto|cuales|como va|mostrar|consultar|ver\s+mis|ver\s+gastos)\b/i.test(t);
-    const amount = this.parseAmount(text);
+    // 2. Comprobación de verbos de acción de pago en Colombia
+    const isPaymentAction = /\b(pagu[eé]|pago|pagad[ao]|se\s*pago|ya\s*pagu[eé]|abon[eé]|abono|cancel[eé]|cancelad[ao]|transfer[ií]|met[ií]|le\s*met[ií]|d[ií]|liquid[eé]|descont[eé]|sald[eé]|saldad[ao]|consign[eé]|qued[oó]\s*pag[ao])\b/i.test(t);
+    const isExplicitQuestion = /[¿?]|\b(cuanto|cuales|como va|mostrar|consultar|ver\s+mis|ver\s+gastos|historial)\b/i.test(t);
 
+    let amount = this.parseAmount(raw);
+    const fixedMatch = this.matchFixedObligation(raw);
+
+    // Si el usuario dijo "ya pague el arriendo", "pague epm", "se pago la luz", "pague spotify" SIN decir el monto:
+    // El sistema inteligente asume la cuota base del compromiso fijo automáticamente
+    let usedDefaultAmount = false;
+    if (amount === 0 && fixedMatch && (isPaymentAction || /\b(ya|se|factura|cuenta|recibo)\b/i.test(t)) && !isExplicitQuestion) {
+      amount = fixedMatch.cuota;
+      usedDefaultAmount = true;
+    }
+
+    // 3. Registro de movimiento si hay monto (explícito o inferido de compromiso fijo)
     if (amount > 0 && !isExplicitQuestion) {
-      const isIngreso = /\b(recibi|recibo|ingreso|me pagaron|gane|cobre|nomina|sueldo|abono a mi favor)\b/i.test(t);
-      const fixedMatch = !isIngreso ? this.matchFixedObligation(text) : null;
-      const isFijo = !!fixedMatch;
+      const isIngreso = /\b(recibi|recibo|ingreso|me pagaron|gane|cobre|nomina|sueldo|abono a mi favor)\b/i.test(t) && !fixedMatch;
+      const isFijo = !!fixedMatch && !isIngreso;
 
       let category = isIngreso ? "Salario" : (fixedMatch ? fixedMatch.categoria : "Otros");
       let subcategory = isIngreso ? "Ingreso Extra" : (fixedMatch ? "Pago fijo" : "General");
 
       if (!fixedMatch && !isIngreso) {
         for (const item of this.categoriesMap) {
-          if (item.regex.test(t) || item.regex.test(text)) {
+          if (item.regex.test(t) || item.regex.test(raw)) {
             category = item.category;
             subcategory = item.subcategory;
             break;
@@ -134,8 +282,8 @@ const FinancialNLP = {
       }
 
       // Limpiar descripción ejecutiva
-      let desc = text
-        .replace(/\b(pagu[eé]|pago|abon[eé]|cancel[eé]|compr[eé]|me gast[eé]|gast[eé]|recib[ií]|ingreso|este mes|hoy|ayer)\b/gi, "")
+      let desc = raw
+        .replace(/\b(pagu[eé]|pago|pagad[ao]|se\s*pago|ya\s*pagu[eé]|abon[eé]|abono|cancel[eé]|compr[eé]|me gast[eé]|gast[eé]|recib[ií]|ingreso|este mes|hoy|ayer)\b/gi, "")
         .replace(/\b(con|por|de|en|el|la|los|las|un|una|pesos|cop|nequi|colanta|ayc|efectivo|bancolombia|tarjeta)\b/gi, "")
         .replace(/\$?\s*\d+(?:[.,]\d+)?\s*(?:mil|k|lucas?|mill[oó]n|millones|palos?)?\b/gi, "")
         .replace(/\s+/g, " ")
@@ -155,17 +303,18 @@ const FinancialNLP = {
         amount: amount,
         category: category,
         subcategory: subcategory,
-        account: this.parseAccount(text),
+        account: this.parseAccount(raw),
         description: desc,
         isFixed: isFijo,
         idFijo: fixedMatch ? fixedMatch.id : null,
         conceptoFijo: fixedMatch ? fixedMatch.concepto : null,
         isVariableInvoice: fixedMatch ? fixedMatch.variable : false,
-        cuotaBaseFijo: fixedMatch ? fixedMatch.cuota : 0
+        cuotaBaseFijo: fixedMatch ? fixedMatch.cuota : 0,
+        usedDefaultAmount: usedDefaultAmount
       };
     }
 
-    // 3. Consultas Inteligentes
+    // 4. Consultas Inteligentes
     if (/\b(disponible|saldo|plata|cuanto me queda|cuanto tengo|cuanto hay|caja|liquidez)\b/i.test(t)) {
       return { type: "QUERY_AVAILABLE" };
     }
@@ -188,3 +337,11 @@ const FinancialNLP = {
     return { type: "UNKNOWN" };
   }
 };
+
+// Exportar globalmente para navegador y módulos Node.js
+if (typeof window !== "undefined") {
+  window.FinancialNLP = FinancialNLP;
+}
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = FinancialNLP;
+}

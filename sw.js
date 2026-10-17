@@ -1,16 +1,17 @@
 /**
  * PARDOFINANZAS PRO — SERVICE WORKER (PWA)
  * Carga instantánea offline y soporte para app móvil instalable
+ * Versión 28 con invalidación inmediata de caché antigua
  */
 
-const CACHE_NAME = "pardofinanzas-pwa-v26";
+const CACHE_NAME = "pardofinanzas-pwa-v28";
 const STATIC_ASSETS = [
   "./",
   "./index.html",
   "./css/styles.css",
-  "./js/api.js",
-  "./js/nlp_parser.js",
-  "./js/app.js",
+  "./js/api.js?v=26.9.3",
+  "./js/nlp_parser.js?v=26.9.3",
+  "./js/app.js?v=26.9.3",
   "./manifest.json",
   "./assets/icon-192.png",
   "./assets/icon-512.png"
@@ -33,6 +34,7 @@ self.addEventListener("activate", (event) => {
       return Promise.all(
         keys.map((key) => {
           if (key !== CACHE_NAME) {
+            console.log("🧹 PWA: Eliminando caché antigua:", key);
             return caches.delete(key);
           }
         })

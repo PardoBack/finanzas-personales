@@ -887,8 +887,11 @@ const FintechApp = {
   initServiceWorker() {
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => {
-        navigator.serviceWorker.register("./sw.js")
-          .then(reg => console.log("✅ PWA Service Worker registrado:", reg.scope))
+        navigator.serviceWorker.register("./sw.js?v=28")
+          .then(reg => {
+            try { reg.update(); } catch (e) {}
+            console.log("✅ PWA Service Worker registrado (v28):", reg.scope);
+          })
           .catch(err => console.warn("Service Worker:", err));
       });
     }
@@ -1367,18 +1370,42 @@ const FintechApp = {
 
       // Reconciliación ultra-inteligente de gastos fijos si aplica
       let fixedReconciled = null;
-      if (intent.transactionType === "Gasto" && this.state.data && Array.isArray(this.state.data.fijos)) {
-        const idTarget = (intent.idFijo || "").toUpperCase();
-        const fijo = this.state.data.fijos.find(f => 
-          (idTarget && String(f.id).toUpperCase() === idTarget) ||
-          (intent.conceptoFijo && String(f.concepto || "").toLowerCase().includes(intent.conceptoFijo.toLowerCase())) ||
-          (intent.description && String(f.concepto || "").toLowerCase().includes(intent.description.toLowerCase())) ||
-          (String(f.id).toUpperCase() === "F-0107" && /epm|energia|luz|agua|gas/i.test(intent.description || ""))
-        );
+      if (intent.transactionType === "Gasto") {
+        if (!this.state.data) this.state.data = {};
+        if (!Array.isArray(this.state.data.fijos) || !this.state.data.fijos.length) {
+          if (typeof DEMO_DATA !== "undefined" && DEMO_DATA.fijos) {
+            this.state.data.fijos = JSON.parse(JSON.stringify(DEMO_DATA.fijos));
+          }
+        }
+
+        const matchDirect = typeof FinancialNLP !== "undefined" && typeof FinancialNLP.matchFixedObligation === "function"
+          ? (FinancialNLP.matchFixedObligation(originalText) || FinancialNLP.matchFixedObligation(intent.description))
+          : null;
+
+        const idTarget = (intent.idFijo || (matchDirect ? matchDirect.id : "")).toUpperCase();
+
+        const fijo = (this.state.data.fijos || []).find(f => {
+          const fid = String(f.id || "").toUpperCase();
+          if (idTarget && fid === idTarget) return true;
+          if (intent.conceptoFijo && String(f.concepto || "").toLowerCase().includes(intent.conceptoFijo.toLowerCase())) return true;
+          if (matchDirect && String(f.concepto || "").toLowerCase() === matchDirect.concepto.toLowerCase()) return true;
+          if (fid === "F-0107" && /epm|energia|luz|agua|gas|servicios/i.test(originalText + " " + (intent.description || ""))) return true;
+          if (fid === "F-0108" && /comida|mercado/i.test(originalText + " " + (intent.description || ""))) return true;
+          if (fid === "F-0109" && /tigo|internet|wifi|une/i.test(originalText + " " + (intent.description || ""))) return true;
+          if (fid === "F-0110" && /trabajo/i.test(originalText) && /parqueadero|parking/i.test(originalText)) return true;
+          if (fid === "F-0111" && /audifono|samsung/i.test(originalText + " " + (intent.description || ""))) return true;
+          if (fid === "F-0112" && /moto/i.test(originalText) && /parqueadero|parking/i.test(originalText)) return true;
+          if (fid === "F-0113" && /gasolina|tanque|combustible/i.test(originalText + " " + (intent.description || ""))) return true;
+          if (fid === "F-0114" && /spotify/i.test(originalText + " " + (intent.description || ""))) return true;
+          if (fid === "F-0115" && /datos|celular|claro/i.test(originalText + " " + (intent.description || ""))) return true;
+          if (fid === "F-0116" && /arriendo|apartamento|canon/i.test(originalText + " " + (intent.description || ""))) return true;
+          if (fid === "F-0117" && /google/i.test(originalText + " " + (intent.description || ""))) return true;
+          return false;
+        });
 
         if (fijo) {
           const valorPago = intent.amount;
-          if (intent.isVariableInvoice || valorPago > (fijo.cuota || 0)) {
+          if (intent.isVariableInvoice || valorPago > (fijo.cuota || 0) || String(fijo.id).toUpperCase() === "F-0107") {
             fijo.cuota = valorPago;
           }
           fijo.abonado = valorPago;
@@ -1395,6 +1422,9 @@ const FintechApp = {
           if (this.state.data.resumen) {
             this.state.data.resumen.fijos_pendientes = totalPendienteFijos;
           }
+          try {
+            localStorage.setItem(API_CONFIG.CACHE_KEY, JSON.stringify(this.state.data));
+          } catch (e) {}
         }
       }
 
@@ -1689,11 +1719,13 @@ const FintechApp = {
     const activeMonth = this.state.activeMonth || "octubre";
     const targetMonth = activeMonth === "all" ? "octubre" : activeMonth;
 
+    const movs = (this.state.data && this.state.data.movimientos) || [];
+
     // Filtrar movimientos de gasto del mes activo
     const monthExpenses = movs.filter(m => {
       const isGasto = !String(m.tipo || "").toLowerCase().includes("ingreso");
       const mMes = String(m.mes || "").toLowerCase();
-      return isGasto && mMes === targetMonth;
+      return isGasto && (mMes === targetMonth || !mMes);
     });
 
     this.state.data.fijos.forEach(f => {
@@ -1708,12 +1740,19 @@ const FintechApp = {
         if (ref.includes(idUpper)) return true;
         if (m.idFijo && String(m.idFijo).toUpperCase() === idUpper) return true;
 
-        if (idUpper === "F-0107" && (d.includes("epm") || s.includes("epm") || d.includes("energia") || d.includes("luz"))) return true;
-        if (idUpper === "F-0109" && (d.includes("tigo") || s.includes("internet") || d.includes("wifi"))) return true;
-        if (idUpper === "F-0114" && (d.includes("spotify"))) return true;
-        if (idUpper === "F-0115" && (d.includes("datos") || d.includes("celular") || s.includes("telefonia"))) return true;
-        if (idUpper === "F-0116" && (d.includes("arriendo"))) return true;
-        if (idUpper === "F-0117" && (d.includes("google"))) return true;
+        if (typeof FinancialNLP !== "undefined" && typeof FinancialNLP.matchFixedObligation === "function") {
+          const mFromDesc = FinancialNLP.matchFixedObligation(d);
+          if (mFromDesc && mFromDesc.id === idUpper) return true;
+          const mFromSub = FinancialNLP.matchFixedObligation(s);
+          if (mFromSub && mFromSub.id === idUpper) return true;
+        }
+
+        if (idUpper === "F-0107" && /epm|energia|luz|agua|gas|servicios/i.test(d + " " + s)) return true;
+        if (idUpper === "F-0109" && /tigo|internet|wifi|une/i.test(d + " " + s)) return true;
+        if (idUpper === "F-0114" && /spotify|musica/i.test(d + " " + s)) return true;
+        if (idUpper === "F-0115" && /datos|celular|telefonia|claro/i.test(d + " " + s)) return true;
+        if (idUpper === "F-0116" && /arriendo|apartamento|canon/i.test(d + " " + s)) return true;
+        if (idUpper === "F-0117" && /google/i.test(d + " " + s)) return true;
         return false;
       });
 
