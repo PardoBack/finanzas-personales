@@ -1520,6 +1520,77 @@ html, body {
   color: var(--text-muted);
 }
 
+/* Gastos Fijos: Celdas & Badges */
+.fixed-concept-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.fixed-brand-logo {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fixed-concept-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.fixed-concept-name {
+  color: #FFFFFF;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.fixed-tags-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.fixed-cat-badge {
+  font-size: 0.7rem;
+  color: #94A3B8;
+}
+
+.tag-quincena {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.12rem 0.45rem;
+  border-radius: 6px;
+}
+
+.tag-q1 {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60A5FA;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.tag-q2 {
+  background: rgba(168, 85, 247, 0.15);
+  color: #C084FC;
+  border: 1px solid rgba(168, 85, 247, 0.3);
+}
+
+.pill-dia {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #CBD5E1;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
 /* Tarjetas de Ahorro Colanta */
 .savings-cards-grid {
   display: grid;

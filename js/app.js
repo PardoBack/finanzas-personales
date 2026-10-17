@@ -235,124 +235,176 @@ const FintechApp = {
   getBrandBadgeSVG(brandKey) {
     const k = String(brandKey || "").toLowerCase();
 
-    // 1. EPM (Empresas Públicas de Medellín)
+    // 1. EPM (Empresas Públicas de Medellín) - Official green energy emblem & bold epm logo
     if (k === "epm" || k.includes("epm")) {
       return `
-        <div class="brand-badge brand-epm" title="Empresas Públicas de Medellín">
-          <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect width="32" height="32" rx="8" fill="#047857"/>
-            <ellipse cx="16" cy="10" rx="3.5" ry="5" fill="#A7F3D0"/>
-            <ellipse cx="22" cy="16" rx="5" ry="3.5" fill="#6EE7B7"/>
-            <ellipse cx="16" cy="22" rx="3.5" ry="5" fill="#34D399"/>
-            <ellipse cx="10" cy="16" rx="5" ry="3.5" fill="#A7F3D0"/>
-            <circle cx="16" cy="16" r="2.5" fill="#FFFFFF"/>
+        <div class="brand-badge brand-epm" title="Empresas Públicas de Medellín" style="width:36px; height:36px; border-radius:10px; background:linear-gradient(135deg,#00843D 0%,#005A28 100%); display:inline-flex; align-items:center; justify-content:center; box-shadow:0 3px 10px rgba(0,132,61,0.35);">
+          <svg viewBox="0 0 36 36" width="32" height="32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <ellipse cx="18" cy="11.5" rx="3.5" ry="5.5" fill="#6EE7B7"/>
+            <ellipse cx="24.5" cy="18" rx="5.5" ry="3.5" fill="#A7F3D0"/>
+            <ellipse cx="18" cy="24.5" rx="3.5" ry="5.5" fill="#34D399"/>
+            <ellipse cx="11.5" cy="18" rx="5.5" ry="3.5" fill="#6EE7B7"/>
+            <circle cx="18" cy="18" r="2.8" fill="#FFFFFF"/>
+            <text x="18" y="32" fill="#FFFFFF" font-family="'Segoe UI', Roboto, sans-serif" font-weight="900" font-size="8" text-anchor="middle" letter-spacing="-0.3">epm</text>
           </svg>
         </div>
       `;
     }
 
-    // 2. Tigo Telecomunicaciones
+    // 2. Tigo Telecomunicaciones - Official Navy Blue with Yellow Smile Curve & tiGO script
     if (k === "tigo" || k.includes("tigo")) {
       return `
-        <div class="brand-badge brand-tigo" title="Tigo Colombia">
-          <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect width="32" height="32" rx="8" fill="#00377B"/>
-            <path d="M7 21C11.5 25 20.5 25 25 21" stroke="#FBBF24" stroke-width="2.6" stroke-linecap="round"/>
-            <text x="16" y="15" fill="#FFFFFF" font-family="'Segoe UI', Roboto, sans-serif" font-weight="900" font-size="9" text-anchor="middle" letter-spacing="-0.5">tigo</text>
+        <div class="brand-badge brand-tigo" title="Tigo Colombia" style="width:36px; height:36px; border-radius:10px; background:linear-gradient(135deg,#00377B 0%,#001F4D 100%); display:inline-flex; align-items:center; justify-content:center; box-shadow:0 3px 10px rgba(0,55,123,0.35);">
+          <svg viewBox="0 0 36 36" width="32" height="32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <text x="18" y="19" fill="#FFFFFF" font-family="'Segoe UI', Roboto, sans-serif" font-weight="900" font-size="11.5" text-anchor="middle" letter-spacing="-0.5">ti<tspan fill="#FDB913">g</tspan>o</text>
+            <path d="M8 24C13.5 28.5 22.5 28.5 28 24" stroke="#FDB913" stroke-width="3" stroke-linecap="round"/>
           </svg>
         </div>
       `;
     }
 
-    // 3. Cooperativa Colanta / AyC Colanta
+    // 3. Cooperativa Colanta / AyC Colanta - Authentic Red Clover (Trébol) Logo
     if (k === "colanta" || k.includes("colanta") || k === "ayccolanta") {
       return `
-        <div class="brand-badge brand-colanta" title="Cooperativa Colanta">
-          <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="16" cy="16" r="14" fill="#E11D48"/>
-            <path d="M16 13C14 10.5 11.5 10.5 11.5 13C11.5 15.5 14.5 16 16 16C17.5 16 20.5 15.5 20.5 13C20.5 10.5 18 10.5 16 13Z" fill="#FFFFFF"/>
-            <path d="M13 16C10.5 14 10.5 11.5 13 11.5C15.5 11.5 16 14.5 16 16C16 17.5 15.5 20.5 13 20.5C10.5 20.5 10.5 18 13 16Z" fill="#FFFFFF"/>
-            <path d="M19 16C21.5 14 21.5 11.5 19 11.5C16.5 11.5 16 14.5 16 16C16 17.5 16.5 20.5 19 20.5C21.5 20.5 21.5 18 19 16Z" fill="#FFFFFF"/>
-            <path d="M16 16C16 19 14.5 21.5 12.5 22.5" stroke="#FFFFFF" stroke-width="1.8" stroke-linecap="round"/>
+        <div class="brand-badge brand-colanta" title="Cooperativa Colanta" style="width:36px; height:36px; border-radius:10px; background:linear-gradient(135deg,#D6001C 0%,#B30017 100%); display:inline-flex; align-items:center; justify-content:center; box-shadow:0 3px 10px rgba(214,0,28,0.35);">
+          <svg viewBox="0 0 36 36" width="32" height="32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- Trébol de Colanta -->
+            <circle cx="18" cy="11.5" r="4.6" fill="#FFFFFF"/>
+            <circle cx="12.5" cy="19" r="4.6" fill="#FFFFFF"/>
+            <circle cx="23.5" cy="19" r="4.6" fill="#FFFFFF"/>
+            <circle cx="18" cy="16.5" r="3.8" fill="#FFFFFF"/>
+            <circle cx="18" cy="16.5" r="1.5" fill="#D6001C"/>
+            <path d="M18 18C17.8 22.5 16 25 14 26.5" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round"/>
+            <text x="18" y="32.5" fill="#FFFFFF" font-family="'Segoe UI', Roboto, sans-serif" font-weight="900" font-size="6.5" text-anchor="middle" letter-spacing="-0.2">colanta</text>
           </svg>
         </div>
       `;
     }
 
-    // 4. Nequi
+    // 4. Nequi - Official Plum & Magenta App Icon Mark
     if (k === "nequi" || k.includes("nequi")) {
       return `
-        <div class="brand-badge brand-nequi" title="Nequi">
-          <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect width="32" height="32" rx="8" fill="#1F0036"/>
-            <path d="M10 22V10L22 22V10" stroke="#E11D74" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M10 22V10L22 22V10" stroke="#FFFFFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        <div class="brand-badge brand-nequi" title="Nequi Bancolombia" style="width:36px; height:36px; border-radius:10px; background:linear-gradient(135deg,#1F0036 0%,#11001F 100%); display:inline-flex; align-items:center; justify-content:center; box-shadow:0 3px 10px rgba(225,29,116,0.35);">
+          <svg viewBox="0 0 36 36" width="32" height="32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="26" cy="10" r="2.8" fill="#FF0055"/>
+            <path d="M11 25V11L25 25V11" stroke="#FF0055" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M11 25V11L25 25V11" stroke="#FFFFFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </div>
       `;
     }
 
-    // 5. Bancolombia
+    // 5. Bancolombia - Modern Slate with Yellow, Blue & Red Ribbon
     if (k === "bancolombia" || k.includes("bancolombia")) {
       return `
-        <div class="brand-badge brand-bancolombia" title="Bancolombia">
-          <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect width="32" height="32" rx="8" fill="#0F172A"/>
-            <path d="M7 12C11 12 13 18 17 18C21 18 23 12 25 12" stroke="#FACC15" stroke-width="2.2" stroke-linecap="round"/>
-            <path d="M7 16C11 16 13 22 17 22C21 22 23 16 25 16" stroke="#38BDF8" stroke-width="2.2" stroke-linecap="round"/>
-            <path d="M7 20C11 20 13 26 17 26C21 26 23 20 25 20" stroke="#F43F5E" stroke-width="2.2" stroke-linecap="round"/>
+        <div class="brand-badge brand-bancolombia" title="Bancolombia" style="width:36px; height:36px; border-radius:10px; background:linear-gradient(135deg,#0F172A 0%,#020617 100%); display:inline-flex; align-items:center; justify-content:center; box-shadow:0 3px 10px rgba(253,218,36,0.25);">
+          <svg viewBox="0 0 36 36" width="32" height="32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M8 12C13 10 16 22 28 12" stroke="#FDDA24" stroke-width="2.8" stroke-linecap="round"/>
+            <path d="M8 17C13 15 16 27 28 17" stroke="#0072CE" stroke-width="2.8" stroke-linecap="round"/>
+            <path d="M8 22C13 20 16 32 28 22" stroke="#E03A3E" stroke-width="2.8" stroke-linecap="round"/>
           </svg>
         </div>
       `;
     }
 
-    // 6. Terpel (Combustible / Gasolina / Moto)
+    // 6. Terpel (Combustible / Gasolina / Moto) - Official Sunburst
     if (k === "terpel" || k.includes("terpel") || k.includes("gasolina") || k.includes("moto")) {
       return `
-        <div class="brand-badge brand-terpel" title="Terpel Combustibles">
-          <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect width="32" height="32" rx="8" fill="#DC2626"/>
-            <circle cx="16" cy="16" r="6.5" fill="#FACC15"/>
-            <path d="M16 5V8M16 24V27M5 16H8M24 16H27M8 8L10.5 10.5M21.5 21.5L24 24M8 24L10.5 21.5M21.5 10.5L24 8" stroke="#FEF08A" stroke-width="2" stroke-linecap="round"/>
+        <div class="brand-badge brand-terpel" title="Terpel Combustibles" style="width:36px; height:36px; border-radius:10px; background:linear-gradient(135deg,#DC2626 0%,#991B1B 100%); display:inline-flex; align-items:center; justify-content:center; box-shadow:0 3px 10px rgba(220,38,38,0.35);">
+          <svg viewBox="0 0 36 36" width="32" height="32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="18" cy="18" r="8" fill="#FFD100"/>
+            <path d="M18 5V9M18 27V31M5 18H9M27 18H31M8.8 8.8L11.6 11.6M24.4 24.4L27.2 27.2M8.8 27.2L11.6 24.4M24.4 11.6L27.2 8.8" stroke="#FFE066" stroke-width="2.2" stroke-linecap="round"/>
+            <circle cx="18" cy="18" r="4.5" fill="#FFFFFF"/>
           </svg>
         </div>
       `;
     }
 
-    // 7. Smart Fit (Gym)
-    if (k === "smartfit" || k.includes("smart") || k.includes("gym") || k.includes("fit")) {
-      return `
-        <div class="brand-badge brand-smartfit" title="Smart Fit">
-          <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect width="32" height="32" rx="8" fill="#18181B"/>
-            <path d="M9 13C9 10.8 11.2 9 16 9C20.8 9 23 10.8 23 13C23 16.5 18 16 16 17.5C14 18.5 9 18.5 9 21.5C9 23.5 11.2 25 16 25C20.8 25 23 23.2 23 21" stroke="#FACC15" stroke-width="2.8" stroke-linecap="round"/>
-          </svg>
-        </div>
-      `;
-    }
-
-    // 8. Spotify
+    // 7. Spotify - Official Green Sound Waves
     if (k === "spotify" || k.includes("spotify")) {
       return `
-        <div class="brand-badge brand-spotify" title="Spotify">
-          <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="16" cy="16" r="14" fill="#121212"/>
-            <path d="M8 12.5C13 11 19.5 11.5 24 13.8" stroke="#1DB954" stroke-width="2.5" stroke-linecap="round"/>
-            <path d="M9.5 16.5C13.5 15.2 18.5 15.6 22.5 17.2" stroke="#1DB954" stroke-width="2.1" stroke-linecap="round"/>
-            <path d="M11.5 20.2C14.8 19.2 18.2 19.5 21 20.8" stroke="#1DB954" stroke-width="1.7" stroke-linecap="round"/>
+        <div class="brand-badge brand-spotify" title="Spotify" style="width:36px; height:36px; border-radius:10px; background:#121212; display:inline-flex; align-items:center; justify-content:center; box-shadow:0 3px 10px rgba(30,215,96,0.35);">
+          <svg viewBox="0 0 36 36" width="32" height="32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="18" cy="18" r="14" fill="#1ED760"/>
+            <path d="M10.5 14C15.5 12.3 22 13 26 15.2" stroke="#121212" stroke-width="2.8" stroke-linecap="round"/>
+            <path d="M12 18.2C16 16.8 21 17.3 24.8 19" stroke="#121212" stroke-width="2.4" stroke-linecap="round"/>
+            <path d="M13.5 22.3C16.8 21.3 20.5 21.6 23.5 22.8" stroke="#121212" stroke-width="2" stroke-linecap="round"/>
           </svg>
         </div>
       `;
     }
 
-    // 9. Restaurante Corporativo Planta San Germán
-    if (k === "restaurante" || k.includes("rest") || k.includes("almuerzo")) {
+    // 8. Google One / Google - Official 4-Color Google G
+    if (k === "google" || k.includes("google") || k.includes("drive")) {
       return `
-        <div class="brand-badge brand-restaurante" title="Restaurante Planta Medellín">
-          <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect width="32" height="32" rx="8" fill="#D97706"/>
-            <path d="M11 22V9M11 9C9.5 9 9.5 12 11 12M11 9C12.5 9 12.5 12 11 12" stroke="#FEF3C7" stroke-width="2" stroke-linecap="round"/>
-            <path d="M21 22V9C19 9 19 13.5 21 14.5" stroke="#FEF3C7" stroke-width="2" stroke-linecap="round"/>
+        <div class="brand-badge brand-google" title="Google One" style="width:36px; height:36px; border-radius:10px; background:#1E293B; display:inline-flex; align-items:center; justify-content:center; box-shadow:0 3px 10px rgba(66,133,244,0.3);">
+          <svg viewBox="0 0 36 36" width="32" height="32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M26.5 18.3C26.5 17.6 26.4 17 26.3 16.4H18V19.7H22.8C22.6 20.7 22 21.6 21 22.3V24.5H23.9C25.6 22.9 26.5 20.8 26.5 18.3Z" fill="#4285F4"/>
+            <path d="M18 27C20.4 27 22.5 26.2 23.9 24.5L21 22.3C20.2 22.8 19.2 23.2 18 23.2C15.6 23.2 13.6 21.6 12.9 19.4H10V21.7C11.5 24.7 14.5 27 18 27Z" fill="#34A853"/>
+            <path d="M12.9 19.4C12.7 18.8 12.6 18.2 12.6 17.5C12.6 16.8 12.7 16.2 12.9 15.6V13.3H10C9.4 14.5 9 15.9 9 17.5C9 19.1 9.4 20.5 10 21.7L12.9 19.4Z" fill="#FBBC05"/>
+            <path d="M18 11.8C19.3 11.8 20.5 12.3 21.4 13.1L24 10.5C22.4 9 20.4 8 18 8C14.5 8 11.5 10.3 10 13.3L12.9 15.6C13.6 13.4 15.6 11.8 18 11.8Z" fill="#EA4335"/>
+          </svg>
+        </div>
+      `;
+    }
+
+    // 9. Arriendo / Inmobiliaria / Vivienda - Royal Architectural House
+    if (k === "arriendo" || k.includes("arriendo") || k.includes("casa") || k.includes("vivienda")) {
+      return `
+        <div class="brand-badge brand-arriendo" title="Arriendo Casa" style="width:36px; height:36px; border-radius:10px; background:linear-gradient(135deg,#1E3A8A 0%,#0F172A 100%); display:inline-flex; align-items:center; justify-content:center; box-shadow:0 3px 10px rgba(30,58,138,0.35);">
+          <svg viewBox="0 0 36 36" width="32" height="32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M8 16L18 8L28 16V26C28 27.1 27.1 28 26 28H10C8.9 28 8 27.1 8 26V16Z" stroke="#60A5FA" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M15 28V20H21V28" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="18" cy="14" r="1.8" fill="#FBBF24"/>
+          </svg>
+        </div>
+      `;
+    }
+
+    // 10. Parqueadero Trabajo / Moto
+    if (k === "parqueadero" || k.includes("parqueadero") || k.includes("parking")) {
+      return `
+        <div class="brand-badge brand-parking" title="Parqueadero" style="width:36px; height:36px; border-radius:10px; background:linear-gradient(135deg,#1D4ED8 0%,#1E40AF 100%); display:inline-flex; align-items:center; justify-content:center; box-shadow:0 3px 10px rgba(29,78,216,0.35);">
+          <svg viewBox="0 0 36 36" width="32" height="32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="18" cy="18" r="13" stroke="#93C5FD" stroke-width="2"/>
+            <path d="M15 25V11H20C22.2 11 23.5 12.3 23.5 14.5C23.5 16.7 22.2 18 20 18H15" stroke="#FFFFFF" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      `;
+    }
+
+    // 11. Smart Fit (Gym)
+    if (k === "smartfit" || k.includes("smart") || k.includes("gym") || k.includes("fit")) {
+      return `
+        <div class="brand-badge brand-smartfit" title="Smart Fit" style="width:36px; height:36px; border-radius:10px; background:#18181B; display:inline-flex; align-items:center; justify-content:center; box-shadow:0 3px 10px rgba(255,214,0,0.3);">
+          <svg viewBox="0 0 36 36" width="32" height="32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="18" cy="18" r="13" stroke="#FFD600" stroke-width="2.4"/>
+            <path d="M11 15C11 12.5 13.5 11 18 11C22.5 11 25 12.5 25 15C25 18.5 20 18 18 19.5C16 20.5 11 20.5 11 23.5C11 25.5 13.5 27 18 27C22.5 27 25 25.5 25 23" stroke="#FFD600" stroke-width="2.6" stroke-linecap="round"/>
+          </svg>
+        </div>
+      `;
+    }
+
+    // 12. Restaurante / Cafetería Planta San Germán
+    if (k === "restaurante" || k.includes("rest") || k.includes("almuerzo") || k.includes("comida")) {
+      return `
+        <div class="brand-badge brand-restaurante" title="Alimentación & Restaurante" style="width:36px; height:36px; border-radius:10px; background:linear-gradient(135deg,#D97706 0%,#B45309 100%); display:inline-flex; align-items:center; justify-content:center; box-shadow:0 3px 10px rgba(217,119,6,0.35);">
+          <svg viewBox="0 0 36 36" width="32" height="32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 25V10M12 10C10.5 10 10.5 13.5 12 13.5M12 10C13.5 10 13.5 13.5 12 13.5" stroke="#FEF3C7" stroke-width="2.2" stroke-linecap="round"/>
+            <path d="M24 25V10C21.8 10 21.8 15 24 16" stroke="#FEF3C7" stroke-width="2.2" stroke-linecap="round"/>
+          </svg>
+        </div>
+      `;
+    }
+
+    // 13. Tecnología / Samsung Audífonos
+    if (k === "tech" || k.includes("audifono") || k.includes("samsung")) {
+      return `
+        <div class="brand-badge brand-tech" title="Tecnología" style="width:36px; height:36px; border-radius:10px; background:linear-gradient(135deg,#312E81 0%,#1E1B4B 100%); display:inline-flex; align-items:center; justify-content:center; box-shadow:0 3px 10px rgba(49,46,129,0.35);">
+          <svg viewBox="0 0 36 36" width="32" height="32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M10 20V17C10 12.6 13.6 9 18 9C22.4 9 26 12.6 26 17V20" stroke="#A5B4FC" stroke-width="2.4" stroke-linecap="round"/>
+            <rect x="8" y="19" width="4.5" height="8" rx="2.2" fill="#818CF8"/>
+            <rect x="23.5" y="19" width="4.5" height="8" rx="2.2" fill="#818CF8"/>
           </svg>
         </div>
       `;
@@ -360,7 +412,7 @@ const FintechApp = {
 
     // Fallback general
     return `
-      <div class="brand-badge brand-default" style="background:rgba(255,255,255,0.08); border-radius:inherit;">
+      <div class="brand-badge brand-default" style="width:36px; height:36px; border-radius:10px; background:rgba(255,255,255,0.08); display:inline-flex; align-items:center; justify-content:center;">
         <i class="fa-solid fa-receipt" style="color:#94A3B8; font-size:1.1rem;"></i>
       </div>
     `;
@@ -495,6 +547,7 @@ const FintechApp = {
     this.renderCharts();
     this.renderAnnualSection();
     this.renderMovementsTable();
+    this.renderFixedTable();
     this.renderFugasTable();
 
     this.showToast(`📅 Visualizando: ${month === 'all' ? 'Todo el año 2026' : capitalize(month) + ' ' + year}`, "success");
@@ -584,13 +637,21 @@ const FintechApp = {
 
     const annual = data.resumenAnual || [];
     const kpis = data.kpisAnuales || {
-      totalIngresos: 61623190,
+      totalIngresos: 33765454,
       totalGastos: 22958989,
-      superavit: 38664201,
-      tasaAhorro: 62.7,
-      mesMayorAhorro: { nombre: "Junio", monto: 7023416 },
+      superavit: 10806465,
+      tasaAhorro: 32.0,
+      mesMayorAhorro: { nombre: "Enero", monto: 2050872 },
       mesMayorGasto: { nombre: "Junio", monto: 3892812 }
     };
+
+    // Actualizar badges superiores
+    const pIng = document.querySelector(".annual-mini-badge.badge-green");
+    const pGas = document.querySelector(".annual-mini-badge.badge-red");
+    const pAho = document.querySelector(".annual-mini-badge.badge-blue");
+    if (pIng) pIng.innerHTML = `<i class="fa-solid fa-arrow-trend-up"></i> $${Math.round(kpis.totalIngresos / 100000) / 10}M Ingresos`;
+    if (pGas) pGas.innerHTML = `<i class="fa-solid fa-arrow-trend-down"></i> $${Math.round(kpis.totalGastos / 100000) / 10}M Gastos`;
+    if (pAho) pAho.innerHTML = `<i class="fa-solid fa-piggy-bank"></i> $${Math.round(kpis.superavit / 100000) / 10}M Ahorro (${kpis.tasaAhorro}%)`;
 
     // Actualizar 4 KPIs
     const elIng = document.getElementById("annual-total-ingresos");
@@ -1061,6 +1122,12 @@ const FintechApp = {
       setTimeout(() => this.renderAnnualSection(), 50);
     } else if (cleanKey === "movements") {
       this.renderMovementsTable();
+    } else if (cleanKey === "fixed") {
+      this.renderFixedTable();
+    } else if (cleanKey === "fugas") {
+      this.renderFugasTable();
+    } else if (cleanKey === "wallet") {
+      this.renderBalances();
     }
   },
 
@@ -1387,6 +1454,19 @@ const FintechApp = {
     const res = await FinanceAPI.fetchFinancialData();
     this.state.data = res.data;
 
+    // Sanitizar caché anterior si contenía cifras infladas de prueba ($61M)
+    if (this.state.data && this.state.data.kpisAnuales && this.state.data.kpisAnuales.totalIngresos > 45000000) {
+      this.state.data.resumenAnual = DEMO_DATA.resumenAnual;
+      this.state.data.kpisAnuales = DEMO_DATA.kpisAnuales;
+      try {
+        localStorage.setItem(API_CONFIG.CACHE_KEY, JSON.stringify(this.state.data));
+      } catch (e) {}
+    }
+
+    if (!this.state.data.fijos || !this.state.data.fijos.length) {
+      this.state.data.fijos = DEMO_DATA.fijos;
+    }
+
     // Actualizar dinámicamente contador del sidebar con el número de movimientos real
     const movs = (this.state.data && this.state.data.movimientos) || [];
     const movCountEl = document.getElementById("sidebar-mov-count");
@@ -1427,17 +1507,56 @@ const FintechApp = {
     const capitalize = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1) : "";
     const monthLabel = active === "all" ? "Año 2026" : capitalize(active);
 
-    // Virtual Cards
-    const totalAvail = cuentas.total || res.disponible || 3390857;
-    const elTot = document.getElementById("card-total-available");
-    const elCol = document.getElementById("card-acc-colanta");
-    const elNeq = document.getElementById("card-acc-nequi");
-    const elEff = document.getElementById("card-acc-efectivo");
+    // Virtual Cards & Saldo Disponible Dinámico por Mes
+    let totalAvail = 0;
+    let accCol = 0;
+    let accNeq = 0;
+    let accEff = 0;
+    let masterLabel = "TOTAL DISPONIBLE LIBRE";
 
-    if (elTot) elTot.textContent = formatVal(totalAvail);
-    if (elCol) elCol.textContent = formatVal(cuentas.aycColanta || 3319057);
-    if (elNeq) elNeq.textContent = hidden ? "••••••" : `$${this.formatCOP(cuentas.nequi || 0)} COP`;
-    if (elEff) elEff.textContent = hidden ? "••••••" : `$${this.formatCOP(cuentas.efectivo || 71800)} COP`;
+    if (active === "octubre") {
+      // Mes activo actual en curso
+      totalAvail = cuentas.total || res.disponible || 3390857;
+      accCol = cuentas.aycColanta || 3319057;
+      accNeq = cuentas.nequi || 0;
+      accEff = cuentas.efectivo || 71800;
+      masterLabel = "DISPONIBLE EN CAJA (OCTUBRE)";
+    } else if (active === "all") {
+      // Consolidado de todo el año
+      const kpis = (this.state.data && this.state.data.kpisAnuales) || {};
+      totalAvail = kpis.superavit || 10806465;
+      accCol = 3931299; // Fondos Colanta acumulados
+      accNeq = Math.round(totalAvail * 0.35);
+      accEff = Math.max(0, totalAvail - accCol - accNeq);
+      masterLabel = "SUPERÁVIT CONSOLIDADO (TODO 2026)";
+    } else {
+      // Mes histórico seleccionado (Enero, Febrero, Marzo, etc.)
+      const annualData = (this.state.data && this.state.data.resumenAnual) || [];
+      const match = annualData.find(a => String(a.mes).toLowerCase() === active);
+      const monthSurplus = match ? match.ahorro : (monthData.ingresos - monthData.gastos);
+      totalAvail = Math.max(0, monthSurplus);
+      accCol = Math.round(totalAvail * 0.88);
+      accNeq = Math.round(totalAvail * 0.08);
+      accEff = Math.max(0, totalAvail - accCol - accNeq);
+      masterLabel = `SUPERÁVIT / DISPONIBLE (${monthLabel.toUpperCase()})`;
+    }
+
+    // Actualizar todas las instancias de tarjetas de saldo (Overview y Billetera)
+    document.querySelectorAll("#card-total-available, .card-total-available").forEach(el => {
+      el.textContent = formatVal(totalAvail);
+    });
+    document.querySelectorAll(".master-label").forEach(el => {
+      el.textContent = masterLabel;
+    });
+    document.querySelectorAll("#card-acc-colanta, .card-acc-colanta").forEach(el => {
+      el.textContent = formatVal(accCol);
+    });
+    document.querySelectorAll("#card-acc-nequi, .card-acc-nequi").forEach(el => {
+      el.textContent = hidden ? "••••••" : `$${this.formatCOP(accNeq)} COP`;
+    });
+    document.querySelectorAll("#card-acc-efectivo, .card-acc-efectivo").forEach(el => {
+      el.textContent = hidden ? "••••••" : `$${this.formatCOP(accEff)} COP`;
+    });
 
     // Actualizar etiquetas dinámicas con el nombre del mes
     const elIncLabel = document.getElementById("kpi-label-income");
@@ -2223,24 +2342,89 @@ const FintechApp = {
     const tbody = document.getElementById("fixed-tbody");
     if (!tbody) return;
 
-    const fijos = (this.state.data && this.state.data.fijos) || [];
+    let fijos = (this.state.data && this.state.data.fijos) || [];
+    if (!fijos.length && typeof DEMO_DATA !== "undefined" && DEMO_DATA.fijos) {
+      fijos = DEMO_DATA.fijos;
+    }
+
+    if (!fijos || !fijos.length) {
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:2.5rem; color:#94A3B8;">No hay gastos fijos registrados.</td></tr>`;
+      return;
+    }
+
+    // Calcular montos dinámicos de Quincena 1 y Quincena 2
+    const q1Total = fijos.filter(f => Number(f.dia || 0) <= 15).reduce((acc, f) => acc + Number(f.cuota || 0), 0);
+    const q2Total = fijos.filter(f => Number(f.dia || 0) > 15).reduce((acc, f) => acc + Number(f.cuota || 0), 0);
+    const totalCuotas = q1Total + q2Total;
+    const totalAbonado = fijos.reduce((acc, f) => acc + Number(f.abonado || 0), 0);
+    const totalPendiente = Math.max(0, totalCuotas - totalAbonado);
+
+    const elQ1 = document.getElementById("q1-fixed-amount");
+    const elQ2 = document.getElementById("q2-fixed-amount");
+    if (elQ1) elQ1.textContent = `$${this.formatCOP(q1Total)} COP`;
+    if (elQ2) elQ2.textContent = `$${this.formatCOP(q2Total)} COP`;
+
+    const elTotalFijos = document.getElementById("kpi-val-fixed");
+    if (elTotalFijos) elTotalFijos.textContent = `$${this.formatCOP(totalPendiente)} COP`;
+
+    const pendCount = fijos.filter(f => Number(f.cuota || 0) > Number(f.abonado || 0)).length;
+    const badgeFixed = document.getElementById("sidebar-fixed-count");
+    if (badgeFixed) badgeFixed.textContent = pendCount;
+
     tbody.innerHTML = fijos.map(f => {
       const cuota = Number(f.cuota || 0);
       const abonado = Number(f.abonado || 0);
       const saldo = Math.max(0, cuota - abonado);
 
-      let statusPill = `<span class="pill-status status-pending">🔴 Pendiente</span>`;
-      if (abonado >= cuota && cuota > 0) statusPill = `<span class="pill-status status-paid">🟢 Pagado</span>`;
-      else if (abonado > 0) statusPill = `<span class="pill-status status-partial">🟡 Abono</span>`;
+      let statusPill = `<span class="pill-status status-pending"><i class="fa-solid fa-circle-exclamation"></i> Pendiente</span>`;
+      if (abonado >= cuota && cuota > 0) {
+        statusPill = `<span class="pill-status status-paid"><i class="fa-solid fa-circle-check"></i> Pagado</span>`;
+      } else if (abonado > 0) {
+        statusPill = `<span class="pill-status status-partial"><i class="fa-solid fa-clock-rotate-left"></i> Abono</span>`;
+      }
+
+      // Determinar logo oficial de marca para la obligación
+      let brandKey = "default";
+      const c = String(f.concepto || "").toLowerCase();
+      if (c.includes("epm")) brandKey = "epm";
+      else if (c.includes("tigo") || c.includes("celular")) brandKey = "tigo";
+      else if (c.includes("arriendo") || c.includes("casa")) brandKey = "arriendo";
+      else if (c.includes("spotify")) brandKey = "spotify";
+      else if (c.includes("google")) brandKey = "google";
+      else if (c.includes("gasolina") || c.includes("terpel")) brandKey = "terpel";
+      else if (c.includes("parqueadero")) brandKey = "parqueadero";
+      else if (c.includes("comida") || c.includes("restaurante")) brandKey = "restaurante";
+      else if (c.includes("audifono") || c.includes("samsung")) brandKey = "tech";
+      else if (c.includes("smart") || c.includes("gym")) brandKey = "smartfit";
+
+      const logoHtml = this.getBrandBadgeSVG(brandKey);
+      const quincenaTag = Number(f.dia) <= 15 
+        ? `<span class="tag-quincena tag-q1">Q1 (Día 1-15)</span>` 
+        : `<span class="tag-quincena tag-q2">Q2 (Día 16-31)</span>`;
 
       return `
         <tr>
-          <td><code>${f.id}</code></td>
-          <td><strong>${f.concepto}</strong></td>
-          <td>Día ${f.dia}</td>
-          <td>$${this.formatCOP(cuota)}</td>
-          <td>$${this.formatCOP(abonado)}</td>
-          <td style="color:${saldo > 0 ? '#FB7185' : '#64748B'}; font-weight:700;">$${this.formatCOP(saldo)}</td>
+          <td><code class="id-tag">${f.id}</code></td>
+          <td>
+            <div class="fixed-concept-cell">
+              <div class="fixed-brand-logo">${logoHtml}</div>
+              <div class="fixed-concept-meta">
+                <strong class="fixed-concept-name">${f.concepto}</strong>
+                <div class="fixed-tags-row">
+                  <span class="fixed-cat-badge">${f.categoria || 'Obligación'}</span>
+                  ${quincenaTag}
+                </div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <span class="pill-dia"><i class="fa-regular fa-calendar"></i> Día ${f.dia}</span>
+          </td>
+          <td class="text-right" style="font-weight:700; color:#F8FAFC;">$${this.formatCOP(cuota)}</td>
+          <td class="text-right" style="font-weight:700; color:#34D399;">$${this.formatCOP(abonado)}</td>
+          <td class="text-right" style="font-weight:800; color:${saldo > 0 ? '#FB7185' : '#64748B'};">
+            $${this.formatCOP(saldo)}
+          </td>
           <td>${statusPill}</td>
         </tr>
       `;
@@ -2258,15 +2442,24 @@ const FintechApp = {
       return cat.includes("hormiga") || cat.includes("dulce") || /\b(mecato|dulce|antojo|helado|tinto|pan de queso)\b/.test(desc);
     });
 
+    const totalFugas = fugas.reduce((acc, f) => acc + Number(f.valor || 0), 0);
+    const fugasTotalEl = document.getElementById("fugas-total-val");
+    if (fugasTotalEl) fugasTotalEl.textContent = `$${this.formatCOP(totalFugas)} COP`;
+
     if (!fugas.length) {
-      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:1.5rem; color:#64748B;">🎉 Sin gastos hormiga este mes.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:2rem; color:#64748B;">🎉 Sin gastos hormiga este mes.</td></tr>`;
       return;
     }
 
     tbody.innerHTML = fugas.map(f => `
       <tr>
-        <td>${f.fecha}</td>
-        <td><strong>${f.descripcion}</strong></td>
+        <td><span class="pill-dia"><i class="fa-regular fa-calendar"></i> ${f.fecha}</span></td>
+        <td>
+          <div style="display:flex; align-items:center; gap:0.6rem;">
+            <span style="font-size:1.2rem;">🍪</span>
+            <strong>${f.descripcion}</strong>
+          </div>
+        </td>
         <td style="color:#FB7185; font-weight:800;">-$${this.formatCOP(f.valor)}</td>
         <td><span class="badge-account">${f.cuenta}</span></td>
         <td><span class="pill-status status-pending">Micropago</span></td>

@@ -848,16 +848,26 @@
           </div>
 
           <div class="interactive-tables-container">
-            <div class="fixed-overview-banner">
+            <div class="fixed-overview-banner" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:1rem; margin-bottom:1.5rem;">
               <div class="q-banner-card">
-                <span class="q-title">Quincena 1 (Día 1 a 15)</span>
+                <span class="q-title"><i class="fa-solid fa-calendar-day" style="color:#60A5FA;"></i> Quincena 1 (Día 1 a 15)</span>
                 <h4 class="q-amount" id="q1-fixed-amount">$1.332.000 COP</h4>
                 <span class="q-note">EPM, Comida, Tigo, Audífonos, Parqueadero</span>
               </div>
               <div class="q-banner-card">
-                <span class="q-title">Quincena 2 (Día 16 a 31)</span>
+                <span class="q-title"><i class="fa-solid fa-calendar-day" style="color:#C084FC;"></i> Quincena 2 (Día 16 a 31)</span>
                 <h4 class="q-amount" id="q2-fixed-amount">$1.225.000 COP</h4>
                 <span class="q-note">Arriendo Casa ($900k), Google, Parqueadero</span>
+              </div>
+              <div class="q-banner-card" style="border-color:rgba(16,185,129,0.3); background:rgba(16,185,129,0.04);">
+                <span class="q-title"><i class="fa-solid fa-receipt" style="color:#34D399;"></i> Total Obligaciones del Mes</span>
+                <h4 class="q-amount" style="color:#34D399;">$2.557.000 COP</h4>
+                <span class="q-note">15 compromisos mensuales programados</span>
+              </div>
+              <div class="q-banner-card" style="border-color:rgba(251,191,36,0.3); background:rgba(251,191,36,0.04);">
+                <span class="q-title"><i class="fa-solid fa-clock-rotate-left" style="color:#FBBF24;"></i> Estado de Pagos</span>
+                <h4 class="q-amount" style="color:#FBBF24;">$2.503.000 COP</h4>
+                <span class="q-note">Pendiente • Pagadas: Spotify ($10.1k) y Celular</span>
               </div>
             </div>
 
@@ -868,14 +878,14 @@
                     <th>ID</th>
                     <th>Servicio / Obligación</th>
                     <th>Día</th>
-                    <th>Cuota Base</th>
-                    <th>Abonado</th>
-                    <th>Saldo</th>
+                    <th class="text-right">Cuota Base</th>
+                    <th class="text-right">Abonado</th>
+                    <th class="text-right">Saldo</th>
                     <th>Estado</th>
                   </tr>
                 </thead>
                 <tbody id="fixed-tbody">
-                  <!-- Renderizado dinámicamente -->
+                  <!-- Renderizado dinámicamente con Logos Oficiales y Estados -->
                 </tbody>
               </table>
             </div>
@@ -888,38 +898,100 @@
         <div class="view-panel" id="view-savings">
           <div class="view-header-title-row">
             <div>
-              <span class="section-badge-tiny"><i class="fa-solid fa-piggy-bank"></i> AHORRO ESTRATÉGICO</span>
-              <h2 class="view-title">Fondos Cooperativa Colanta</h2>
-              <p class="view-subtitle">Ahorro navideño, ordinario a la vista y aportes sociales acumulados</p>
+              <span class="section-badge-tiny"><i class="fa-solid fa-piggy-bank"></i> AHORRO ESTRATÉGICO & PATRIMONIO</span>
+              <h2 class="view-title">Fondos Cooperativa Colanta (AyC)</h2>
+              <p class="view-subtitle">Ahorro navideño, ordinario a la vista y aportes sociales acumulados en Planta San Germán</p>
             </div>
           </div>
 
           <div class="interactive-tables-container">
-            <div class="savings-cards-grid">
+            <!-- Hero Card de Patrimonio Total en Cooperativa -->
+            <div style="background:linear-gradient(135deg, rgba(214,0,28,0.12) 0%, rgba(37,99,235,0.08) 100%); border:1px solid rgba(214,0,28,0.3); border-radius:20px; padding:1.75rem 2rem; margin-bottom:1.5rem; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:1.25rem;">
+              <div style="display:flex; align-items:center; gap:1.25rem;">
+                <div style="width:58px; height:58px; border-radius:16px; background:#D6001C; display:flex; align-items:center; justify-content:center; box-shadow:0 6px 20px rgba(214,0,28,0.4); flex-shrink:0;">
+                  <svg viewBox="0 0 36 36" width="38" height="38" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="18" cy="11.5" r="4.6" fill="#FFFFFF"/>
+                    <circle cx="12.5" cy="19" r="4.6" fill="#FFFFFF"/>
+                    <circle cx="23.5" cy="19" r="4.6" fill="#FFFFFF"/>
+                    <circle cx="18" cy="16.5" r="3.8" fill="#FFFFFF"/>
+                    <circle cx="18" cy="16.5" r="1.5" fill="#D6001C"/>
+                    <path d="M18 18C17.8 22.5 16 25 14 26.5" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round"/>
+                  </svg>
+                </div>
+                <div>
+                  <span style="font-size:0.8rem; color:#FCA5A5; font-weight:700; text-transform:uppercase; letter-spacing:0.05em;">Patrimonio Cooperativo Total</span>
+                  <h2 style="font-family:var(--font-heading); font-size:2rem; font-weight:900; color:#FFFFFF; margin:0.15rem 0;">$3.931.299 COP</h2>
+                  <span style="font-size:0.78rem; color:#94A3B8;">Socio Cooperativa Colanta AyC • Ahorro protegido con rentabilidad directa</span>
+                </div>
+              </div>
+              <div style="background:rgba(0,0,0,0.3); padding:0.85rem 1.25rem; border-radius:14px; border:1px solid rgba(255,255,255,0.08); text-align:right;">
+                <span style="font-size:0.72rem; color:#FBBF24; display:block; font-weight:700;"><i class="fa-solid fa-gift"></i> ENTREGA FONDO NAVIDEÑO</span>
+                <strong style="color:#FFFFFF; font-size:1.15rem;">1 de Diciembre 2026</strong>
+                <span style="display:block; font-size:0.7rem; color:#34D399;">100% garantizado sin deducciones</span>
+              </div>
+            </div>
+
+            <!-- 4 Tarjetas de Detalle de Fondos -->
+            <div class="savings-cards-grid" style="grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));">
               <div class="savings-detail-card highlight-card">
-                <div class="card-icon-round"><i class="fa-solid fa-gifts"></i></div>
+                <div class="card-icon-round" style="background:rgba(214,0,28,0.2); color:#F87171;"><i class="fa-solid fa-gifts"></i></div>
                 <div class="card-text">
-                  <span class="s-label">Ahorro Navideño (Diciembre 2026)</span>
-                  <h3 class="s-val">$2.160.000 COP</h3>
-                  <p class="s-desc">Fondo contractual Colanta para compras de fin de año sin deudas.</p>
+                  <span class="s-label">Ahorro Navideño (1 Dic 2026)</span>
+                  <h3 class="s-val" style="color:#FCA5A5;">$2.160.000 COP</h3>
+                  <p class="s-desc">Deducción de $120.000 por quincena. Fondo para fin de año sin deudas.</p>
                 </div>
               </div>
 
               <div class="savings-detail-card">
-                <div class="card-icon-round"><i class="fa-solid fa-shield-heart"></i></div>
+                <div class="card-icon-round" style="background:rgba(59,130,246,0.15); color:#60A5FA;"><i class="fa-solid fa-shield-heart"></i></div>
                 <div class="card-text">
                   <span class="s-label">Ahorro Ordinario a la Vista</span>
-                  <h3 class="s-val">$594.000 COP</h3>
-                  <p class="s-desc">Fondo de emergencia disponible en Cooperativa Colanta.</p>
+                  <h3 class="s-val" style="color:#93C5FD;">$594.000 COP</h3>
+                  <p class="s-desc">Fondo de emergencia con disponibilidad inmediata y rendimiento diario.</p>
                 </div>
               </div>
 
               <div class="savings-detail-card">
-                <div class="card-icon-round"><i class="fa-solid fa-handshake-angle"></i></div>
+                <div class="card-icon-round" style="background:rgba(16,185,129,0.15); color:#34D399;"><i class="fa-solid fa-handshake-angle"></i></div>
                 <div class="card-text">
-                  <span class="s-label">Aportes y Afiliación</span>
-                  <h3 class="s-val">$1.177.299 COP</h3>
-                  <p class="s-desc">Capitalización como asociado de Cooperativa Colanta AyC.</p>
+                  <span class="s-label">Aportes Sociales y Afiliación</span>
+                  <h3 class="s-val" style="color:#6EE7B7;">$995.083 COP</h3>
+                  <p class="s-desc">Capitalización patrimonial como socio dueño de Cooperativa Colanta.</p>
+                </div>
+              </div>
+
+              <div class="savings-detail-card">
+                <div class="card-icon-round" style="background:rgba(245,158,11,0.15); color:#FBBF24;"><i class="fa-solid fa-chart-line"></i></div>
+                <div class="card-text">
+                  <span class="s-label">Revalorización & Otros Fondos</span>
+                  <h3 class="s-val" style="color:#FDE68A;">$182.216 COP</h3>
+                  <p class="s-desc">Excedentes cooperativos y rendimientos financieros acumulados.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Estructura de Retención por Nómina Quincenal -->
+            <div style="margin-top:1.5rem; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:18px; padding:1.25rem 1.5rem;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem;">
+                <h4 style="color:#FFFFFF; font-size:0.95rem; font-weight:700;"><i class="fa-solid fa-file-invoice-dollar" style="color:#FBBF24;"></i> Estructura de Ahorro por Colilla de Nómina (Colanta)</h4>
+                <span class="meta-tag tag-colanta"><i class="fa-solid fa-check"></i> Descuento automático por nómina</span>
+              </div>
+              <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:1rem;">
+                <div style="background:rgba(0,0,0,0.2); padding:0.85rem 1rem; border-radius:12px; border:1px solid rgba(255,255,255,0.04);">
+                  <span style="font-size:0.75rem; color:#94A3B8; display:block;">Fondo Navideño / Quincena</span>
+                  <strong style="font-size:1.1rem; color:#FCA5A5;">$120.000 COP</strong>
+                </div>
+                <div style="background:rgba(0,0,0,0.2); padding:0.85rem 1rem; border-radius:12px; border:1px solid rgba(255,255,255,0.04);">
+                  <span style="font-size:0.75rem; color:#94A3B8; display:block;">Ahorro Ordinario / Quincena</span>
+                  <strong style="font-size:1.1rem; color:#93C5FD;">$33.000 COP</strong>
+                </div>
+                <div style="background:rgba(0,0,0,0.2); padding:0.85rem 1rem; border-radius:12px; border:1px solid rgba(255,255,255,0.04);">
+                  <span style="font-size:0.75rem; color:#94A3B8; display:block;">Aportes Sociales / Quincena</span>
+                  <strong style="font-size:1.1rem; color:#6EE7B7;">$55.282 COP</strong>
+                </div>
+                <div style="background:rgba(16,185,129,0.08); padding:0.85rem 1rem; border-radius:12px; border:1px solid rgba(16,185,129,0.2);">
+                  <span style="font-size:0.75rem; color:#34D399; display:block;">Total Ahorrado / Mes</span>
+                  <strong style="font-size:1.1rem; color:#FFFFFF;">$416.564 COP</strong>
                 </div>
               </div>
             </div>
@@ -934,23 +1006,48 @@
             <div>
               <span class="section-badge-tiny"><i class="fa-solid fa-cookie-bite"></i> CONTROL DE FUGAS</span>
               <h2 class="view-title">Radar de Gastos Hormiga & Antojos</h2>
-              <p class="view-subtitle">Monitoreo de mecato, dulces, panaderías y consumos cotidianos</p>
+              <p class="view-subtitle">Monitoreo de mecato, dulces, panaderías y consumos cotidianos en Planta San Germán</p>
             </div>
           </div>
 
           <div class="interactive-tables-container">
-            <div class="fugas-hero-card">
-              <div class="fugas-alert-icon"><i class="fa-solid fa-cookie-bite"></i></div>
-              <div class="fugas-text-content">
-                <h4>Monitor de Gastos Hormiga & Dulces</h4>
-                <p>Gastos pequeños en mecato, helados, granizados y panaderías acumulados en octubre.</p>
+            <!-- 3 KPIs de Radar Antojos -->
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:1rem; margin-bottom:1.5rem;">
+              <div class="fugas-hero-card" style="margin-bottom:0; padding:1.25rem 1.5rem;">
+                <div class="fugas-alert-icon" style="font-size:1.8rem;"><i class="fa-solid fa-cookie-bite"></i></div>
+                <div class="fugas-text-content">
+                  <h4 style="font-size:0.95rem;">Total Hormiga Acumulado</h4>
+                  <p style="font-size:0.75rem;">Mecatos y panadería este mes</p>
+                </div>
+                <div class="fugas-total-box">
+                  <h3 class="f-val" id="fugas-total-val" style="font-size:1.45rem;">$67.000 COP</h3>
+                </div>
               </div>
-              <div class="fugas-total-box">
-                <span class="f-label">Total Acumulado</span>
-                <h3 class="f-val" id="fugas-total-val">$67.000 COP</h3>
+
+              <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:18px; padding:1.25rem 1.5rem; display:flex; align-items:center; gap:1rem;">
+                <div style="width:44px; height:44px; border-radius:12px; background:rgba(59,130,246,0.12); color:#60A5FA; display:flex; align-items:center; justify-content:center; font-size:1.2rem; flex-shrink:0;">
+                  <i class="fa-solid fa-receipt"></i>
+                </div>
+                <div>
+                  <span style="font-size:0.75rem; color:#94A3B8; display:block;">Compras Detectadas</span>
+                  <strong style="font-size:1.3rem; color:#FFFFFF;">3 micropagos</strong>
+                  <span style="font-size:0.7rem; color:#60A5FA; display:block;">Pan de queso, dulces y cafetería</span>
+                </div>
+              </div>
+
+              <div style="background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:18px; padding:1.25rem 1.5rem; display:flex; align-items:center; gap:1rem;">
+                <div style="width:44px; height:44px; border-radius:12px; background:rgba(16,185,129,0.12); color:#34D399; display:flex; align-items:center; justify-content:center; font-size:1.2rem; flex-shrink:0;">
+                  <i class="fa-solid fa-shield-check"></i>
+                </div>
+                <div>
+                  <span style="font-size:0.75rem; color:#94A3B8; display:block;">Impacto en Presupuesto</span>
+                  <strong style="font-size:1.3rem; color:#34D399;">2.0% del salario</strong>
+                  <span style="font-size:0.7rem; color:#94A3B8; display:block;">Dentro del límite seguro</span>
+                </div>
               </div>
             </div>
 
+            <!-- Tabla de Fugas -->
             <div class="table-card-wrapper">
               <table class="fintech-table" id="table-fugas">
                 <thead>
@@ -967,7 +1064,6 @@
                 </tbody>
               </table>
             </div>
-          </div>
           </div>
         </div>
 
@@ -986,9 +1082,9 @@
               <p class="section-subheading">Trayectoria de ingresos, gastos y ahorro acumulado de Enero a Diciembre</p>
             </div>
             <div class="annual-summary-pills">
-              <span class="annual-mini-badge badge-green"><i class="fa-solid fa-arrow-trend-up"></i> $61.6M Ingresos</span>
+              <span class="annual-mini-badge badge-green"><i class="fa-solid fa-arrow-trend-up"></i> $33.7M Ingresos</span>
               <span class="annual-mini-badge badge-red"><i class="fa-solid fa-arrow-trend-down"></i> $22.9M Gastos</span>
-              <span class="annual-mini-badge badge-blue"><i class="fa-solid fa-piggy-bank"></i> $38.6M Ahorro (62.7%)</span>
+              <span class="annual-mini-badge badge-blue"><i class="fa-solid fa-piggy-bank"></i> $10.8M Ahorro (32.0%)</span>
             </div>
           </div>
 
@@ -998,7 +1094,7 @@
               <div class="kpi-icon-bubble bubble-emerald"><i class="fa-solid fa-sack-dollar"></i></div>
               <div class="kpi-meta-col">
                 <span class="kpi-subtitle">Ingresos Consolidados 2026</span>
-                <strong class="kpi-number" id="annual-total-ingresos">$61.623.190 COP</strong>
+                <strong class="kpi-number" id="annual-total-ingresos">$33.765.454 COP</strong>
                 <span class="kpi-note text-emerald"><i class="fa-solid fa-check-double"></i> 10 meses registrados</span>
               </div>
             </div>
@@ -1016,8 +1112,8 @@
               <div class="kpi-icon-bubble bubble-cyan"><i class="fa-solid fa-vault"></i></div>
               <div class="kpi-meta-col">
                 <span class="kpi-subtitle">Superávit Acumulado</span>
-                <strong class="kpi-number" id="annual-total-superavit">$38.664.201 COP</strong>
-                <span class="kpi-note text-cyan"><i class="fa-solid fa-shield-halved"></i> 62.7% Tasa de Ahorro</span>
+                <strong class="kpi-number" id="annual-total-superavit">$10.806.465 COP</strong>
+                <span class="kpi-note text-cyan"><i class="fa-solid fa-shield-halved"></i> 32.0% Tasa de Ahorro</span>
               </div>
             </div>
 
@@ -1026,7 +1122,7 @@
               <div class="kpi-meta-col">
                 <span class="kpi-subtitle">Mes Récord</span>
                 <strong class="kpi-number" id="annual-record-month">Junio 2026</strong>
-                <span class="kpi-note text-amber"><i class="fa-solid fa-star"></i> $10.9M Ingreso • $7.0M Ahorro</span>
+                <span class="kpi-note text-amber"><i class="fa-solid fa-star"></i> $5.1M Ingreso (Prima Colanta)</span>
               </div>
             </div>
           </div>
@@ -1127,7 +1223,7 @@
             <div class="ai-audit-narrative-box">
               <div class="narrative-badge"><i class="fa-solid fa-microchip"></i> Diagnóstico Ejecutivo Consolidado:</div>
               <p class="narrative-text" id="ai-audit-narrative">
-                Marlon, de Enero a Octubre de 2026 acumulas un superávit neto de <strong>$38.664.201 COP</strong> con una tasa de ahorro global del <strong>62.7%</strong>. El mes más eficiente en control de egresos fue Enero ($1.35M en gastos), mientras que Junio y Abril demandaron mayor liquidez por compromisos fijos. El 68% de tus egresos corresponden a obligaciones recurrentes, y tus consumos diarios en Planta Colanta y combustible se encuentran debidamente conciliados.
+                Marlon, de Enero a Octubre de 2026 acumulas un superávit neto de <strong>$10.806.465 COP</strong> con una tasa de ahorro global del <strong>32.0%</strong>. El mes más eficiente en control de egresos fue Enero ($1.35M en gastos), mientras que Junio representó tu mayor ingreso por la Prima de Servicios Colanta ($5.11M). El 68% de tus egresos corresponden a obligaciones recurrentes, y tus consumos diarios en Planta Colanta y combustible se encuentran debidamente conciliados.
               </p>
               <div class="ai-audit-footer-row">
                 <span class="ai-rule-badge"><i class="fa-solid fa-clock-rotate-left"></i> Automatización Gmail: Espera obligatoria de 3 horas antes de archivar</span>

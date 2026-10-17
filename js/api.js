@@ -45,65 +45,65 @@ const DEMO_DATA = {
     {
       "mes": "enero",
       "nombre": "Enero",
-      "ingresos": 7684444.0,
+      "ingresos": 3410000.0,
       "gastos": 1359128.0,
-      "ahorro": 6325316.0,
+      "ahorro": 2050872.0,
       "transacciones": 14
     },
     {
       "mes": "febrero",
       "nombre": "Febrero",
-      "ingresos": 5467344.0,
+      "ingresos": 3380000.0,
       "gastos": 2296000.0,
-      "ahorro": 3171344.0,
+      "ahorro": 1084000.0,
       "transacciones": 19
     },
     {
       "mes": "marzo",
       "nombre": "Marzo",
-      "ingresos": 7018822.0,
+      "ingresos": 3420000.0,
       "gastos": 2814000.0,
-      "ahorro": 4204822.0,
+      "ahorro": 606000.0,
       "transacciones": 21
     },
     {
       "mes": "abril",
       "nombre": "Abril",
-      "ingresos": 6988224.0,
+      "ingresos": 3390000.0,
       "gastos": 3129946.0,
-      "ahorro": 3858278.0,
+      "ahorro": 260054.0,
       "transacciones": 26
     },
     {
       "mes": "mayo",
       "nombre": "Mayo",
-      "ingresos": 6327506.0,
+      "ingresos": 3415000.0,
       "gastos": 2829200.0,
-      "ahorro": 3498306.0,
+      "ahorro": 585800.0,
       "transacciones": 21
     },
     {
       "mes": "junio",
       "nombre": "Junio",
-      "ingresos": 10916228.0,
+      "ingresos": 5110000.0,
       "gastos": 3892812.0,
-      "ahorro": 7023416.0,
+      "ahorro": 1217188.0,
       "transacciones": 25
     },
     {
       "mes": "julio",
       "nombre": "Julio",
-      "ingresos": 6344382.0,
+      "ingresos": 3400000.0,
       "gastos": 2546900.0,
-      "ahorro": 3797482.0,
+      "ahorro": 853100.0,
       "transacciones": 19
     },
     {
       "mes": "agosto",
       "nombre": "Agosto",
-      "ingresos": 7470786.0,
+      "ingresos": 3430000.0,
       "gastos": 1668936.0,
-      "ahorro": 5801850.0,
+      "ahorro": 1761064.0,
       "transacciones": 31
     },
     {
@@ -117,9 +117,9 @@ const DEMO_DATA = {
     {
       "mes": "octubre",
       "nombre": "Octubre",
-      "ingresos": 0,
+      "ingresos": 3405000.0,
       "gastos": 207123.0,
-      "ahorro": -207123.0,
+      "ahorro": 3197877.0,
       "transacciones": 8
     },
     {
@@ -140,13 +140,13 @@ const DEMO_DATA = {
     }
   ],
   "kpisAnuales": {
-    "totalIngresos": 61623190.0,
+    "totalIngresos": 33765454.0,
     "totalGastos": 22958989.0,
-    "superavit": 38664201.0,
-    "tasaAhorro": 62.7,
+    "superavit": 10806465.0,
+    "tasaAhorro": 32.0,
     "mesMayorAhorro": {
-      "nombre": "Junio",
-      "monto": 7023416.0
+      "nombre": "Enero",
+      "monto": 2050872.0
     },
     "mesMayorGasto": {
       "nombre": "Junio",
@@ -3570,6 +3570,9 @@ const FinanceAPI = {
         if (data && data.ok) {
           if (!data.resumenAnual) data.resumenAnual = DEMO_DATA.resumenAnual;
           if (!data.kpisAnuales) data.kpisAnuales = DEMO_DATA.kpisAnuales;
+          if (!data.fijos || !data.fijos.length) {
+            data.fijos = DEMO_DATA.fijos;
+          }
           if (!data.movimientos || data.movimientos.length < 15) {
             data.movimientos = DEMO_DATA.movimientos;
           }
@@ -3587,6 +3590,7 @@ const FinanceAPI = {
         const parsed = JSON.parse(cached);
         if (!parsed.resumenAnual) parsed.resumenAnual = DEMO_DATA.resumenAnual;
         if (!parsed.kpisAnuales) parsed.kpisAnuales = DEMO_DATA.kpisAnuales;
+        if (!parsed.fijos || !parsed.fijos.length) parsed.fijos = DEMO_DATA.fijos;
         return { data: parsed, isLive: false, fromCache: true };
       } catch (e) {}
     }
