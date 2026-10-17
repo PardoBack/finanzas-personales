@@ -6,7 +6,7 @@
 const API_CONFIG = {
   DEFAULT_WEBHOOK: "https://script.google.com/macros/s/AKfycbxfGcLK2UtQUpLYTOmD6o7PO-cCD_MmUnGul0F7MlfLbPebKYNy8HLV8XM3amI8a_BQ/exec",
   SPREADSHEET_ID: "1C9ifm7U8IYGOdY4IwAji9Z3McSlNy3B-e_2Jo-zvBFk",
-  CACHE_KEY: "PARDO_FINANZAS_CACHE_V32",
+  CACHE_KEY: "PARDO_FINANZAS_CACHE_V33",
   SETTINGS_KEY: "PARDO_FINANZAS_SETTINGS_V26",
   SECURITY_KEY: "PARDO_FINANZAS_SECURITY_V26"
 };
@@ -3505,6 +3505,15 @@ const DEMO_DATA = {
       "estado": "🟢 Pagado"
     },
     {
+      "id": "F-0122",
+      "concepto": "Agua",
+      "categoria": "Servicios",
+      "dia": 15,
+      "cuota": 60000,
+      "abonado": 0,
+      "estado": "🔴 Pendiente"
+    },
+    {
       "id": "F-0116",
       "concepto": "ARRIENDO CASA",
       "categoria": "Vivienda",
@@ -3555,15 +3564,6 @@ const DEMO_DATA = {
       "categoria": "Moto",
       "dia": 30,
       "cuota": 40000,
-      "abonado": 0,
-      "estado": "🔴 Pendiente"
-    },
-    {
-      "id": "F-0122",
-      "concepto": "Agua",
-      "categoria": "Servicios",
-      "dia": 15,
-      "cuota": 60000,
       "abonado": 0,
       "estado": "🔴 Pendiente"
     }

@@ -462,6 +462,19 @@ const FintechApp = {
       `;
     }
 
+    // 14. Agua / Acueducto / Servicio de Agua Potable
+    if (k === "agua" || k.includes("agua") || k.includes("acueducto") || k.includes("hidro")) {
+      return `
+        <div class="brand-badge brand-agua" title="Servicio de Agua" style="width:36px; height:36px; border-radius:10px; background:linear-gradient(135deg,#0284C7 0%,#0369A1 100%); display:inline-flex; align-items:center; justify-content:center; box-shadow:0 3px 10px rgba(2,132,199,0.45);">
+          <svg viewBox="0 0 36 36" width="32" height="32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M18 6.5C18 6.5 10 16.5 10 22.5C10 26.642 13.582 30 18 30C22.418 30 26 26.642 26 22.5C26 16.5 18 6.5 18 6.5Z" fill="#38BDF8"/>
+            <path d="M14 22.5C14 20 15.5 17.5 17.5 15" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round"/>
+            <circle cx="21.5" cy="24.5" r="1.8" fill="#E0F2FE"/>
+          </svg>
+        </div>
+      `;
+    }
+
     // Fallback general
     return `
       <div class="brand-badge brand-default" style="width:36px; height:36px; border-radius:10px; background:rgba(255,255,255,0.08); display:inline-flex; align-items:center; justify-content:center;">
@@ -3532,7 +3545,19 @@ const FintechApp = {
     const badgeFixed = document.getElementById("sidebar-fixed-pending") || document.getElementById("sidebar-fixed-count");
     if (badgeFixed) badgeFixed.textContent = pendCount;
 
-    tbody.innerHTML = fijos.map(f => {
+    // Agrupar estrictamente: Quincena 1 (Día 1-15) primero, luego Quincena 2 (Día 16-31)
+    const sortedFijos = [...fijos].sort((a, b) => {
+      const qA = Number(a.dia || 0) <= 15 ? 1 : 2;
+      const qB = Number(b.dia || 0) <= 15 ? 1 : 2;
+      if (qA !== qB) return qA - qB;
+      const diaA = Number(a.dia || 0);
+      const diaB = Number(b.dia || 0);
+      if (diaA !== diaB) return diaA - diaB;
+      return String(a.id || "").localeCompare(String(b.id || ""));
+    });
+
+    let lastQuincena = 0;
+    tbody.innerHTML = sortedFijos.map(f => {
       const cuota = Number(f.cuota || 0);
       const abonado = Number(f.abonado || 0);
       const saldo = Math.max(0, cuota - abonado);
@@ -3548,7 +3573,8 @@ const FintechApp = {
       // Determinar logo oficial de marca para la obligación
       let brandKey = "default";
       const c = String(f.concepto || "").toLowerCase();
-      if (c.includes("epm")) brandKey = "epm";
+      if (c.includes("agua") || c.includes("acueducto") || c.includes("hidro")) brandKey = "agua";
+      else if (c.includes("epm")) brandKey = "epm";
       else if (c.includes("tigo") || c.includes("celular")) brandKey = "tigo";
       else if (c.includes("arriendo") || c.includes("casa")) brandKey = "arriendo";
       else if (c.includes("spotify")) brandKey = "spotify";
@@ -3564,7 +3590,31 @@ const FintechApp = {
         ? `<span class="tag-quincena tag-q1">Q1 (Día 1-15)</span>` 
         : `<span class="tag-quincena tag-q2">Q2 (Día 16-31)</span>`;
 
-      return `
+      // Encabezado de grupo visual por Quincena
+      let groupHeader = "";
+      const currentQuincena = Number(f.dia) <= 15 ? 1 : 2;
+      if (currentQuincena !== lastQuincena) {
+        lastQuincena = currentQuincena;
+        const qTitle = currentQuincena === 1 ? "Quincena 1 — Pagos Día 15" : "Quincena 2 — Pagos Día 30";
+        const qSub = currentQuincena === 1 ? "Compromisos del 1 al 15 del mes" : "Compromisos del 16 a fin de mes";
+        const qColor = currentQuincena === 1 ? "#38BDF8" : "#A78BFA";
+        const qBg = currentQuincena === 1 ? "rgba(56, 189, 248, 0.07)" : "rgba(167, 139, 250, 0.07)";
+        const qBorder = currentQuincena === 1 ? "rgba(56, 189, 248, 0.22)" : "rgba(167, 139, 250, 0.22)";
+        groupHeader = `
+          <tr class="fixed-group-header-row" style="background:${qBg}; border-top:1px solid ${qBorder}; border-bottom:1px solid ${qBorder};">
+            <td colspan="8" style="padding:0.6rem 1rem;">
+              <div style="display:flex; align-items:center; justify-content:space-between;">
+                <span style="font-size:0.75rem; font-weight:800; color:${qColor}; text-transform:uppercase; letter-spacing:0.06em; display:flex; align-items:center; gap:0.4rem;">
+                  <i class="fa-solid fa-calendar-check"></i> ${qTitle}
+                </span>
+                <span style="font-size:0.7rem; color:#94A3B8; font-weight:500;">${qSub}</span>
+              </div>
+            </td>
+          </tr>
+        `;
+      }
+
+      return groupHeader + `
         <tr>
           <td><code class="id-tag">${f.id}</code></td>
           <td>

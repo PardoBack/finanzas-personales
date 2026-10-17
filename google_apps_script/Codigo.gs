@@ -716,53 +716,103 @@ function sincronizarFijosOctubreDefinitivo() {
   const shHist = ss.getSheetByName("HISTORICO FIJOS");
   const logs = [];
 
-  // 1. Sincronizar F-0108 (COMIDA) a $650.000 exactos en CONTROL FIJOS
   if (shFijos && shFijos.getLastRow() >= 10) {
     const numRows = Math.min(80, shFijos.getLastRow() - 9);
-    const rows = shFijos.getRange(10, 1, numRows, 9).getValues();
+    const rows = shFijos.getRange(10, 1, numRows, 12).getValues();
+    const itemsMap = new Map();
 
     for (let i = 0; i < rows.length; i++) {
-      const id = String(rows[i][0] || "").trim().toUpperCase();
+      const r = rows[i];
+      const id = String(r[0] || "").trim().toUpperCase();
+      if (!id || !/^F-/i.test(id)) continue;
 
-      if (id === "F-0108") {
-        const rIndex = i + 10;
-        shFijos.getRange(rIndex, 5).setValue(650000); // Cuota Base ($)
-        shFijos.getRange(rIndex, 6).setValue(650000); // Abonado Mes ($)
-        shFijos.getRange(rIndex, 7).setValue("🟢 Pagado"); // Estado
-        shFijos.getRange(rIndex, 8).setValue("2026-10-17"); // Fecha Último Pago
-        shFijos.getRange(rIndex, 9).setValue(0); // Saldo Pendiente
-        logs.push("F-0108 ajustado a $650.000 en CONTROL FIJOS fila " + rIndex);
+      const concepto = String(r[1] || "").trim();
+      const concNorm = concepto.toLowerCase();
+
+      // Si es F-0108 (COMIDA), forzar $650.000 exactos
+      if (id === "F-0108" || concNorm === "comida") {
+        r[0] = "F-0108";
+        r[1] = "COMIDA";
+        r[2] = "Alimentación";
+        r[3] = 15;
+        r[4] = 650000;
+        r[5] = 650000;
+        r[6] = "🟢 Pagado";
+        r[7] = "2026-10-17";
+        r[8] = 0;
+        itemsMap.set("F-0108", r);
+        logs.push("F-0108 (COMIDA) ajustado a $650.000 Pagado");
+        continue;
+      }
+
+      // Si es Agua o F-0122, unificar en F-0122 con $60.000 Día 15
+      if (id === "F-0122" || concNorm.includes("agua")) {
+        itemsMap.set("F-0122", [
+          "F-0122",
+          "Agua",
+          "Servicios",
+          15,
+          60000,
+          "",
+          "🔴 Pendiente",
+          "",
+          60000,
+          "Media",
+          "Transferencia",
+          "Servicio de Agua Domiciliaria"
+        ]);
+        logs.push("F-0122 (Agua - $60.000 - Día 15) preparado para Quincena 1");
+        continue;
+      }
+
+      // Demás compromisos legítimos
+      if (!itemsMap.has(id)) {
+        itemsMap.set(id, r);
       }
     }
 
-    // 2. Colocar F-0122 (Agua) de forma continua en fila 25 de CONTROL FIJOS
-    // Si existía en otra fila (ej. fila 50+ por getLastRow), limpiarla
-    for (let i = 0; i < rows.length; i++) {
-      const curRow = i + 10;
-      const id = String(rows[i][0] || "").trim().toUpperCase();
-      const concepto = String(rows[i][1] || "").trim().toLowerCase();
-      if ((id === "F-0122" || concepto.includes("agua")) && curRow !== 25) {
-        shFijos.getRange(curRow, 1, 1, 12).clearContent();
-        logs.push("Limpiada fila previa de Agua en fila " + curRow);
-      }
+    // Asegurar que F-0122 (Agua) esté presente
+    if (!itemsMap.has("F-0122")) {
+      itemsMap.set("F-0122", [
+        "F-0122",
+        "Agua",
+        "Servicios",
+        15,
+        60000,
+        "",
+        "🔴 Pendiente",
+        "",
+        60000,
+        "Media",
+        "Transferencia",
+        "Servicio de Agua Domiciliaria"
+      ]);
+      logs.push("F-0122 (Agua - $60.000) incorporado");
     }
 
-    const filaAgua = [
-      "F-0122",
-      "Agua",
-      "Servicios",
-      15,
-      60000,
-      "",
-      "🔴 Pendiente",
-      "",
-      60000,
-      "Media",
-      "Transferencia",
-      "Servicio de Agua Domiciliaria"
-    ];
-    shFijos.getRange(25, 1, 1, filaAgua.length).setValues([filaAgua]);
-    logs.push("F-0122 (Agua - $60.000) ubicado en fila continua 25 de CONTROL FIJOS");
+    // Convertir a lista y ordenar estrictamente: Día 15 primero (Quincena 1), Día 30 después (Quincena 2)
+    const listaFijos = Array.from(itemsMap.values());
+    listaFijos.sort((a, b) => {
+      const qA = Number(a[3] || 0) <= 15 ? 1 : 2;
+      const qB = Number(b[3] || 0) <= 15 ? 1 : 2;
+      if (qA !== qB) return qA - qB;
+      const diaA = Number(a[3] || 0);
+      const diaB = Number(b[3] || 0);
+      if (diaA !== diaB) return diaA - diaB;
+      return String(a[0] || "").localeCompare(String(b[0] || ""));
+    });
+
+    // Reescribir en CONTROL FIJOS desde la fila 10
+    shFijos.getRange(10, 1, listaFijos.length, 12).setValues(listaFijos);
+    logs.push(`Reordenada tabla CONTROL FIJOS: ${listaFijos.length} filas agrupadas (Día 15 con Día 15, Día 30 con Día 30)`);
+
+    // Limpiar filas sobrantes posteriores (ej. fila 26 en adelante)
+    const totalFilasAntes = shFijos.getLastRow();
+    const primeraFilaSobrante = 10 + listaFijos.length;
+    if (totalFilasAntes >= primeraFilaSobrante) {
+      shFijos.getRange(primeraFilaSobrante, 1, totalFilasAntes - primeraFilaSobrante + 1, 12).clearContent();
+      logs.push(`Limpiadas filas sobrantes desde fila ${primeraFilaSobrante} hasta ${totalFilasAntes}`);
+    }
   }
 
   // 3. Sincronizar en HISTORICO FIJOS para Octubre 2026
@@ -777,7 +827,7 @@ function sincronizarFijosOctubreDefinitivo() {
       const hAnio = Number(hRows[h][10] || 0);
 
       if (hMes === "octubre" && (hAnio === 2026 || hAnio === 0)) {
-        if (hId === "F-0108") {
+        if (hId === "F-0108" || String(hRows[h][1] || "").toLowerCase() === "comida") {
           const rIdx = h + 4;
           shHist.getRange(rIdx, 5).setValue(650000); // Cuota Base
           shHist.getRange(rIdx, 6).setValue(650000); // Abonado
@@ -823,7 +873,7 @@ function sincronizarFijosOctubreDefinitivo() {
     CacheService.getScriptCache().remove("CTX_FIN_IA_octubre_2026");
   } catch (e) {}
 
-  return { ok: true, logs: logs, mensaje: "Compromisos fijos de Octubre 2026 sincronizados: F-0108 a $650.000 y F-0122 (Agua $60.000) en fila continua 25." };
+  return { ok: true, logs: logs, mensaje: "Compromisos fijos agrupados perfectamente: Día 15 juntos en Quincena 1 y Día 30 juntos en Quincena 2." };
 }
 
 function autoReconciliarFijosDesdeMovimientos_(ss, mes, anio) {
@@ -1492,6 +1542,17 @@ function obtenerDatosCompletosDashboard_(mesFiltro, anioFiltro) {
         notas: notas
       });
     }
+
+    // Ordenar fijosArray: Quincena 1 (Día 1-15) primero, Quincena 2 (Día 16-31) después
+    fijosArray.sort((a, b) => {
+      const qA = Number(a.dia || 0) <= 15 ? 1 : 2;
+      const qB = Number(b.dia || 0) <= 15 ? 1 : 2;
+      if (qA !== qB) return qA - qB;
+      const diaA = Number(a.dia || 0);
+      const diaB = Number(b.dia || 0);
+      if (diaA !== diaB) return diaA - diaB;
+      return String(a.id || "").localeCompare(String(b.id || ""));
+    });
   }
 
   // Si hay compromisos fijos leídos, calcular fijosPendientes exactos
