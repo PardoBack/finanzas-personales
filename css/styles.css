@@ -5505,3 +5505,46 @@ html, body {
   pointer-events: auto;
 }
 
+/* =========================================================
+   SISTEMA DE MICRO-ANIMACIONES Y FEEDBACK TÁCTIL (PREMIUM)
+   ========================================================= */
+button, .btn, .nav-item, .chip-month, .topbar-btn, .btn-action, 
+.chip-filter, .btn-primary, .btn-ghost, .btn-action-round, 
+.btn-chat-send, .btn-voice, .quick-action-card, .btn-fixed-pay {
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.14s cubic-bezier(0.34, 1.56, 0.64, 1), 
+              box-shadow 0.2s ease, 
+              background-color 0.2s ease, 
+              border-color 0.2s ease !important;
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Efecto de pulsación táctil (Revolut / Apple spring feel) */
+button:active, .btn:active, .nav-item:active, .chip-month:active, 
+.topbar-btn:active, .btn-action:active, .chip-filter:active, 
+.btn-primary:active, .btn-ghost:active, .btn-action-round:active, 
+.btn-chat-send:active, .btn-voice:active, .quick-action-card:active, .btn-fixed-pay:active {
+  transform: scale(0.93) translateY(1.5px) !important;
+}
+
+/* Onda expansiva de luz al hacer clic (Dynamic Ripple) */
+.ripple-wave {
+  position: absolute;
+  border-radius: 50%;
+  transform: scale(0);
+  animation: ripple-animation 0.55s ease-out;
+  background-color: rgba(255, 255, 255, 0.35);
+  pointer-events: none;
+  z-index: 100;
+}
+
+@keyframes ripple-animation {
+  to {
+    transform: scale(4.5);
+    opacity: 0;
+  }
+}
+
+

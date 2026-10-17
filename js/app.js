@@ -44,6 +44,7 @@ const FintechApp = {
     this.initSpeechRecognition();
     this.bindModals();
     this.setupDateContext();
+    this.initRippleEffects();
     this.loadData();
     this.checkBackendHealth();
 
@@ -66,6 +67,30 @@ const FintechApp = {
     if (window.navigator && window.navigator.vibrate) {
       try { window.navigator.vibrate(ms); } catch (e) {}
     }
+  },
+
+  initRippleEffects() {
+    document.addEventListener("pointerdown", (e) => {
+      const btn = e.target.closest("button, .btn, .nav-item, .chip-month, .topbar-btn, .btn-action, .chip-filter, .quick-action-card, .btn-fixed-pay, .btn-chat-send, .btn-voice, .pill-status");
+      if (!btn) return;
+      this.haptic(10);
+
+      const rect = btn.getBoundingClientRect();
+      const circle = document.createElement("span");
+      const diameter = Math.max(rect.width, rect.height);
+      const radius = diameter / 2;
+
+      circle.style.width = circle.style.height = `${diameter}px`;
+      circle.style.left = `${e.clientX - rect.left - radius}px`;
+      circle.style.top = `${e.clientY - rect.top - radius}px`;
+      circle.classList.add("ripple-wave");
+
+      const existing = btn.querySelector(".ripple-wave");
+      if (existing) existing.remove();
+
+      btn.appendChild(circle);
+      setTimeout(() => circle.remove(), 600);
+    });
   },
 
   async checkBackendHealth() {
@@ -236,7 +261,7 @@ const FintechApp = {
       try {
         const res = await FinanceAPI.sendEmailAudit();
         if (res.ok) {
-          this.showToast("📧 ¡Reporte ejecutivo enviado a marlonmunozpardo5@gmail.com!", "success");
+          this.showToast("📧 ¡Reporte ejecutivo enviado a marlonpardomu@gmail.com!", "success");
         } else {
           this.showToast("⚠️ " + (res.error || "No se pudo despachar el correo"), "warning");
         }
@@ -868,9 +893,9 @@ const FintechApp = {
         try {
           const res = await FinanceAPI.sendEmailAudit();
           this.haptic(35);
-          this.showToast("📧 ¡Diagnóstico financiero enviado a marlonmunozpardo5@gmail.com con éxito!", "success");
+          this.showToast("📧 ¡Diagnóstico financiero enviado a marlonpardomu@gmail.com con éxito!", "success");
         } catch (err) {
-          this.showToast("Reporte emitido a marlonmunozpardo5@gmail.com", "success");
+          this.showToast("Reporte emitido a marlonpardomu@gmail.com", "success");
         } finally {
           if (icon) icon.className = "fa-solid fa-check";
           if (text) text.textContent = "Reporte Enviado al Correo";
@@ -2341,12 +2366,23 @@ const FintechApp = {
       const isGasto = !String(m.tipo || "").toLowerCase().includes("ingreso");
       if (isGasto) {
         const val = Number(m.valor || 0);
-        const dayMatch = String(m.fecha || "").match(/^(\d{1,2})/);
-        const day = dayMatch ? parseInt(dayMatch[1], 10) : 10;
-        if (day <= 15) {
-          q1Var += val;
-        } else {
-          q2Var += val;
+        let day = 10;
+        const fStr = String(m.fecha || "").trim();
+        if (fStr.includes("-")) {
+          const parts = fStr.split("-");
+          day = parseInt(parts[2], 10) || 10;
+        } else if (fStr.includes("/")) {
+          const parts = fStr.split("/");
+          day = parseInt(parts[0], 10) || 10;
+        }
+
+        const isFijo = m.idFijo || String(m.subcategoria || "").toLowerCase() === "pago fijo" || String(m.descripcion || "").toLowerCase().includes("pago fijo");
+        if (!isFijo) {
+          if (day <= 15) {
+            q1Var += val;
+          } else {
+            q2Var += val;
+          }
         }
       }
     });
@@ -2358,10 +2394,10 @@ const FintechApp = {
 
     const fijos = (this.state.data && this.state.data.fijos) || [];
     const q1Fixed = fijos.length > 0
-      ? fijos.filter(f => Number(f.dia || 0) <= 15).reduce((acc, f) => acc + Math.max(0, Number(f.cuota || 0) - Number(f.abonado || 0)), 0)
-      : 1332000;
+      ? fijos.filter(f => Number(f.dia || 0) <= 15).reduce((acc, f) => acc + Number(f.cuota || 0), 0)
+      : 1386000;
     const q2Fixed = fijos.length > 0
-      ? fijos.filter(f => Number(f.dia || 0) > 15).reduce((acc, f) => acc + Math.max(0, Number(f.cuota || 0) - Number(f.abonado || 0)), 0)
+      ? fijos.filter(f => Number(f.dia || 0) > 15).reduce((acc, f) => acc + Number(f.cuota || 0), 0)
       : 1225000;
 
     // Actualizar pills del header del panel y widgets del Cockpit Quincenal

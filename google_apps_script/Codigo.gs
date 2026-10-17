@@ -18,7 +18,7 @@ const TELEGRAM_TOKEN = String(PropertiesService.getScriptProperties().getPropert
 const SPREADSHEET_ID = String(PropertiesService.getScriptProperties().getProperty("SPREADSHEET_ID") || "1C9ifm7U8IYGOdY4IwAji9Z3McSlNy3B-e_2Jo-zvBFk").trim();
 const WEBHOOK_URL = String(PropertiesService.getScriptProperties().getProperty("WEBHOOK_URL") || "https://script.google.com/macros/s/AKfycbxfGcLK2UtQUpLYTOmD6o7PO-cCD_MmUnGul0F7MlfLbPebKYNy8HLV8XM3amI8a_BQ/exec").trim();
 const GEMINI_API_KEY = String(PropertiesService.getScriptProperties().getProperty("GEMINI_API_KEY") || "").trim();
-const GMAIL_FACTURAS_REMITENTE = String(PropertiesService.getScriptProperties().getProperty("GMAIL_FACTURAS_REMITENTE") || "marlonmunozpardo5@gmail.com").trim();
+const GMAIL_FACTURAS_REMITENTE = String(PropertiesService.getScriptProperties().getProperty("GMAIL_FACTURAS_REMITENTE") || "marlonpardomu@gmail.com").trim();
 const USUARIO_NOMBRE_COMPLETO = String(PropertiesService.getScriptProperties().getProperty("USUARIO_NOMBRE_COMPLETO") || "MARLON MUNOZ PARDO").trim();
 const ZONA_HORARIA = "America/Bogota";
 const GMAIL_MAX_BODY_CHARS = 30000;
@@ -530,7 +530,7 @@ function actualizarRegistroMovimiento_(id, data) {
  */
 function enviarReporteAuditoriaEmail_(destinatarioPersonalizado) {
   try {
-    const destinatario = destinatarioPersonalizado || GMAIL_FACTURAS_REMITENTE || "marlonmunozpardo5@gmail.com";
+    const destinatario = destinatarioPersonalizado || GMAIL_FACTURAS_REMITENTE || "marlonpardomu@gmail.com";
     const datos = obtenerDatosCompletosDashboard_();
     const kpis = datos.kpisAnuales || {};
     const resumenMeses = datos.resumenAnual || [];

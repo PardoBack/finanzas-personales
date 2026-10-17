@@ -3936,7 +3936,7 @@ const FinanceAPI = {
   async sendEmailAudit(email = null) {
     const webhookUrl = this.getWebhookUrl();
     const token = this.getAuthToken();
-    const targetEmail = email || "marlonmunozpardo5@gmail.com";
+    const targetEmail = email || "marlonpardomu@gmail.com";
     const payload = {
       action: "sendEmailAudit",
       token: token,
