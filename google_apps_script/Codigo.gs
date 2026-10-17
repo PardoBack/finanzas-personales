@@ -830,20 +830,20 @@ function obtenerDatosCompletosDashboard_(mesFiltro, anioFiltro) {
   const tasaAhorroAnual = totIngAnual > 0 ? Math.round((superavitAnual / totIngAnual) * 1000) / 10 : 0;
 
   // Fondos Colanta
-  let navidenoAcum = 2160000, ordinarioAcum = 594000, aportesAcum = 995083, otrosAcum = 182216, totalFondos = 3931299;
+  let navidenoAcum = 2280000, ordinarioAcum = 627000, aportesAcum = 1032650, otrosAcum = 227770, totalFondos = 4167420;
   if (shAho) {
     try {
-      totalFondos = Number(shAho.getRange("A5").getValue() || 3931299);
-      navidenoAcum = Number(shAho.getRange("E5").getValue() || 2160000);
-      ordinarioAcum = Number(shAho.getRange("C8").getValue() || 594000);
-      aportesAcum = Number(shAho.getRange("C10").getValue() || 995083);
+      totalFondos = Number(shAho.getRange("A5").getValue() || 4167420);
+      navidenoAcum = Number(shAho.getRange("E5").getValue() || 2280000);
+      ordinarioAcum = Number(shAho.getRange("C8").getValue() || 627000);
+      aportesAcum = Number(shAho.getRange("C10").getValue() || 1032650);
     } catch(eAho) {}
   }
 
   // Reconciliación matemática de liquidez para el mes en curso:
-  // Si el saldo de cuentas en J39/J42 excede el ingreso recibido del mes (ej. remanente de proyección de 2 quincenas),
-  // se calibra al remanente real del mes (ingreso - gasto - ahorro)
-  const remanenteRealMes = Math.max(0, ingreso - gasto - ahorro);
+  // El ingreso registrado en Nómina ya es neto (los ahorros de cooperativa ya fueron deducidos por nómina),
+  // por lo que la liquidez neta real del mes es (ingreso - gasto).
+  const remanenteRealMes = Math.max(0, ingreso - gasto);
   if (ingreso > 0 && (saldoColanta > ingreso || totalLiquidez > ingreso)) {
     totalLiquidez = remanenteRealMes > 0 ? remanenteRealMes : ingreso;
     saldoColanta = Math.max(0, totalLiquidez - saldoEfectivo - saldoNequi);

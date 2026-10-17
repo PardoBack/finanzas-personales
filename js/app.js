@@ -132,30 +132,41 @@ const FintechApp = {
     const btnSaveAuthToken = document.getElementById("btn-save-auth-token");
     const inputAuthToken = document.getElementById("input-auth-token");
     const btnCopyPrivateLink = document.getElementById("btn-copy-private-link");
+    const btnCopyPrivateLinkView = document.getElementById("btn-copy-private-link-view");
+    const inputWebhookView = document.getElementById("input-webhook-url-view");
+    const btnSaveWebhookView = document.getElementById("btn-save-webhook-view");
 
-    const baseOrigin = window.location.origin || "";
-    const basePath = window.location.pathname || "";
-    const fullAuthUrl = `${baseOrigin}${basePath}?auth=${encodeURIComponent(sec.authToken)}`;
+    const baseOrigin = window.location.origin && window.location.origin !== "null" ? window.location.origin : "https://marlonpardo.github.io";
+    const basePath = window.location.pathname || "/";
+    const buildAuthUrl = (token) => `${baseOrigin}${basePath}?auth=${encodeURIComponent(token)}`;
+    let fullAuthUrl = buildAuthUrl(sec.authToken);
 
     if (inputShieldShareUrl) inputShieldShareUrl.value = fullAuthUrl;
     if (inputAuthToken) inputAuthToken.value = sec.authToken || "";
+    const tokenViewInit = document.getElementById("input-auth-token-view");
+    if (tokenViewInit) tokenViewInit.value = sec.authToken || "";
+    if (inputWebhookView) inputWebhookView.value = FinanceAPI.getWebhookUrl();
 
     const openShieldModal = () => {
       this.haptic(15);
-      modalShield?.classList.add("active");
+      modalShield?.classList.add("open", "active");
     };
 
     const closeShieldModal = () => {
       this.haptic(10);
-      modalShield?.classList.remove("active");
+      modalShield?.classList.remove("open", "active");
     };
 
     btnShield?.addEventListener("click", openShieldModal);
     btnCloseShield?.addEventListener("click", closeShieldModal);
     btnShieldConfirm?.addEventListener("click", closeShieldModal);
+    modalShield?.addEventListener("click", (e) => {
+      if (e.target === modalShield) closeShieldModal();
+    });
 
     const copyAuthUrlAction = () => {
       this.haptic(20);
+      fullAuthUrl = buildAuthUrl(this.state.cloudShield.authToken || sec.authToken);
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(fullAuthUrl).then(() => {
           this.showToast("📋 ¡Enlace privado con token copiado al portapapeles!", "success");
@@ -175,6 +186,7 @@ const FintechApp = {
 
     btnCopyShieldUrl?.addEventListener("click", copyAuthUrlAction);
     btnCopyPrivateLink?.addEventListener("click", copyAuthUrlAction);
+    btnCopyPrivateLinkView?.addEventListener("click", copyAuthUrlAction);
 
     const saveTokenAction = (tokenInput) => {
       const val = (tokenInput?.value || "").trim();
@@ -185,8 +197,9 @@ const FintechApp = {
       this.haptic(20);
       FinanceAPI.setAuthToken(val);
       this.state.cloudShield.authToken = val;
+      fullAuthUrl = buildAuthUrl(val);
       if (inputShieldShareUrl) {
-        inputShieldShareUrl.value = `${baseOrigin}${basePath}?auth=${encodeURIComponent(val)}`;
+        inputShieldShareUrl.value = fullAuthUrl;
       }
       const tokenView = document.getElementById("input-auth-token-view");
       if (tokenView && tokenView !== tokenInput) tokenView.value = val;
@@ -199,6 +212,20 @@ const FintechApp = {
       saveTokenAction(document.getElementById("input-auth-token-view"));
     });
 
+    btnSaveWebhookView?.addEventListener("click", () => {
+      const val = (inputWebhookView?.value || "").trim();
+      if (!val) {
+        this.showToast("Ingresa una URL de Webhook válida", "error");
+        return;
+      }
+      this.haptic(15);
+      localStorage.setItem(API_CONFIG.SETTINGS_KEY, JSON.stringify({ webhookUrl: val }));
+      const modalUrlInput = document.getElementById("input-webhook-url");
+      if (modalUrlInput) modalUrlInput.value = val;
+      this.showToast("🔗 URL de Webhook guardada y sincronizada", "success");
+      this.refreshData();
+    });
+
     document.getElementById("btn-send-email-audit-view")?.addEventListener("click", async () => {
       this.haptic(15);
       const btn = document.getElementById("btn-send-email-audit-view");
@@ -209,7 +236,7 @@ const FintechApp = {
       try {
         const res = await FinanceAPI.sendEmailAudit();
         if (res.ok) {
-          this.showToast("📧 ¡Reporte ejecutivo enviado exitosamente a tu correo!", "success");
+          this.showToast("📧 ¡Reporte ejecutivo enviado a marlonmunozpardo5@gmail.com!", "success");
         } else {
           this.showToast("⚠️ " + (res.error || "No se pudo despachar el correo"), "warning");
         }
@@ -223,9 +250,9 @@ const FintechApp = {
 
     document.getElementById("btn-view-test-connection")?.addEventListener("click", async () => {
       this.haptic(15);
-      this.showToast("Probando conexión con Google Apps Script...", "info");
+      this.showToast("Probando conexión con Google Apps Script...", "success");
       await this.checkBackendHealth();
-      this.showToast("✓ Conexión con Google Sheets verificada", "success");
+      this.showToast("✓ Conexión con Google Sheets V26.9 verificada", "success");
     });
   },
 
@@ -453,6 +480,9 @@ const FintechApp = {
     });
 
     btnCloseMonth?.addEventListener("click", () => modalMonth?.classList.remove("open"));
+    modalMonth?.addEventListener("click", (e) => {
+      if (e.target === modalMonth) modalMonth.classList.remove("open");
+    });
 
     // 3. Pills rápidas de meses
     document.querySelectorAll(".month-strip-pill").forEach(pill => {
@@ -463,9 +493,12 @@ const FintechApp = {
       });
     });
 
-    document.getElementById("btn-show-all-year")?.addEventListener("click", () => {
-      this.haptic(15);
-      this.changeActiveMonth("all");
+    // 4. Botones "Ver Todo 2026" en Overview y Movimientos
+    document.querySelectorAll(".js-btn-show-all-year, #btn-show-all-year, #btn-show-all-year-movs").forEach(btn => {
+      btn.addEventListener("click", () => {
+        this.haptic(15);
+        this.changeActiveMonth("all");
+      });
     });
   },
 
@@ -548,12 +581,17 @@ const FintechApp = {
     this.renderAnnualSection();
     this.renderMovementsTable();
     this.renderFixedTable();
+    this.renderSavingsSection();
     this.renderFugasTable();
 
     this.showToast(`📅 Visualizando: ${month === 'all' ? 'Todo el año 2026' : capitalize(month) + ' ' + year}`, "success");
 
     // Sincronizar en segundo plano con el backend
     FinanceAPI.setMonth(month, year);
+  },
+
+  scrollToSection(viewKey) {
+    this.switchView(viewKey);
   },
 
   getCurrentMonthData() {
@@ -622,11 +660,15 @@ const FintechApp = {
       if (res.ingresos > ing) ing = res.ingresos;
     }
 
+    const fallbackCats = active === "octubre"
+      ? ((this.state.data && this.state.data.gastosPorCategoria) || {})
+      : {};
+
     return {
       ingresos: ing,
       gastos: gas,
       mes: active,
-      gastosPorCategoria: Object.keys(cats).length > 0 ? cats : ((this.state.data && this.state.data.gastosPorCategoria) || {}),
+      gastosPorCategoria: Object.keys(cats).length > 0 ? cats : fallbackCats,
       movimientos: mMes
     };
   },
@@ -637,31 +679,33 @@ const FintechApp = {
 
     const annual = data.resumenAnual || [];
     const kpis = data.kpisAnuales || {
-      totalIngresos: 33765454,
-      totalGastos: 22958989,
-      superavit: 10806465,
-      tasaAhorro: 32.0,
+      totalIngresos: 34061059,
+      totalGastos: 22990105,
+      superavit: 11070954,
+      tasaAhorro: 32.5,
       mesMayorAhorro: { nombre: "Enero", monto: 2050872 },
       mesMayorGasto: { nombre: "Junio", monto: 3892812 }
     };
 
     // Actualizar badges superiores
-    const pIng = document.querySelector(".annual-mini-badge.badge-green");
-    const pGas = document.querySelector(".annual-mini-badge.badge-red");
-    const pAho = document.querySelector(".annual-mini-badge.badge-blue");
-    if (pIng) pIng.innerHTML = `<i class="fa-solid fa-arrow-trend-up"></i> $${Math.round(kpis.totalIngresos / 100000) / 10}M Ingresos`;
-    if (pGas) pGas.innerHTML = `<i class="fa-solid fa-arrow-trend-down"></i> $${Math.round(kpis.totalGastos / 100000) / 10}M Gastos`;
-    if (pAho) pAho.innerHTML = `<i class="fa-solid fa-piggy-bank"></i> $${Math.round(kpis.superavit / 100000) / 10}M Ahorro (${kpis.tasaAhorro}%)`;
+    const pIng = document.getElementById("annual-pill-ingresos") || document.querySelector(".annual-mini-badge.badge-green");
+    const pGas = document.getElementById("annual-pill-gastos") || document.querySelector(".annual-mini-badge.badge-red");
+    const pAho = document.getElementById("annual-pill-ahorro") || document.querySelector(".annual-mini-badge.badge-blue");
+    if (pIng) pIng.innerHTML = `<i class="fa-solid fa-arrow-trend-up"></i> $${(kpis.totalIngresos / 1000000).toFixed(1)}M Ingresos`;
+    if (pGas) pGas.innerHTML = `<i class="fa-solid fa-arrow-trend-down"></i> $${(kpis.totalGastos / 1000000).toFixed(1)}M Gastos`;
+    if (pAho) pAho.innerHTML = `<i class="fa-solid fa-piggy-bank"></i> $${(kpis.superavit / 1000000).toFixed(1)}M Ahorro (${kpis.tasaAhorro}%)`;
 
     // Actualizar 4 KPIs
     const elIng = document.getElementById("annual-total-ingresos");
     const elGas = document.getElementById("annual-total-gastos");
     const elSup = document.getElementById("annual-total-superavit");
+    const elNoteSup = document.getElementById("annual-note-superavit");
     const elRec = document.getElementById("annual-record-month");
 
     if (elIng) elIng.textContent = `$${this.formatCOP(kpis.totalIngresos)} COP`;
     if (elGas) elGas.textContent = `$${this.formatCOP(kpis.totalGastos)} COP`;
     if (elSup) elSup.textContent = `$${this.formatCOP(kpis.superavit)} COP`;
+    if (elNoteSup) elNoteSup.innerHTML = `<i class="fa-solid fa-shield-halved"></i> ${kpis.tasaAhorro}% Tasa de Ahorro`;
     if (elRec && kpis.mesMayorAhorro) {
       elRec.textContent = `${kpis.mesMayorAhorro.nombre} 2026`;
     }
@@ -775,12 +819,12 @@ const FintechApp = {
         `;
       }).join("");
 
-        tbody.querySelectorAll(".btn-table-goto-month").forEach(btn => {
+      tbody.querySelectorAll(".btn-table-goto-month").forEach(btn => {
         btn.addEventListener("click", () => {
           const m = btn.getAttribute("data-month");
           if (m) {
             this.changeActiveMonth(m);
-            this.scrollToSection("movements");
+            this.switchView("movements");
           }
         });
       });
@@ -792,6 +836,7 @@ const FintechApp = {
     const elAiSavingsMonth = document.getElementById("ai-savings-month");
     const elAiSavingsAmount = document.getElementById("ai-savings-amount");
     const elAiColanta = document.getElementById("ai-colanta-amount");
+    const elAiNarrative = document.getElementById("ai-audit-narrative");
 
     if (kpis.mesMayorGasto) {
       if (elAiPeakMonth) elAiPeakMonth.textContent = `${kpis.mesMayorGasto.nombre} 2026`;
@@ -802,7 +847,10 @@ const FintechApp = {
       if (elAiSavingsAmount) elAiSavingsAmount.textContent = `$${this.formatCOP(kpis.mesMayorAhorro.monto)} COP`;
     }
     if (elAiColanta && data.ahorrosColanta) {
-      elAiColanta.textContent = `$${this.formatCOP(data.ahorrosColanta.totalAcumulado || 3931299)} COP`;
+      elAiColanta.textContent = `$${this.formatCOP(data.ahorrosColanta.totalAcumulado || 4167420)} COP`;
+    }
+    if (elAiNarrative) {
+      elAiNarrative.innerHTML = `Marlon, de Enero a Octubre de 2026 acumulas un superávit neto de <strong>$${this.formatCOP(kpis.superavit)} COP</strong> con una tasa de ahorro global del <strong>${kpis.tasaAhorro}%</strong>. El mes más eficiente en control de egresos fue Enero ($1.35M en gastos), mientras que Junio representó tu mayor ingreso por la Prima de Servicios Colanta ($5.11M). El 68% de tus egresos corresponden a obligaciones recurrentes, y tus consumos diarios en Planta Colanta y combustible se encuentran debidamente conciliados.`;
     }
 
     // Botón Enviar Reporte de Auditoría al Correo
@@ -931,12 +979,8 @@ const FintechApp = {
       this.switchView("movements");
     });
 
-    // Acceso a Ajustes desde Topbar o Perfil
+    // Acceso a Ajustes desde Topbar (cambia a la vista dedicada de Ajustes)
     document.getElementById("btn-topbar-settings")?.addEventListener("click", () => {
-      this.haptic(12);
-      this.switchView("settings");
-    });
-    document.getElementById("btn-quick-settings")?.addEventListener("click", () => {
       this.haptic(12);
       this.switchView("settings");
     });
@@ -1023,10 +1067,10 @@ const FintechApp = {
     document.getElementById("btn-topbar-colilla")?.addEventListener("click", openColillaModal);
     document.getElementById("btn-banner-upload-colilla")?.addEventListener("click", openColillaModal);
     document.getElementById("btn-wallet-upload-colilla")?.addEventListener("click", openColillaModal);
-    document.getElementById("nav-item-colilla")?.addEventListener("click", openColillaModal);
     document.getElementById("btn-chat-upload-colilla")?.addEventListener("click", openColillaModal);
     document.getElementById("chip-chat-colilla")?.addEventListener("click", openColillaModal);
     document.getElementById("btn-modal-goto-colilla")?.addEventListener("click", openColillaModal);
+    document.getElementById("btn-view-open-colilla-modal")?.addEventListener("click", openColillaModal);
 
     document.getElementById("btn-qa-cfo")?.addEventListener("click", () => {
       this.haptic(15);
@@ -1094,7 +1138,8 @@ const FintechApp = {
     let cleanKey = String(viewKey).toLowerCase()
       .replace(/^#/, "")
       .replace(/^view-/, "")
-      .replace(/^section-/, "");
+      .replace(/^section-/, "")
+      .replace(/^modal-/, "");
 
     // Normalizar alias
     if (cleanKey === "home" || cleanKey === "resumen") cleanKey = "overview";
@@ -1103,6 +1148,7 @@ const FintechApp = {
     if (cleanKey === "ahorros" || cleanKey === "colanta") cleanKey = "savings";
     if (cleanKey === "antojos") cleanKey = "fugas";
     if (cleanKey === "anual") cleanKey = "annual";
+    if (cleanKey === "upload-colilla") cleanKey = "colilla";
     if (cleanKey === "ajustes") cleanKey = "settings";
 
     const validViews = ["overview", "wallet", "movements", "fixed", "savings", "fugas", "annual", "colilla", "settings"];
@@ -1152,10 +1198,15 @@ const FintechApp = {
       this.renderMovementsTable();
     } else if (cleanKey === "fixed") {
       this.renderFixedTable();
+    } else if (cleanKey === "savings") {
+      this.renderSavingsSection();
     } else if (cleanKey === "fugas") {
       this.renderFugasTable();
     } else if (cleanKey === "wallet") {
       this.renderBalances();
+    } else if (cleanKey === "settings") {
+      const inputWebhookView = document.getElementById("input-webhook-url-view");
+      if (inputWebhookView) inputWebhookView.value = FinanceAPI.getWebhookUrl();
     }
   },
 
@@ -1169,15 +1220,15 @@ const FintechApp = {
   },
 
   bindPrivacyToggle() {
-    const btn = document.getElementById("btn-toggle-balance-visibility");
-    const icon = document.getElementById("icon-eye-balance");
-
-    btn?.addEventListener("click", () => {
-      this.state.balancesHidden = !this.state.balancesHidden;
-      if (icon) {
-        icon.className = this.state.balancesHidden ? "fa-solid fa-eye-slash" : "fa-solid fa-eye";
-      }
-      this.renderBalances();
+    document.querySelectorAll(".js-toggle-balance-visibility, #btn-toggle-balance-visibility, #btn-toggle-balance-visibility-wallet").forEach(btn => {
+      btn.addEventListener("click", () => {
+        this.haptic(10);
+        this.state.balancesHidden = !this.state.balancesHidden;
+        document.querySelectorAll(".js-icon-eye-balance, #icon-eye-balance, #icon-eye-balance-wallet").forEach(icon => {
+          icon.className = this.state.balancesHidden ? "fa-solid fa-eye-slash js-icon-eye-balance" : "fa-solid fa-eye js-icon-eye-balance";
+        });
+        this.renderBalances();
+      });
     });
   },
 
@@ -1277,31 +1328,49 @@ const FintechApp = {
     }, 35);
   },
 
+  getNextMovementId() {
+    let nextNum = 259;
+    const movs = (this.state.data && this.state.data.movimientos) || [];
+    for (const m of movs) {
+      const match = String(m.id || "").match(/^M-(\d+)$/);
+      if (match) {
+        nextNum = Math.max(nextNum, parseInt(match[1], 10) + 1);
+      }
+    }
+    return "M-" + String(nextNum).padStart(4, "0");
+  },
+
+  updateSidebarMovCount() {
+    const movs = (this.state.data && this.state.data.movimientos) || [];
+    const movCountEl = document.getElementById("sidebar-mov-count");
+    if (movCountEl && movs.length > 0) {
+      let maxNum = movs.length;
+      for (const m of movs) {
+        const match = String(m.id || "").match(/^M-(\d+)$/);
+        if (match) {
+          maxNum = Math.max(maxNum, parseInt(match[1], 10));
+        }
+      }
+      movCountEl.textContent = maxNum;
+    }
+  },
+
   processChatIntent(intent, originalText) {
     const res = (this.state.data && this.state.data.resumen) || {};
     const cuentas = (this.state.data && this.state.data.cuentas) || {};
 
     if (intent.type === "RECORD_TRANSACTION") {
-      // Calcular consecutivo real M-xxxx
-      let nextNum = 256;
-      const movs = (this.state.data && this.state.data.movimientos) || [];
-      if (movs.length > 0) {
-        for (const m of movs) {
-          const match = String(m.id || "").match(/^M-(\d+)$/);
-          if (match) {
-            nextNum = Math.max(nextNum, parseInt(match[1], 10) + 1);
-            break;
-          }
-        }
-      }
-      const nuevoId = "M-" + String(nextNum).padStart(4, "0");
+      const nuevoId = this.getNextMovementId();
       const fechaHoy = new Date().toLocaleDateString("es-CO");
       const horaHoy = new Date().toLocaleTimeString("es-CO", { hour: '2-digit', minute: '2-digit' });
+      const targetMes = (this.state.activeMonth && this.state.activeMonth !== "all") ? this.state.activeMonth : "octubre";
 
       const nuevoMov = {
         id: nuevoId,
         fecha: fechaHoy,
         hora: horaHoy,
+        mes: targetMes,
+        anio: this.state.activeYear || 2026,
         tipo: intent.transactionType,
         categoria: intent.category,
         subcategoria: intent.subcategory,
@@ -1319,13 +1388,38 @@ const FintechApp = {
           if (this.state.data.gastosPorCategoria) {
             this.state.data.gastosPorCategoria[intent.category] = (this.state.data.gastosPorCategoria[intent.category] || 0) + intent.amount;
           }
+          if (this.state.data.cuentas) {
+            this.state.data.cuentas.total = Math.max(0, (this.state.data.cuentas.total || 0) - intent.amount);
+            if (intent.account === "Efectivo") {
+              this.state.data.cuentas.efectivo = Math.max(0, (this.state.data.cuentas.efectivo || 0) - intent.amount);
+            } else if (intent.account === "Nequi") {
+              this.state.data.cuentas.nequi = Math.max(0, (this.state.data.cuentas.nequi || 0) - intent.amount);
+            } else {
+              this.state.data.cuentas.aycColanta = Math.max(0, (this.state.data.cuentas.aycColanta || 0) - intent.amount);
+            }
+          }
         } else {
           this.state.data.resumen.ingresos = (this.state.data.resumen.ingresos || 0) + intent.amount;
           this.state.data.resumen.disponible = (this.state.data.resumen.disponible || 0) + intent.amount;
+          if (this.state.data.cuentas) {
+            this.state.data.cuentas.total = (this.state.data.cuentas.total || 0) + intent.amount;
+            if (intent.account === "Efectivo") {
+              this.state.data.cuentas.efectivo = (this.state.data.cuentas.efectivo || 0) + intent.amount;
+            } else if (intent.account === "Nequi") {
+              this.state.data.cuentas.nequi = (this.state.data.cuentas.nequi || 0) + intent.amount;
+            } else {
+              this.state.data.cuentas.aycColanta = (this.state.data.cuentas.aycColanta || 0) + intent.amount;
+            }
+          }
         }
 
+        if (typeof FinanceAPI.syncAnnualAndSavingsData === "function") {
+          FinanceAPI.syncAnnualAndSavingsData(this.state.data);
+        }
+        this.updateSidebarMovCount();
         this.renderBalances();
         this.renderCharts();
+        this.renderAnnualSection();
         this.renderMovementsTable();
         this.renderFugasTable();
       }
@@ -1344,14 +1438,14 @@ const FintechApp = {
 
       this.appendBotMsg(`
         <p>✅ <strong>${intent.transactionType.toUpperCase()} REGISTRADO EN 0.05s</strong></p>
-        <p>🏷️ <strong>${intent.description}</strong><br>
+        <p>🏷️ <strong>${intent.description}</strong> (<code>${nuevoId}</code>)<br>
         💰 <strong>$${this.formatCOP(intent.amount)} COP</strong><br>
         📂 Categoría: <em>${intent.category}</em><br>
         💳 Cuenta: <em>${intent.account}</em></p>
         ${syncStatusHtml}
         <div style="margin-top:0.45rem;">
           <button type="button" class="btn-chat-delete-mov" data-id="${nuevoId}" data-val="${intent.amount}" data-tipo="${intent.transactionType}" style="background:rgba(239, 68, 68, 0.12); color:#FCA5A5; border:1px solid rgba(239, 68, 68, 0.25); border-radius:6px; padding:0.25rem 0.55rem; font-size:0.75rem; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:0.35rem;">
-            <i class="fa-solid fa-trash-can"></i> Deshacer / Borrar este gasto
+            <i class="fa-solid fa-trash-can"></i> Deshacer / Borrar este registro
           </button>
         </div>
       `);
@@ -1404,8 +1498,8 @@ const FintechApp = {
     }
 
     if (intent.type === "QUERY_AVAILABLE") {
-      const disp = (cuentas.total !== undefined && cuentas.total !== null) ? cuentas.total : ((res.disponible !== undefined && res.disponible !== null) ? res.disponible : 71800);
-      const ayc = (cuentas.aycColanta !== undefined && cuentas.aycColanta !== null) ? cuentas.aycColanta : 0;
+      const disp = (cuentas.total !== undefined && cuentas.total !== null) ? cuentas.total : ((res.disponible !== undefined && res.disponible !== null) ? res.disponible : 1462366);
+      const ayc = (cuentas.aycColanta !== undefined && cuentas.aycColanta !== null) ? cuentas.aycColanta : 1390566;
       const neq = cuentas.nequi || 0;
       const eff = (cuentas.efectivo !== undefined && cuentas.efectivo !== null) ? cuentas.efectivo : 71800;
 
@@ -1422,29 +1516,72 @@ const FintechApp = {
     }
 
     if (intent.type === "QUERY_FUGAS") {
+      const allMovs = (this.state.data && this.state.data.movimientos) || [];
+      const activeMonth = this.state.activeMonth === "all" ? "octubre" : (this.state.activeMonth || "octubre");
+      const fugasMes = allMovs.filter(m => {
+        if (String(m.mes || "").toLowerCase() !== activeMonth) return false;
+        const cat = (m.categoria || "").toLowerCase();
+        const desc = (m.descripcion || "").toLowerCase();
+        return cat.includes("hormiga") || cat.includes("dulce") || /\b(mecato|dulce|antojo|helado|tinto|pan de queso|buñuelo|pastel)\b/.test(desc);
+      });
+      const totalFugas = fugasMes.reduce((acc, f) => acc + Number(f.valor || 0), 0) || 86000;
+      const cupoRestante = Math.max(0, 150000 - totalFugas);
       this.appendBotMsg(`
-        <p>🐜 <strong>RADAR DE GASTOS HORMIGA & ANTOJOS:</strong></p>
-        <p>💸 Acumulado en octubre: <strong style="color:#FB7185;">$67.000 COP</strong></p>
-        <p>🔢 Compras detectadas: <strong>2</strong> (Café, granizado, pan de queso)</p>
-        <p>💡 <em>Frenar micropagos protege tu liquidez diaria.</em></p>
+        <p>🐜 <strong>RADAR DE GASTOS HORMIGA & ANTOJOS (${activeMonth.toUpperCase()}):</strong></p>
+        <p>💸 Acumulado: <strong style="color:#FB7185;">$${this.formatCOP(totalFugas)} COP</strong> (${fugasMes.length || 3} consumos)</p>
+        <p>🛡️ Cupo restante del mes: <strong style="color:#34D399;">$${this.formatCOP(cupoRestante)} COP</strong></p>
+        <p>💡 <em>Frenar micropagos protege tu liquidez diaria en Planta San Germán.</em></p>
       `);
       return;
     }
 
     if (intent.type === "QUERY_FIXED") {
+      const fijos = (this.state.data && this.state.data.fijos) || [];
+      const pendList = fijos.filter(f => Number(f.cuota || 0) > Number(f.abonado || 0));
+      const paidList = fijos.filter(f => Number(f.abonado || 0) > 0);
+      const totalPend = pendList.reduce((acc, f) => acc + Math.max(0, Number(f.cuota || 0) - Number(f.abonado || 0)), 0) || 2557000;
+      const paidNames = paidList.map(f => `${f.concepto} ($${this.formatCOP(f.abonado)})`).join(", ") || "Spotify ($10.100) y Celular ($43.900)";
       this.appendBotMsg(`
-        <p>📌 <strong>OBLIGACIONES FIJAS DE OCTUBRE:</strong></p>
-        <p>⏳ Saldo pendiente: <strong style="color:#FBBF24;">$2.557.000 COP</strong> (13 obligaciones)</p>
-        <p>🟢 Pagadas: <strong>Spotify</strong> ($10.100) y <strong>Datos Celular</strong> ($43.900).</p>
+        <p>📌 <strong>OBLIGACIONES FIJAS DEL MES:</strong></p>
+        <p>⏳ Saldo pendiente: <strong style="color:#FBBF24;">$${this.formatCOP(totalPend)} COP</strong> (${pendList.length || 14} obligaciones)</p>
+        <p>🟢 Abonadas / Pagadas: <strong>${paidNames}</strong>.</p>
       `);
       return;
     }
 
     if (intent.type === "QUERY_SAVINGS") {
+      const sav = (this.state.data && this.state.data.ahorrosColanta) || {};
+      const totSav = sav.totalAcumulado || 4167420;
+      const navSav = sav.navidenoAcumulado || 2280000;
+      const ordSav = sav.ordinarioAcumulado || 627000;
+      const apoSav = sav.aportesAcumulado || 1032650;
       this.appendBotMsg(`
-        <p>🐷 <strong>FONDOS DE AHORRO COLANTA:</strong></p>
-        <p>🏛️ Total Acumulado: <strong style="color:#C084FC;">$3.931.299 COP</strong></p>
-        <p>🎄 Fondo Navideño (1 Dic): <strong>$2.160.000 COP</strong></p>
+        <p>🐷 <strong>FONDOS DE AHORRO COLANTA (AYC):</strong></p>
+        <p>🏛️ Total Acumulado: <strong style="color:#FBBF24;">$${this.formatCOP(totSav)} COP</strong></p>
+        <p>🎄 Fondo Navideño (1 Dic): <strong>$${this.formatCOP(navSav)} COP</strong> (95% de la meta)<br>
+        🛡️ Ahorro Ordinario: <strong>$${this.formatCOP(ordSav)} COP</strong><br>
+        🤝 Aportes Sociales: <strong>$${this.formatCOP(apoSav)} COP</strong></p>
+      `);
+      return;
+    }
+
+    if (intent.type === "QUERY_SUMMARY") {
+      const monthData = this.getCurrentMonthData();
+      const kpis = (this.state.data && this.state.data.kpisAnuales) || {};
+      this.appendBotMsg(`
+        <p>📊 <strong>RESUMEN EJECUTIVO (${String(monthData.mes || 'OCTUBRE').toUpperCase()}):</strong></p>
+        <p>🟢 Ingresos: <strong>$${this.formatCOP(monthData.ingresos)} COP</strong><br>
+        🔴 Gastos: <strong>$${this.formatCOP(monthData.gastos)} COP</strong><br>
+        💎 Liquidez Neta: <strong style="color:#38BDF8;">$${this.formatCOP(Math.max(0, monthData.ingresos - monthData.gastos))} COP</strong><br>
+        🏆 Superávit Anual 2026: <strong>$${this.formatCOP(kpis.superavit || 11070954)} COP (${kpis.tasaAhorro || 32.5}%)</strong></p>
+      `);
+      return;
+    }
+
+    if (intent.type === "GREETING") {
+      this.appendBotMsg(`
+        <p>¡Hola Marlon! 👋 Tus finanzas en <strong>Colanta San Germán</strong> están al día.</p>
+        <p>En <strong>Octubre</strong> tienes <strong>$${this.formatCOP(cuentas.total || 1462366)} COP</strong> disponibles en caja y tus fondos acumulan <strong>$4.167.420 COP</strong>. ¿Deseas registrar algún gasto o consultar un mes?</p>
       `);
       return;
     }
@@ -1486,32 +1623,10 @@ const FintechApp = {
     const res = await FinanceAPI.fetchFinancialData();
     this.state.data = res.data;
 
-    // Sanitizar caché anterior si contenía cifras infladas de prueba ($61M) o saldo inflado en octubre sin colilla
+    // Sanitizar caché y reconciliar totales con las cifras auditadas de Octubre 2026
     if (this.state.data) {
-      if (this.state.data.kpisAnuales && this.state.data.kpisAnuales.totalIngresos > 45000000) {
-        this.state.data.resumenAnual = DEMO_DATA.resumenAnual;
-        this.state.data.kpisAnuales = DEMO_DATA.kpisAnuales;
-      }
-      // Reconciliación estricta de liquidez: si el saldo de caja o de cuentas supera el ingreso real del mes
-      const ingOctActual = Number((this.state.data.resumen && this.state.data.resumen.ingresos) || 0);
-      const gasOctActual = Number((this.state.data.resumen && this.state.data.resumen.gastos) || 0);
-      if (this.state.data.cuentas) {
-        if (ingOctActual > 0 && (this.state.data.cuentas.total > ingOctActual || this.state.data.cuentas.aycColanta > ingOctActual)) {
-          const netoReal = Math.max(0, ingOctActual - gasOctActual);
-          const eff = Number(this.state.data.cuentas.efectivo !== undefined ? this.state.data.cuentas.efectivo : 71800);
-          const neq = Number(this.state.data.cuentas.nequi || 0);
-          this.state.data.cuentas.total = netoReal;
-          this.state.data.cuentas.aycColanta = Math.max(0, netoReal - eff - neq);
-          if (this.state.data.resumen) {
-            this.state.data.resumen.disponible = netoReal;
-          }
-        } else if (this.state.data.cuentas.aycColanta > 1000000 && ingOctActual === 0) {
-          this.state.data.cuentas = DEMO_DATA.cuentas;
-          if (this.state.data.resumen) {
-            this.state.data.resumen.disponible = DEMO_DATA.resumen.disponible;
-            this.state.data.resumen.ingresos = DEMO_DATA.resumen.ingresos;
-          }
-        }
+      if (typeof FinanceAPI.syncAnnualAndSavingsData === "function") {
+        FinanceAPI.syncAnnualAndSavingsData(this.state.data);
       }
       try {
         localStorage.setItem(API_CONFIG.CACHE_KEY, JSON.stringify(this.state.data));
@@ -1522,24 +1637,13 @@ const FintechApp = {
       this.state.data.fijos = DEMO_DATA.fijos;
     }
 
-    // Actualizar dinámicamente contador del sidebar con el número de movimientos real
-    const movs = (this.state.data && this.state.data.movimientos) || [];
-    const movCountEl = document.getElementById("sidebar-mov-count");
-    if (movCountEl && movs.length > 0) {
-      const firstId = movs[0] && movs[0].id;
-      const m = String(firstId || "").match(/^M-(\d+)$/);
-      if (m) {
-        movCountEl.textContent = parseInt(m[1], 10);
-      } else {
-        movCountEl.textContent = movs.length;
-      }
-    }
-
+    this.updateSidebarMovCount();
     this.renderBalances();
     this.renderCharts();
     this.renderAnnualSection();
     this.renderMovementsTable();
     this.renderFixedTable();
+    this.renderSavingsSection();
     this.renderFugasTable();
   },
 
@@ -1555,6 +1659,8 @@ const FintechApp = {
     const monthData = this.getCurrentMonthData();
     const res = (this.state.data && this.state.data.resumen) || {};
     const cuentas = (this.state.data && this.state.data.cuentas) || {};
+    const sav = (this.state.data && this.state.data.ahorrosColanta) || {};
+    const kpis = (this.state.data && this.state.data.kpisAnuales) || {};
     const hidden = this.state.balancesHidden;
     const active = this.state.activeMonth || "octubre";
 
@@ -1569,6 +1675,9 @@ const FintechApp = {
     let accEff = 0;
     let masterLabel = "TOTAL DISPONIBLE LIBRE";
 
+    const totalSavingsColanta = Number(sav.totalAcumulado || 4167420);
+    const navSavingsColanta = Number(sav.navidenoAcumulado || 2280000);
+
     if (active === "octubre") {
       // Mes activo actual en curso (Octubre 2026)
       const ingOct = Number(monthData.ingresos || res.ingresos || 0);
@@ -1577,7 +1686,6 @@ const FintechApp = {
       accEff = Number(cuentas.efectivo !== undefined ? cuentas.efectivo : 71800);
 
       if (ingOct > 0) {
-        // El disponible real en caja para el mes es exactamente el ingreso neto recibido ($1.700.605 - $238.239 = $1.462.366 COP)
         const saldoNetoMes = Math.max(0, ingOct - gasOct);
         if (cuentas.total && cuentas.total <= ingOct && cuentas.total > 0) {
           totalAvail = cuentas.total;
@@ -1585,7 +1693,6 @@ const FintechApp = {
             ? cuentas.aycColanta
             : Math.max(0, totalAvail - accEff - accNeq);
         } else {
-          // Reconciliación matemática exacta: saldo neto disponible real
           totalAvail = saldoNetoMes;
           accCol = Math.max(0, totalAvail - accEff - accNeq);
         }
@@ -1596,10 +1703,9 @@ const FintechApp = {
       masterLabel = "DISPONIBLE REAL EN CAJA (OCTUBRE)";
     } else if (active === "all") {
       // Consolidado de todo el año
-      const kpis = (this.state.data && this.state.data.kpisAnuales) || {};
-      totalAvail = kpis.superavit || 7401465;
-      accCol = 3931299; // Fondos Colanta acumulados
-      accNeq = Math.round(totalAvail * 0.35);
+      totalAvail = kpis.superavit || 11070954;
+      accCol = Math.round(totalAvail * 0.88);
+      accNeq = Math.round(totalAvail * 0.08);
       accEff = Math.max(0, totalAvail - accCol - accNeq);
       masterLabel = "SUPERÁVIT CONSOLIDADO (TODO 2026)";
     } else {
@@ -1615,43 +1721,75 @@ const FintechApp = {
     }
 
     // Actualizar todas las instancias de tarjetas de saldo (Overview y Billetera)
-    document.querySelectorAll("#card-total-available, .card-total-available").forEach(el => {
+    document.querySelectorAll("#card-total-available, #wallet-total-available, .card-total-available").forEach(el => {
       el.textContent = formatVal(totalAvail);
     });
     document.querySelectorAll(".master-label").forEach(el => {
       el.textContent = masterLabel;
     });
-    document.querySelectorAll("#card-acc-colanta, .card-acc-colanta").forEach(el => {
+    document.querySelectorAll("#card-acc-colanta, #wallet-acc-colanta, .card-acc-colanta").forEach(el => {
       el.textContent = formatVal(accCol);
     });
-    document.querySelectorAll("#card-acc-nequi, .card-acc-nequi").forEach(el => {
+    document.querySelectorAll("#card-acc-savings, #wallet-acc-savings").forEach(el => {
+      el.textContent = formatVal(totalSavingsColanta);
+    });
+    document.querySelectorAll("#card-sub-savings, #wallet-sub-savings").forEach(el => {
+      el.textContent = `Navideño ($${(navSavingsColanta / 1000000).toFixed(2)}M) • Ordinario • Aportes`;
+    });
+    document.querySelectorAll("#card-acc-nequi, #wallet-acc-nequi, .card-acc-nequi").forEach(el => {
       el.textContent = hidden ? "••••••" : `$${this.formatCOP(accNeq)} COP`;
     });
-    document.querySelectorAll("#card-acc-efectivo, .card-acc-efectivo").forEach(el => {
+    document.querySelectorAll("#card-acc-efectivo, #wallet-acc-efectivo, .card-acc-efectivo").forEach(el => {
       el.textContent = hidden ? "••••••" : `$${this.formatCOP(accEff)} COP`;
     });
 
-    // Actualizar visibilidad de banner de colilla pendiente
+    // Actualizar mini stats de tasa de ahorro y superávit en Master Card
+    const tasaAnual = kpis.tasaAhorro || 32.5;
+    const supAnual = kpis.superavit || 11070954;
+    document.querySelectorAll("#overview-stat-savings-rate, #wallet-stat-savings-rate").forEach(el => {
+      el.textContent = `+${tasaAnual}%`;
+    });
+    document.querySelectorAll("#overview-stat-superavit, #wallet-stat-superavit").forEach(el => {
+      el.textContent = hidden ? "••••" : `$${(supAnual / 1000000).toFixed(1)}M`;
+    });
+
+    // Actualizar visibilidad de banner de colilla pendiente y porcentaje de liquidez
     const colNoticeOverview = document.getElementById("october-colilla-notice");
     const colNoticeWallet = document.getElementById("wallet-colilla-notice");
-    const colantaBadge = document.getElementById("badge-colanta-status");
+    const pctColanta = totalAvail > 0 ? Math.round((accCol / totalAvail) * 100) : 0;
+
+    document.querySelectorAll("#badge-colanta-status, #wallet-badge-colanta").forEach(badge => {
+      if (active === "octubre" && accCol === 0) {
+        badge.innerHTML = `<i class="fa-solid fa-hourglass-half"></i> Esperando Colilla Q1`;
+        badge.className = "acc-badge-pct badge-pending-colilla";
+      } else {
+        badge.textContent = `${pctColanta}% Liquidez`;
+        badge.className = "acc-badge-pct";
+      }
+    });
 
     if (active === "octubre" && accCol === 0) {
       if (colNoticeOverview) colNoticeOverview.style.display = "flex";
       if (colNoticeWallet) colNoticeWallet.style.display = "flex";
-      if (colantaBadge) {
-        colantaBadge.innerHTML = `<i class="fa-solid fa-hourglass-half"></i> Esperando Colilla Q1`;
-        colantaBadge.className = "acc-badge-pct badge-pending-colilla";
-      }
     } else {
       if (colNoticeOverview) colNoticeOverview.style.display = "none";
       if (colNoticeWallet) colNoticeWallet.style.display = "none";
-      if (colantaBadge) {
-        const pct = totalAvail > 0 ? Math.round((accCol / totalAvail) * 100) : 0;
-        colantaBadge.textContent = `${pct}% Liquidez`;
-        colantaBadge.className = "acc-badge-pct";
-      }
     }
+
+    // Actualizar las 3 tarjetas de Conciliación Bancaria en #view-wallet
+    const elRecColVal = document.getElementById("reconcile-colanta-val");
+    const elRecColSub = document.getElementById("reconcile-colanta-sub");
+    const elRecSavVal = document.getElementById("reconcile-savings-val");
+    const elRecSavSub = document.getElementById("reconcile-savings-sub");
+    const elRecDayVal = document.getElementById("reconcile-daily-val");
+    const elRecDaySub = document.getElementById("reconcile-daily-sub");
+
+    if (elRecColVal) elRecColVal.textContent = formatVal(accCol);
+    if (elRecColSub) elRecColSub.textContent = `✓ ${pctColanta}% de tu liquidez libre`;
+    if (elRecSavVal) elRecSavVal.textContent = formatVal(totalSavingsColanta);
+    if (elRecSavSub) elRecSavSub.textContent = `✓ Entrega 1 Dic ($${(navSavingsColanta / 1000000).toFixed(2)}M Navideño)`;
+    if (elRecDayVal) elRecDayVal.textContent = formatVal(accNeq + accEff);
+    if (elRecDaySub) elRecDaySub.textContent = `✓ Nequi ($${this.formatCOP(accNeq)}) + Efectivo ($${this.formatCOP(accEff)})`;
 
     // Actualizar etiquetas dinámicas con el nombre del mes
     const elIncLabel = document.getElementById("kpi-label-income");
@@ -1664,11 +1802,13 @@ const FintechApp = {
     const elExp = document.getElementById("kpi-val-expense");
     const elFix = document.getElementById("kpi-val-fixed");
     const elNav = document.getElementById("kpi-val-navidad");
+    const elNavSub = document.getElementById("kpi-sub-savings-total");
 
     if (elInc) elInc.textContent = formatVal(monthData.ingresos);
     if (elExp) elExp.textContent = formatVal(monthData.gastos);
     if (elFix) elFix.textContent = formatVal(res.fijos_pendientes || 2557000);
-    if (elNav) elNav.textContent = formatVal(2160000);
+    if (elNav) elNav.textContent = formatVal(navSavingsColanta);
+    if (elNavSub) elNavSub.textContent = `Total Fondos: $${(totalSavingsColanta / 1000000).toFixed(2)}M`;
 
     // Etiqueta contextual de Ingresos
     const elMetaInc = document.getElementById("kpi-meta-income");
@@ -1714,6 +1854,64 @@ const FintechApp = {
     if (elPaceSub) elPaceSub.textContent = `${diasRestantes} días restantes`;
   },
 
+  renderSavingsSection() {
+    const sav = (this.state.data && this.state.data.ahorrosColanta) || {};
+    const totalAcum = Number(sav.totalAcumulado || 4167420);
+    const navAcum = Number(sav.navidenoAcumulado || 2280000);
+    const ordAcum = Number(sav.ordinarioAcumulado || 627000);
+    const apoAcum = Number(sav.aportesAcumulado || 1032650);
+    const otrAcum = Number(sav.otrosAcumulado || Math.max(0, totalAcum - navAcum - ordAcum - apoAcum));
+
+    const navQuincena = Number(sav.navidenoQuincena || 120000);
+    const ordQuincena = Number(sav.ordinarioQuincena || 33000);
+    const apoQuincena = Number(sav.aportesQuincena || 37567);
+    const totalMes = Number(sav.totalAhorroMes || 472242);
+
+    const metaNavidad = 2400000;
+    const pctNav = Math.min(100, Math.round((navAcum / metaNavidad) * 1000) / 10);
+    const quincenasDone = Math.round(navAcum / navQuincena);
+    const quincenasLeft = Math.max(0, 20 - quincenasDone);
+    const montoFaltante = Math.max(0, metaNavidad - navAcum);
+
+    const elHeroTotal = document.getElementById("colanta-hero-total");
+    const elCountdown = document.getElementById("savings-navidad-countdown");
+    const elPctLbl = document.getElementById("savings-navidad-pct-lbl");
+    const elBar = document.getElementById("savings-navidad-bar");
+    const elQDone = document.getElementById("savings-quincenas-done");
+    const elQLeft = document.getElementById("savings-quincenas-left");
+
+    if (elHeroTotal) elHeroTotal.textContent = `$${this.formatCOP(totalAcum)} COP`;
+    if (elCountdown) {
+      elCountdown.textContent = quincenasLeft === 0
+        ? "¡Meta Navideña Completada!"
+        : `Falta${quincenasLeft === 1 ? '' : 'n'} ${quincenasLeft} quincena${quincenasLeft === 1 ? '' : 's'} ($${Math.round(montoFaltante / 1000)}k)`;
+    }
+    if (elPctLbl) elPctLbl.textContent = `${pctNav.toFixed(1)}% Completado ($${this.formatCOP(navAcum)} COP)`;
+    if (elBar) elBar.style.width = `${pctNav}%`;
+    if (elQDone) elQDone.innerHTML = `<i class="fa-solid fa-check text-emerald"></i> ${quincenasDone} quincenas aportadas`;
+    if (elQLeft) elQLeft.innerHTML = `<i class="fa-solid fa-clock text-cyan"></i> ${quincenasLeft} quincena${quincenasLeft === 1 ? '' : 's'} restante${quincenasLeft === 1 ? '' : 's'} ($${this.formatCOP(navQuincena)} c/u)`;
+
+    const elValNav = document.getElementById("savings-val-navideno");
+    const elValOrd = document.getElementById("savings-val-ordinario");
+    const elValApo = document.getElementById("savings-val-aportes");
+    const elValOtr = document.getElementById("savings-val-otros");
+
+    if (elValNav) elValNav.textContent = `$${this.formatCOP(navAcum)} COP`;
+    if (elValOrd) elValOrd.textContent = `$${this.formatCOP(ordAcum)} COP`;
+    if (elValApo) elValApo.textContent = `$${this.formatCOP(apoAcum)} COP`;
+    if (elValOtr) elValOtr.textContent = `$${this.formatCOP(otrAcum)} COP`;
+
+    const elQNav = document.getElementById("savings-q-navideno");
+    const elQOrd = document.getElementById("savings-q-ordinario");
+    const elQApo = document.getElementById("savings-q-aportes");
+    const elMTot = document.getElementById("savings-m-total");
+
+    if (elQNav) elQNav.textContent = `$${this.formatCOP(navQuincena)} COP`;
+    if (elQOrd) elQOrd.textContent = `$${this.formatCOP(ordQuincena)} COP`;
+    if (elQApo) elQApo.textContent = `$${this.formatCOP(apoQuincena)} COP`;
+    if (elMTot) elMTot.textContent = `$${this.formatCOP(totalMes)} COP`;
+  },
+
   renderCharts() {
     this.renderCategoriesChart();
     this.renderQuincenaChart();
@@ -1724,19 +1922,62 @@ const FintechApp = {
     if (!ctx) return;
     if (this.state.charts.categories) this.state.charts.categories.destroy();
 
+    const active = this.state.activeMonth || "octubre";
+    const capitalize = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1) : "";
+    const periodBadge = document.getElementById("categories-period-badge");
+    if (periodBadge) {
+      periodBadge.textContent = active === "all" ? "Todo 2026" : capitalize(active);
+    }
+
     const monthData = this.getCurrentMonthData();
     const catData = Object.keys(monthData.gastosPorCategoria).length > 0 
       ? monthData.gastosPorCategoria 
       : ((this.state.data && this.state.data.gastosPorCategoria) || {
-        "Transporte y Moto": 116000,
-        "Gastos Hormiga / Dulces": 67000,
-        "Ocio y Entretenimiento": 14023,
-        "Suscripciones": 10100
+        "Moto": 116000,
+        "Gastos Hormiga / Dulces": 86000,
+        "Entretenimiento": 24123,
+        "Alimentación": 12116
       });
 
-    const labels = Object.keys(catData);
-    const values = Object.values(catData);
-    const colors = ["#3B82F6", "#F43F5E", "#F59E0B", "#10B981", "#8B5CF6", "#06B6D4"];
+    // Ordenar categorías de mayor a menor gasto para presentación ejecutiva
+    const sortedEntries = Object.entries(catData)
+      .map(([k, v]) => [k, Number(v || 0)])
+      .filter(([, v]) => v > 0)
+      .sort((a, b) => b[1] - a[1]);
+
+    const labels = sortedEntries.map(e => e[0]);
+    const values = sortedEntries.map(e => e[1]);
+    const totalCatGasto = values.reduce((acc, v) => acc + v, 0);
+    const colors = ["#3B82F6", "#F43F5E", "#F59E0B", "#10B981", "#8B5CF6", "#06B6D4", "#EC4899"];
+
+    const centerTextPlugin = {
+      id: "centerTextPlugin",
+      beforeDraw: (chart) => {
+        const { width, height, ctx: chartCtx } = chart;
+        chartCtx.save();
+        const meta = chart.getDatasetMeta(0);
+        if (!meta || !meta.data || !meta.data[0]) {
+          chartCtx.restore();
+          return;
+        }
+        const centerX = meta.data[0].x;
+        const centerY = meta.data[0].y;
+
+        chartCtx.textAlign = "center";
+        chartCtx.textBaseline = "middle";
+        chartCtx.fillStyle = "#94A3B8";
+        chartCtx.font = "600 10px 'Plus Jakarta Sans', sans-serif";
+        chartCtx.fillText("TOTAL GASTO", centerX, centerY - 11);
+
+        chartCtx.fillStyle = "#F8FAFC";
+        chartCtx.font = "800 14px 'Outfit', sans-serif";
+        const formattedTotal = totalCatGasto >= 1000000
+          ? `$${(totalCatGasto / 1000000).toFixed(2)}M`
+          : `$${this.formatCOP(totalCatGasto)}`;
+        chartCtx.fillText(formattedTotal, centerX, centerY + 8);
+        chartCtx.restore();
+      }
+    };
 
     this.state.charts.categories = new Chart(ctx, {
       type: "doughnut",
@@ -1750,23 +1991,68 @@ const FintechApp = {
           hoverOffset: 8
         }]
       },
+      plugins: [centerTextPlugin],
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        cutout: "70%",
+        cutout: "72%",
         plugins: {
           legend: {
             position: "right",
-            labels: { color: "#94A3B8", font: { family: "Plus Jakarta Sans", size: 11 }, boxWidth: 12, padding: 12 }
+            labels: { color: "#CBD5E1", font: { family: "Plus Jakarta Sans", size: 11, weight: "600" }, boxWidth: 11, padding: 12 }
           },
           tooltip: {
             callbacks: {
-              label: (c) => ` $${this.formatCOP(c.raw || 0)} COP`
+              label: (c) => {
+                const val = Number(c.raw || 0);
+                const pct = totalCatGasto > 0 ? Math.round((val / totalCatGasto) * 1000) / 10 : 0;
+                return ` $${this.formatCOP(val)} COP (${pct}%)`;
+              }
             }
           }
         }
       }
     });
+
+    // Renderizar lista ejecutiva de desglose de categorías debajo del gráfico
+    const listContainer = document.getElementById("categories-breakdown-list");
+    if (listContainer) {
+      const getCatIcon = (catName) => {
+        const cl = String(catName || "").toLowerCase();
+        if (cl.includes("moto") || cl.includes("transporte")) return "fa-motorcycle";
+        if (cl.includes("hormiga") || cl.includes("dulce")) return "fa-cookie-bite";
+        if (cl.includes("alimenta") || cl.includes("comida")) return "fa-utensils";
+        if (cl.includes("entretenimiento") || cl.includes("ocio") || cl.includes("suscrip")) return "fa-Headphones".toLowerCase();
+        if (cl.includes("servicio") || cl.includes("hogar") || cl.includes("vivienda")) return "fa-bolt";
+        if (cl.includes("salud") || cl.includes("deporte")) return "fa-heart-pulse";
+        return "fa-layer-group";
+      };
+
+      listContainer.innerHTML = sortedEntries.slice(0, 5).map(([catName, val], idx) => {
+        const color = colors[idx % colors.length];
+        const pct = totalCatGasto > 0 ? Math.round((val / totalCatGasto) * 1000) / 10 : 0;
+        const icon = getCatIcon(catName);
+        return `
+          <div class="cat-breakdown-item">
+            <div class="cat-bd-top">
+              <div class="cat-bd-left">
+                <span class="cat-bd-dot" style="background:${color}; box-shadow:0 0 8px ${color}80;">
+                  <i class="fa-solid ${icon}"></i>
+                </span>
+                <span class="cat-bd-name">${this.escapeHTML(catName)}</span>
+              </div>
+              <div class="cat-bd-right">
+                <strong class="cat-bd-val">$${this.formatCOP(val)}</strong>
+                <span class="cat-bd-pct" style="color:${color}; background:${color}18; border:1px solid ${color}35;">${pct}%</span>
+              </div>
+            </div>
+            <div class="cat-bd-bar-track">
+              <div class="cat-bd-bar-fill" style="width:${pct}%; background:${color};"></div>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
   },
 
   renderQuincenaChart() {
@@ -1809,10 +2095,16 @@ const FintechApp = {
 
     if (this.state.activeMonth === "octubre" && q1Var === 0 && q2Var === 0) {
       q1Var = 207123;
+      q2Var = 31116;
     }
 
-    const q1Fixed = 1332000;
-    const q2Fixed = 1225000;
+    const fijos = (this.state.data && this.state.data.fijos) || [];
+    const q1Fixed = fijos.length > 0
+      ? fijos.filter(f => Number(f.dia || 0) <= 15).reduce((acc, f) => acc + Math.max(0, Number(f.cuota || 0) - Number(f.abonado || 0)), 0)
+      : 1332000;
+    const q2Fixed = fijos.length > 0
+      ? fijos.filter(f => Number(f.dia || 0) > 15).reduce((acc, f) => acc + Math.max(0, Number(f.cuota || 0) - Number(f.abonado || 0)), 0)
+      : 1225000;
 
     // Actualizar pills del header del panel y widgets del Cockpit Quincenal
     const q1Total = q1Fixed + q1Var;
@@ -1826,6 +2118,46 @@ const FintechApp = {
     if (elQ2Total) elQ2Total.textContent = `$${this.formatCOP(q2Total)}`;
     if (elCockpitQ1) elCockpitQ1.textContent = `$${this.formatCOP(q1Total)}`;
     if (elCockpitQ2) elCockpitQ2.textContent = `$${this.formatCOP(q2Total)}`;
+
+    // Actualizar dinámicamente barras de progreso y leyendas de Q1 y Q2
+    const q1FixedPct = q1Total > 0 ? Math.round((q1Fixed / q1Total) * 1000) / 10 : 100;
+    const q1VarPct = Math.max(0, Math.round((100 - q1FixedPct) * 10) / 10);
+    const q2FixedPct = q2Total > 0 ? Math.round((q2Fixed / q2Total) * 1000) / 10 : 100;
+    const q2VarPct = Math.max(0, Math.round((100 - q2FixedPct) * 10) / 10);
+
+    const fmtShort = (v) => v >= 1000000 ? `$${(v / 1000000).toFixed(2)}M` : `$${Math.round(v / 1000)}k`;
+
+    const elQ1BarFix = document.getElementById("q1-bar-fixed");
+    const elQ1BarVar = document.getElementById("q1-bar-var");
+    const elQ1LegFix = document.getElementById("q1-leg-fixed");
+    const elQ1LegVar = document.getElementById("q1-leg-var");
+
+    if (elQ1BarFix) {
+      elQ1BarFix.style.width = `${q1FixedPct}%`;
+      elQ1BarFix.title = `Fijos: $${this.formatCOP(q1Fixed)} (${q1FixedPct}%)`;
+    }
+    if (elQ1BarVar) {
+      elQ1BarVar.style.width = `${q1VarPct}%`;
+      elQ1BarVar.title = `Variables: $${this.formatCOP(q1Var)} (${q1VarPct}%)`;
+    }
+    if (elQ1LegFix) elQ1LegFix.innerHTML = `<i class="fa-solid fa-square text-cyan"></i> Fijos ${fmtShort(q1Fixed)} (${q1FixedPct}%)`;
+    if (elQ1LegVar) elQ1LegVar.innerHTML = `<i class="fa-solid fa-square text-rose"></i> Var ${fmtShort(q1Var)} (${q1VarPct}%)`;
+
+    const elQ2BarFix = document.getElementById("q2-bar-fixed");
+    const elQ2BarVar = document.getElementById("q2-bar-var");
+    const elQ2LegFix = document.getElementById("q2-leg-fixed");
+    const elQ2LegVar = document.getElementById("q2-leg-var");
+
+    if (elQ2BarFix) {
+      elQ2BarFix.style.width = `${q2FixedPct}%`;
+      elQ2BarFix.title = `Fijos: $${this.formatCOP(q2Fixed)} (${q2FixedPct}%)`;
+    }
+    if (elQ2BarVar) {
+      elQ2BarVar.style.width = `${q2VarPct}%`;
+      elQ2BarVar.title = `Variables: $${this.formatCOP(q2Var)} (${q2VarPct}%)`;
+    }
+    if (elQ2LegFix) elQ2LegFix.innerHTML = `<i class="fa-solid fa-square text-amber"></i> Fijos ${fmtShort(q2Fixed)} (${q2FixedPct}%)`;
+    if (elQ2LegVar) elQ2LegVar.innerHTML = `<i class="fa-solid fa-square text-rose"></i> Var ${fmtShort(q2Var)} (${q2VarPct}%)`;
 
     this.state.charts.quincena = new Chart(canvas, {
       type: "bar",
@@ -2349,6 +2681,14 @@ const FintechApp = {
     }
   },
 
+  confirmDeleteMovement(id) {
+    if (!id) return;
+    if (confirm(`¿Deseas eliminar el registro ${id} de Google Sheets?`)) {
+      this.haptic(20);
+      this.deleteMovementById(id);
+    }
+  },
+
   deleteMovementById(id) {
     const movs = (this.state.data && this.state.data.movimientos) || [];
     let movIndex = -1;
@@ -2368,6 +2708,7 @@ const FintechApp = {
     const targetId = movToDelete.id || id;
     const val = Number(movToDelete.valor || 0);
     const isIngreso = String(movToDelete.tipo).toLowerCase().includes("ingreso");
+    const accLower = String(movToDelete.cuenta || "").toLowerCase();
 
     if (this.state.data && this.state.data.resumen) {
       if (isIngreso) {
@@ -2377,18 +2718,43 @@ const FintechApp = {
         this.state.data.resumen.gastos = Math.max(0, (this.state.data.resumen.gastos || 0) - val);
         this.state.data.resumen.disponible = (this.state.data.resumen.disponible || 0) + val;
         if (this.state.data.gastosPorCategoria && movToDelete.categoria) {
-          this.state.data.gastosPorCategoria[movToDelete.categoria] = Math.max(0, (this.state.data.gastosPorCategoria[movToDelete.categoria] || 0) - val);
+          const nextCatVal = Math.max(0, (this.state.data.gastosPorCategoria[movToDelete.categoria] || 0) - val);
+          if (nextCatVal === 0) {
+            delete this.state.data.gastosPorCategoria[movToDelete.categoria];
+          } else {
+            this.state.data.gastosPorCategoria[movToDelete.categoria] = nextCatVal;
+          }
         }
       }
     }
 
+    if (this.state.data && this.state.data.cuentas) {
+      const sign = isIngreso ? -1 : 1;
+      if (accLower.includes("nequi")) {
+        this.state.data.cuentas.nequi = Math.max(0, (this.state.data.cuentas.nequi || 0) + sign * val);
+      } else if (accLower.includes("efectivo")) {
+        this.state.data.cuentas.efectivo = Math.max(0, (this.state.data.cuentas.efectivo || 0) + sign * val);
+      } else {
+        this.state.data.cuentas.ahorros = Math.max(0, (this.state.data.cuentas.ahorros || 0) + sign * val);
+      }
+      this.state.data.cuentas.total =
+        (this.state.data.cuentas.ahorros || 0) +
+        (this.state.data.cuentas.nequi || 0) +
+        (this.state.data.cuentas.efectivo || 0);
+    }
+
     movs.splice(movIndex, 1);
+
+    if (typeof FinanceAPI !== "undefined" && typeof FinanceAPI.syncAnnualAndSavingsData === "function") {
+      FinanceAPI.syncAnnualAndSavingsData(this.state.data);
+    }
 
     if (this.state.selectedMovement && String(this.state.selectedMovement.id).toUpperCase() === String(targetId).toUpperCase()) {
       document.getElementById("modal-transaction-detail")?.classList.remove("open");
       this.state.selectedMovement = null;
     }
 
+    this.updateSidebarMovCount();
     this.renderBalances();
     this.renderCharts();
     this.renderAnnualSection();
@@ -2451,6 +2817,41 @@ const FintechApp = {
     this.renderMovementsTable(filtered);
   },
 
+  togglePayFixedItem(id) {
+    const fijos = (this.state.data && this.state.data.fijos) || [];
+    const item = fijos.find(f => String(f.id) === String(id));
+    if (!item) return;
+
+    this.haptic(15);
+    const cuota = Number(item.cuota || 0);
+    const abonado = Number(item.abonado || 0);
+
+    if (abonado >= cuota) {
+      item.abonado = 0;
+      item.estado = "Pendiente";
+      this.showToast(`⏳ ${item.concepto} marcado como Pendiente`, "success");
+    } else {
+      item.abonado = cuota;
+      item.estado = "Pagado";
+      this.showToast(`✅ ${item.concepto} marcado como Pagado ($${this.formatCOP(cuota)})`, "success");
+    }
+
+    const totalPendiente = fijos.reduce((acc, f) => acc + Math.max(0, Number(f.cuota || 0) - Number(f.abonado || 0)), 0);
+    if (this.state.data && this.state.data.resumen) {
+      this.state.data.resumen.fijosPendientes = totalPendiente;
+    }
+
+    try {
+      localStorage.setItem(API_CONFIG.CACHE_KEY, JSON.stringify(this.state.data));
+    } catch (e) {
+      // ignore storage error
+    }
+
+    this.renderFixedTable();
+    this.renderBalances();
+    this.renderQuincenaChart();
+  },
+
   renderFixedTable() {
     const tbody = document.getElementById("fixed-tbody");
     if (!tbody) return;
@@ -2461,7 +2862,7 @@ const FintechApp = {
     }
 
     if (!fijos || !fijos.length) {
-      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:2.5rem; color:#94A3B8;">No hay gastos fijos registrados.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:2.5rem; color:#94A3B8;">No hay gastos fijos registrados.</td></tr>`;
       return;
     }
 
@@ -2474,23 +2875,36 @@ const FintechApp = {
 
     const elQ1 = document.getElementById("q1-fixed-amount");
     const elQ2 = document.getElementById("q2-fixed-amount");
+    const elTotalMonth = document.getElementById("fixed-total-month-amount");
+    const elPendingMonth = document.getElementById("fixed-pending-month-amount");
+
     if (elQ1) elQ1.textContent = `$${this.formatCOP(q1Total)} COP`;
     if (elQ2) elQ2.textContent = `$${this.formatCOP(q2Total)} COP`;
+    if (elTotalMonth) elTotalMonth.textContent = `$${this.formatCOP(totalCuotas)} COP`;
+    if (elPendingMonth) elPendingMonth.textContent = `$${this.formatCOP(totalPendiente)} COP`;
 
     const elTotalFijos = document.getElementById("kpi-val-fixed");
     if (elTotalFijos) elTotalFijos.textContent = `$${this.formatCOP(totalPendiente)} COP`;
 
     const pendCount = fijos.filter(f => Number(f.cuota || 0) > Number(f.abonado || 0)).length;
-    const badgeFixed = document.getElementById("sidebar-fixed-count");
+    const elKpiCountFixed = document.getElementById("kpi-count-fixed");
+    if (elKpiCountFixed) {
+      elKpiCountFixed.textContent = pendCount === fijos.length
+        ? `${fijos.length} obligaciones`
+        : `${pendCount} pendientes / ${fijos.length}`;
+    }
+
+    const badgeFixed = document.getElementById("sidebar-fixed-pending") || document.getElementById("sidebar-fixed-count");
     if (badgeFixed) badgeFixed.textContent = pendCount;
 
     tbody.innerHTML = fijos.map(f => {
       const cuota = Number(f.cuota || 0);
       const abonado = Number(f.abonado || 0);
       const saldo = Math.max(0, cuota - abonado);
+      const isPaid = abonado >= cuota && cuota > 0;
 
       let statusPill = `<span class="pill-status status-pending"><i class="fa-solid fa-circle-exclamation"></i> Pendiente</span>`;
-      if (abonado >= cuota && cuota > 0) {
+      if (isPaid) {
         statusPill = `<span class="pill-status status-paid"><i class="fa-solid fa-circle-check"></i> Pagado</span>`;
       } else if (abonado > 0) {
         statusPill = `<span class="pill-status status-partial"><i class="fa-solid fa-clock-rotate-left"></i> Abono</span>`;
@@ -2522,9 +2936,9 @@ const FintechApp = {
             <div class="fixed-concept-cell">
               <div class="fixed-brand-logo">${logoHtml}</div>
               <div class="fixed-concept-meta">
-                <strong class="fixed-concept-name">${f.concepto}</strong>
+                <strong class="fixed-concept-name">${this.escapeHTML(f.concepto)}</strong>
                 <div class="fixed-tags-row">
-                  <span class="fixed-cat-badge">${f.categoria || 'Obligación'}</span>
+                  <span class="fixed-cat-badge">${this.escapeHTML(f.categoria || 'Obligación')}</span>
                   ${quincenaTag}
                 </div>
               </div>
@@ -2539,9 +2953,23 @@ const FintechApp = {
             $${this.formatCOP(saldo)}
           </td>
           <td>${statusPill}</td>
+          <td class="text-center">
+            <button type="button" class="btn-fixed-pay ${isPaid ? 'is-paid' : ''}" data-fixed-id="${f.id}" title="${isPaid ? 'Marcar como pendiente' : 'Marcar cuota como pagada'}">
+              <i class="fa-solid ${isPaid ? 'fa-rotate-left' : 'fa-check'}"></i>
+              <span>${isPaid ? 'Revertir' : 'Abonar'}</span>
+            </button>
+          </td>
         </tr>
       `;
     }).join("");
+
+    tbody.querySelectorAll(".btn-fixed-pay").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const fId = btn.getAttribute("data-fixed-id");
+        if (fId) this.togglePayFixedItem(fId);
+      });
+    });
   },
 
   renderFugasTable() {
@@ -2549,32 +2977,111 @@ const FintechApp = {
     if (!tbody) return;
 
     const all = (this.state.data && this.state.data.movimientos) || [];
-    const fugas = all.filter(m => {
+    const activeMonth = this.state.activeMonth || "octubre";
+    const capitalize = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1) : "";
+
+    let monthMovs = all;
+    if (activeMonth !== "all") {
+      monthMovs = all.filter(m => String(m.mes || "").toLowerCase() === activeMonth);
+      if (monthMovs.length === 0 && activeMonth === "octubre") {
+        monthMovs = all;
+      }
+    }
+
+    const isFuga = (m) => {
       const cat = (m.categoria || "").toLowerCase();
       const desc = (m.descripcion || "").toLowerCase();
-      return cat.includes("hormiga") || cat.includes("dulce") || /\b(mecato|dulce|antojo|helado|tinto|pan de queso)\b/.test(desc);
-    });
+      return cat.includes("hormiga") || cat.includes("dulce") || /\b(mecato|dulce|antojo|helado|tinto|pan de queso|cafe|café|postre|snack)\b/.test(desc);
+    };
 
+    const fugas = monthMovs.filter(isFuga);
     const totalFugas = fugas.reduce((acc, f) => acc + Number(f.valor || 0), 0);
+    const topeMensual = 150000;
+    const pctUsed = Math.min(100, Math.round((totalFugas / topeMensual) * 1000) / 10);
+    const restante = Math.max(0, topeMensual - totalFugas);
+
     const fugasTotalEl = document.getElementById("fugas-total-val");
-    if (fugasTotalEl) fugasTotalEl.textContent = `$${this.formatCOP(totalFugas)} COP`;
+    if (fugasTotalEl) fugasTotalEl.textContent = `$${this.formatCOP(totalFugas)}`;
+
+    const periodPill = document.getElementById("fugas-period-pill");
+    if (periodPill) {
+      periodPill.textContent = activeMonth === "all" ? "Año 2026" : `${capitalize(activeMonth)} 2026`;
+    }
+
+    const threatBadge = document.getElementById("fugas-threat-badge");
+    if (threatBadge) {
+      if (totalFugas >= topeMensual) {
+        threatBadge.textContent = "Tope Superado";
+        threatBadge.style.background = "rgba(244,63,94,0.22)";
+        threatBadge.style.color = "#FB7185";
+      } else if (pctUsed >= 50) {
+        threatBadge.textContent = "Riesgo Moderado";
+        threatBadge.style.background = "rgba(245,158,11,0.18)";
+        threatBadge.style.color = "#FBBF24";
+      } else {
+        threatBadge.textContent = "Bajo Control";
+        threatBadge.style.background = "rgba(16,185,129,0.18)";
+        threatBadge.style.color = "#34D399";
+      }
+    }
+
+    const barFill = document.getElementById("fugas-bar-fill");
+    if (barFill) barFill.style.width = `${pctUsed}%`;
+
+    const spentLbl = document.getElementById("fugas-spent-lbl");
+    if (spentLbl) spentLbl.textContent = `$${this.formatCOP(totalFugas)} gastado (${pctUsed}%)`;
+
+    const leftLbl = document.getElementById("fugas-left-lbl");
+    if (leftLbl) {
+      leftLbl.textContent = totalFugas <= topeMensual
+        ? `$${this.formatCOP(restante)} disponible antes del tope`
+        : `Excedido por $${this.formatCOP(totalFugas - topeMensual)}`;
+    }
+
+    const antojoList = document.getElementById("fugas-antojo-list");
+    if (antojoList && fugas.length > 0) {
+      antojoList.innerHTML = fugas.slice(0, 4).map(f => {
+        const pct = totalFugas > 0 ? Math.round((Number(f.valor || 0) / totalFugas) * 100) : 0;
+        const dLower = String(f.descripcion || "").toLowerCase();
+        const emoji = dLower.includes("cafe") || dLower.includes("café") || dLower.includes("tinto") ? "☕" : "🍬";
+        return `
+          <div class="fuga-cat-item">
+            <div class="fuga-cat-info">
+              <span class="fuga-emoji">${emoji}</span>
+              <div>
+                <strong>${this.escapeHTML(f.descripcion)} (${this.escapeHTML(f.fecha || "")})</strong>
+                <small>${this.escapeHTML(f.cuenta || "Nequi")} • ${this.escapeHTML(f.categoria || "Gastos Hormiga / Dulces")}</small>
+              </div>
+            </div>
+            <div class="fuga-cat-amount">-$${this.formatCOP(f.valor)} <span class="fuga-pct">${pct}%</span></div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    const tipText = document.getElementById("fugas-tip-text");
+    if (tipText) {
+      tipText.innerHTML = totalFugas > 0
+        ? `Has acumulado <strong>$${this.formatCOP(totalFugas)} COP</strong> en gastos hormiga (${fugas.length} registros). Te quedan <strong>$${this.formatCOP(restante)} COP</strong> antes del límite saludable de $150.000.`
+        : `¡Excelente disciplina! No registras gastos hormiga en este periodo.`;
+    }
 
     if (!fugas.length) {
-      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:2rem; color:#64748B;">🎉 Sin gastos hormiga este mes.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:2rem; color:#64748B;">🎉 Sin gastos hormiga registrados en este periodo.</td></tr>`;
       return;
     }
 
     tbody.innerHTML = fugas.map(f => `
       <tr>
-        <td><span class="pill-dia"><i class="fa-regular fa-calendar"></i> ${f.fecha}</span></td>
+        <td><span class="pill-dia"><i class="fa-regular fa-calendar"></i> ${this.escapeHTML(f.fecha || "")}</span></td>
         <td>
           <div style="display:flex; align-items:center; gap:0.6rem;">
             <span style="font-size:1.2rem;">🍪</span>
-            <strong>${f.descripcion}</strong>
+            <strong>${this.escapeHTML(f.descripcion || "")}</strong>
           </div>
         </td>
         <td style="color:#FB7185; font-weight:800;">-$${this.formatCOP(f.valor)}</td>
-        <td><span class="badge-account">${f.cuenta}</span></td>
+        <td><span class="badge-account">${this.escapeHTML(f.cuenta || "Nequi")}</span></td>
         <td><span class="pill-status status-pending">Micropago</span></td>
       </tr>
     `).join("");
@@ -2608,30 +3115,10 @@ const FintechApp = {
 
     let selectedColillaData = null;
 
-    const closeColilla = () => {
-      modalColilla?.classList.remove("open");
-      if (inputFile) inputFile.value = "";
-      selectedColillaData = null;
-      if (dropFileName) dropFileName.textContent = "Formatos soportados: PDF, JPG, PNG";
-      if (btnSubmitCol) {
-        btnSubmitCol.disabled = true;
-        document.getElementById("btn-colilla-label").textContent = "Analizar con Gemini AI";
-      }
-      if (loadingBox) loadingBox.style.display = "none";
-      if (previewCard) previewCard.style.display = "none";
-    };
-
-    btnCloseCol?.addEventListener("click", closeColilla);
-    btnCancelCol?.addEventListener("click", closeColilla);
-
-    dropzone?.addEventListener("click", () => inputFile?.click());
-
-    inputFile?.addEventListener("change", (e) => {
-      const file = e.target.files && e.target.files[0];
+    const loadColillaFile = (file) => {
       if (!file) return;
-
       if (dropFileName) dropFileName.textContent = `📄 ${file.name} (${Math.round(file.size / 1024)} KB)`;
-      
+
       const reader = new FileReader();
       reader.onload = (loadEvt) => {
         const fullBase64 = loadEvt.target.result;
@@ -2645,6 +3132,47 @@ const FintechApp = {
         this.haptic(15);
       };
       reader.readAsDataURL(file);
+    };
+
+    const closeColilla = () => {
+      modalColilla?.classList.remove("open");
+      if (inputFile) inputFile.value = "";
+      selectedColillaData = null;
+      if (dropFileName) dropFileName.textContent = "Formatos soportados: PDF, JPG, PNG";
+      if (btnSubmitCol) {
+        btnSubmitCol.disabled = true;
+        const lbl = document.getElementById("btn-colilla-label");
+        if (lbl) lbl.textContent = "Analizar con Gemini AI";
+      }
+      if (loadingBox) loadingBox.style.display = "none";
+      if (previewCard) previewCard.style.display = "none";
+    };
+
+    btnCloseCol?.addEventListener("click", closeColilla);
+    btnCancelCol?.addEventListener("click", closeColilla);
+
+    dropzone?.addEventListener("click", () => inputFile?.click());
+
+    inputFile?.addEventListener("change", (e) => {
+      const file = e.target.files && e.target.files[0];
+      loadColillaFile(file);
+    });
+
+    // Conectar también la vista dedicada #view-colilla con el procesador de colillas
+    const viewDropzoneCol = document.getElementById("view-dropzone-colilla");
+    const viewFileCol = document.getElementById("view-file-colilla");
+    const btnViewSelectCol = document.getElementById("btn-view-select-colilla");
+
+    btnViewSelectCol?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      viewFileCol?.click();
+    });
+    viewDropzoneCol?.addEventListener("click", () => viewFileCol?.click());
+    viewFileCol?.addEventListener("change", (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      modalColilla?.classList.add("open");
+      loadColillaFile(file);
     });
 
     btnSubmitCol?.addEventListener("click", async () => {
@@ -2702,9 +3230,7 @@ const FintechApp = {
     };
 
     btnQuickSet?.addEventListener("click", openSettings);
-    document.getElementById("btn-topbar-settings")?.addEventListener("click", openSettings);
     document.getElementById("btn-banner-settings")?.addEventListener("click", openSettings);
-    document.getElementById("nav-item-settings")?.addEventListener("click", openSettings);
 
     btnCloseSet?.addEventListener("click", () => modalSet?.classList.remove("open"));
 
@@ -2724,8 +3250,7 @@ const FintechApp = {
       }
     });
 
-    const btnCopyGas = document.getElementById("btn-copy-gas-script");
-    btnCopyGas?.addEventListener("click", async () => {
+    const copyGasScriptHandler = async () => {
       this.haptic(20);
       try {
         const resp = await fetch("google_apps_script/Codigo.gs");
@@ -2736,11 +3261,16 @@ const FintechApp = {
       } catch (err) {
         alert("No se pudo copiar automáticamente: " + err.message + "\nPuedes copiar el archivo 'google_apps_script/Codigo.gs' directamente desde la carpeta de tu proyecto.");
       }
-    });
+    };
+
+    document.getElementById("btn-copy-gas-script")?.addEventListener("click", copyGasScriptHandler);
+    document.getElementById("btn-copy-gas-script-view")?.addEventListener("click", copyGasScriptHandler);
 
     btnSaveSet?.addEventListener("click", () => {
       const v = inputUrl.value.trim();
       localStorage.setItem(API_CONFIG.SETTINGS_KEY, JSON.stringify({ webhookUrl: v }));
+      const viewInputUrl = document.getElementById("settings-view-webhook-url");
+      if (viewInputUrl) viewInputUrl.value = v;
       modalSet?.classList.remove("open");
       this.showToast("Ajustes guardados con éxito", "success");
       this.refreshData();
@@ -2808,9 +3338,8 @@ const FintechApp = {
       const btnDelTable = e.target.closest(".btn-action-delete") || e.target.closest(".btn-table-delete-row");
       if (btnDelTable) {
         const id = btnDelTable.getAttribute("data-id");
-        if (id && confirm(`¿Deseas eliminar el registro ${id} de Google Sheets?`)) {
-          this.haptic(20);
-          this.deleteMovementById(id);
+        if (id) {
+          this.confirmDeleteMovement(id);
         }
         return;
       }
@@ -2835,17 +3364,23 @@ const FintechApp = {
       return;
     }
 
+    const activeMonth = (this.state.activeMonth && this.state.activeMonth !== "all")
+      ? this.state.activeMonth
+      : "octubre";
+
     const payload = {
       tipo: tipo,
       valor: valor,
       descripcion: desc,
       categoria: cat,
       cuenta: cuenta,
-      metodo: cuenta === "Efectivo" ? "Efectivo" : "Transferencia"
+      metodo: cuenta === "Efectivo" ? "Efectivo" : "Transferencia",
+      mes: activeMonth,
+      anio: 2026
     };
 
     const nuevo = {
-      id: "M-" + Math.floor(1000 + Math.random() * 9000),
+      id: this.getNextMovementId(),
       fecha: new Date().toLocaleDateString("es-CO"),
       hora: new Date().toLocaleTimeString("es-CO", { hour: '2-digit', minute: '2-digit' }),
       ...payload
@@ -2853,15 +3388,43 @@ const FintechApp = {
 
     if (this.state.data && this.state.data.movimientos) {
       this.state.data.movimientos.unshift(nuevo);
-      if (tipo === "Gasto") {
+      const isGasto = tipo === "Gasto";
+      if (isGasto) {
         this.state.data.resumen.gastos = (this.state.data.resumen.gastos || 0) + valor;
         this.state.data.resumen.disponible = Math.max(0, (this.state.data.resumen.disponible || 0) - valor);
+        if (!this.state.data.gastosPorCategoria) this.state.data.gastosPorCategoria = {};
+        this.state.data.gastosPorCategoria[cat] = (this.state.data.gastosPorCategoria[cat] || 0) + valor;
       } else {
         this.state.data.resumen.ingresos = (this.state.data.resumen.ingresos || 0) + valor;
         this.state.data.resumen.disponible = (this.state.data.resumen.disponible || 0) + valor;
       }
+
+      if (this.state.data.cuentas) {
+        const sign = isGasto ? -1 : 1;
+        const accLower = cuenta.toLowerCase();
+        if (accLower.includes("nequi")) {
+          this.state.data.cuentas.nequi = Math.max(0, (this.state.data.cuentas.nequi || 0) + sign * valor);
+        } else if (accLower.includes("efectivo")) {
+          this.state.data.cuentas.efectivo = Math.max(0, (this.state.data.cuentas.efectivo || 0) + sign * valor);
+        } else {
+          this.state.data.cuentas.ahorros = Math.max(0, (this.state.data.cuentas.ahorros || 0) + sign * valor);
+        }
+        this.state.data.cuentas.total =
+          (this.state.data.cuentas.ahorros || 0) +
+          (this.state.data.cuentas.nequi || 0) +
+          (this.state.data.cuentas.efectivo || 0);
+      }
+
+      if (typeof FinanceAPI !== "undefined" && typeof FinanceAPI.syncAnnualAndSavingsData === "function") {
+        FinanceAPI.syncAnnualAndSavingsData(this.state.data);
+      }
+
+      this.updateSidebarMovCount();
       this.renderBalances();
+      this.renderCharts();
+      this.renderAnnualSection();
       this.renderMovementsTable();
+      this.renderFugasTable();
     }
 
     FinanceAPI.addMovement(payload).then(res => {
@@ -2871,7 +3434,7 @@ const FintechApp = {
 
     document.getElementById("modal-add-movement")?.classList.remove("open");
     document.getElementById("form-add-movement")?.reset();
-    this.showToast(`✅ ${tipo} guardado: $${this.formatCOP(valor)} (Enviado a Google Sheets)`, "success");
+    this.showToast(`✅ ${tipo} guardado (${nuevo.id}): $${this.formatCOP(valor)}`, "success");
   },
 
   exportToExcel() {

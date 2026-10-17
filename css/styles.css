@@ -5319,3 +5319,189 @@ html, body {
     grid-template-columns: 1fr;
   }
 }
+
+/* =========================================================
+   MEJORAS EJECUTIVAS V26.9 PRO — ULTRA-FINTECH POLISH
+   ========================================================= */
+
+/* 1. Fila ejecutiva de 5 KPIs perfectamente nivelada en Desktop */
+@media (min-width: 1280px) {
+  .kpi-banner-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 1rem;
+  }
+  .kpi-banner-grid .kpi-widget {
+    padding: 1.15rem 1.05rem;
+    gap: 0.8rem;
+  }
+  .kpi-banner-grid .widget-icon-box {
+    width: 40px;
+    height: 40px;
+    font-size: 1.05rem;
+  }
+  .kpi-banner-grid .widget-val {
+    font-size: 1.32rem;
+    white-space: nowrap;
+  }
+}
+
+/* 2. Topbar compacta y sin desbordamiento en pantallas medianas */
+@media (min-width: 993px) and (max-width: 1480px) {
+  .app-topbar {
+    padding: 0 1.25rem;
+  }
+  .topbar-right {
+    gap: 0.45rem;
+  }
+  .topbar-btn {
+    padding: 0.45rem 0.7rem;
+    font-size: 0.76rem;
+  }
+}
+
+/* 3. Lista Ejecutiva de Desglose de Categorías (bajo el Doughnut) */
+.category-breakdown-list {
+  margin-top: 1.15rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.cat-breakdown-item {
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 0.6rem 0.85rem;
+  transition: var(--transition);
+}
+
+.cat-breakdown-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.14);
+  transform: translateX(3px);
+}
+
+.cat-bd-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.4rem;
+  gap: 0.5rem;
+}
+
+.cat-bd-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.cat-bd-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.cat-bd-icon {
+  font-size: 0.8rem;
+  width: 16px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.cat-bd-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #E2E8F0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cat-bd-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.cat-bd-val {
+  font-family: var(--font-heading);
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #FFFFFF;
+}
+
+.cat-bd-pct {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.12rem 0.45rem;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #CBD5E1;
+  min-width: 44px;
+  text-align: center;
+}
+
+.cat-bd-bar-track {
+  width: 100%;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+}
+
+.cat-bd-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* 4. Botón de pago 1-clic en tabla de Gastos Fijos */
+.btn-fixed-pay {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.38rem;
+  padding: 0.38rem 0.75rem;
+  border-radius: 9px;
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition);
+  background: rgba(16, 185, 129, 0.14);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  color: #34D399;
+}
+
+.btn-fixed-pay:hover {
+  background: #10B981;
+  color: #FFFFFF;
+  box-shadow: 0 0 14px rgba(16, 185, 129, 0.4);
+  transform: translateY(-1px);
+}
+
+.btn-fixed-pay.is-paid {
+  background: rgba(148, 163, 184, 0.1);
+  border-color: rgba(148, 163, 184, 0.25);
+  color: #94A3B8;
+}
+
+.btn-fixed-pay.is-paid:hover {
+  background: rgba(244, 63, 94, 0.15);
+  border-color: rgba(244, 63, 94, 0.35);
+  color: #FB7185;
+  box-shadow: none;
+}
+
+/* 5. Soporte dual para modales (.open y .active) */
+.modal-overlay.active {
+  display: flex;
+  opacity: 1;
+  pointer-events: auto;
+}
+

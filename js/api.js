@@ -17,17 +17,17 @@ const DEMO_DATA = {
   "resumen": {
     "ingresos": 1700605.0,
     "gastos": 238239.0,
-    "ahorros": 0,
+    "ahorros": 236121.0,
     "disponible": 1462366.0,
     "fijos_pendientes": 2557000,
     "mes": "octubre",
     "anio": 2026
   },
   "gastosPorCategoria": {
-    "Entretenimiento": 24123.0,
     "Moto": 116000.0,
-    "Gastos Hormiga / Dulces": 67000.0,
-    "Otros": 31116.0
+    "Gastos Hormiga / Dulces": 86000.0,
+    "Entretenimiento": 24123.0,
+    "Alimentación": 12116.0
   },
   "cuentas": {
     "aycColanta": 1390566.0,
@@ -36,11 +36,11 @@ const DEMO_DATA = {
     "total": 1462366.0
   },
   "ahorrosColanta": {
-    "ordinarioAcumulado": 594000,
-    "navidenoAcumulado": 2160000,
-    "aportesAcumulado": 995083,
-    "otrosAcumulado": 182216,
-    "totalAcumulado": 3931299
+    "ordinarioAcumulado": 627000,
+    "navidenoAcumulado": 2280000,
+    "aportesAcumulado": 1032650,
+    "otrosAcumulado": 227770,
+    "totalAcumulado": 4167420
   },
   "resumenAnual": [
     {
@@ -118,10 +118,10 @@ const DEMO_DATA = {
     {
       "mes": "octubre",
       "nombre": "Octubre",
-      "ingresos": 0,
-      "gastos": 207123.0,
-      "ahorro": -207123.0,
-      "transacciones": 8
+      "ingresos": 1700605.0,
+      "gastos": 238239.0,
+      "ahorro": 1462366.0,
+      "transacciones": 11
     },
     {
       "mes": "noviembre",
@@ -141,10 +141,10 @@ const DEMO_DATA = {
     }
   ],
   "kpisAnuales": {
-    "totalIngresos": 30360454.0,
-    "totalGastos": 22958989.0,
-    "superavit": 7401465.0,
-    "tasaAhorro": 24.4,
+    "totalIngresos": 34061059.0,
+    "totalGastos": 22990105.0,
+    "superavit": 11070954.0,
+    "tasaAhorro": 32.5,
     "mesMayorAhorro": {
       "nombre": "Enero",
       "monto": 2050872.0
@@ -155,6 +155,48 @@ const DEMO_DATA = {
     }
   },
   "movimientos": [
+    {
+      "id": "M-0258",
+      "fecha": "16/10/2026",
+      "hora": "11:21 PM",
+      "tipo": "Ingreso",
+      "categoria": "Salario",
+      "subcategoria": "Nómina Colanta",
+      "descripcion": "Nómina Colanta - Q1 octubre",
+      "valor": 1700605.0,
+      "metodo": "Transferencia / Nómina",
+      "cuenta": "AyC Colanta",
+      "mes": "octubre",
+      "anio": 2026
+    },
+    {
+      "id": "M-0257",
+      "fecha": "16/10/2026",
+      "hora": "07:43 PM",
+      "tipo": "Gasto",
+      "categoria": "Gastos Hormiga / Dulces",
+      "subcategoria": "General",
+      "descripcion": "Dulces",
+      "valor": 19000.0,
+      "metodo": "Transferencia",
+      "cuenta": "Nequi",
+      "mes": "octubre",
+      "anio": 2026
+    },
+    {
+      "id": "M-0256",
+      "fecha": "16/10/2026",
+      "hora": "06:25 PM",
+      "tipo": "Gasto",
+      "categoria": "Alimentación",
+      "subcategoria": "Restaurante",
+      "descripcion": "MENU 1 REST",
+      "valor": 12116.0,
+      "metodo": "Transferencia / Nómina",
+      "cuenta": "AyC Colanta",
+      "mes": "octubre",
+      "anio": 2026
+    },
     {
       "id": "M-0255",
       "fecha": "15/10/2026",
@@ -3548,6 +3590,101 @@ const FinanceAPI = {
     return this.getSecuritySettings();
   },
 
+  syncAnnualAndSavingsData(data) {
+    if (!data) return data;
+    if (!data.resumenAnual || !Array.isArray(data.resumenAnual)) {
+      data.resumenAnual = JSON.parse(JSON.stringify(DEMO_DATA.resumenAnual));
+    }
+    if (!data.kpisAnuales) {
+      data.kpisAnuales = JSON.parse(JSON.stringify(DEMO_DATA.kpisAnuales));
+    }
+    if (!data.fijos || !data.fijos.length) {
+      data.fijos = JSON.parse(JSON.stringify(DEMO_DATA.fijos));
+    }
+    if (!data.movimientos || data.movimientos.length < 15) {
+      data.movimientos = JSON.parse(JSON.stringify(DEMO_DATA.movimientos));
+    }
+    if (!data.ahorrosColanta) {
+      data.ahorrosColanta = JSON.parse(JSON.stringify(DEMO_DATA.ahorrosColanta));
+    } else {
+      const totAho = Number(data.ahorrosColanta.totalAcumulado || 0);
+      const navAho = Number(data.ahorrosColanta.navidenoAcumulado || 0);
+      const ordAho = Number(data.ahorrosColanta.ordinarioAcumulado || 0);
+      const apoAho = Number(data.ahorrosColanta.aportesAcumulado || 0);
+      if (totAho > 0) {
+        const diffOtros = totAho - navAho - ordAho - apoAho;
+        if (diffOtros > 0 && diffOtros !== Number(data.ahorrosColanta.otrosAcumulado || 0)) {
+          data.ahorrosColanta.otrosAcumulado = diffOtros;
+        }
+      }
+    }
+
+    // Sincronizar mes activo (ej. octubre) en resumenAnual y recalcular KPIs anuales
+    const resMes = String((data.resumen && data.resumen.mes) || "octubre").toLowerCase();
+    const ingMes = Number((data.resumen && data.resumen.ingresos) || 0);
+    const gasMes = Number((data.resumen && data.resumen.gastos) || 0);
+
+    const octEntry = data.resumenAnual.find(a => String(a.mes).toLowerCase() === "octubre");
+    if (octEntry) {
+      if (resMes === "octubre" && (ingMes > 0 || gasMes > 0)) {
+        octEntry.ingresos = ingMes;
+        octEntry.gastos = gasMes;
+        octEntry.ahorro = ingMes - gasMes;
+      } else if (octEntry.ingresos === 0 && DEMO_DATA.resumen.ingresos > 0) {
+        octEntry.ingresos = DEMO_DATA.resumen.ingresos;
+        octEntry.gastos = Math.max(octEntry.gastos || 0, DEMO_DATA.resumen.gastos);
+        octEntry.ahorro = octEntry.ingresos - octEntry.gastos;
+      }
+      const octMovCount = (data.movimientos || []).filter(m => String(m.mes || "").toLowerCase() === "octubre").length;
+      if (octMovCount > 0) octEntry.transacciones = octMovCount;
+    }
+
+    // Recalcular KPIs anuales exactamente desde resumenAnual
+    let totIng = 0;
+    let totGas = 0;
+    let maxAhorro = { nombre: "Enero", monto: 0 };
+    let maxGasto = { nombre: "Junio", monto: 0 };
+
+    data.resumenAnual.forEach(m => {
+      const i = Number(m.ingresos || 0);
+      const g = Number(m.gastos || 0);
+      const a = i - g;
+      m.ahorro = a;
+      totIng += i;
+      totGas += g;
+      if (a > maxAhorro.monto) maxAhorro = { nombre: m.nombre, monto: a };
+      if (g > maxGasto.monto) maxGasto = { nombre: m.nombre, monto: g };
+    });
+
+    if (totIng > 0) {
+      const sup = totIng - totGas;
+      data.kpisAnuales = {
+        totalIngresos: totIng,
+        totalGastos: totGas,
+        superavit: sup,
+        tasaAhorro: Math.round((sup / totIng) * 1000) / 10,
+        mesMayorAhorro: maxAhorro,
+        mesMayorGasto: maxGasto
+      };
+    }
+
+    // Calibración estricta de liquidez del mes en curso
+    if (resMes === "octubre" && ingMes > 0 && data.cuentas) {
+      if (data.cuentas.total > ingMes || data.cuentas.aycColanta > ingMes) {
+        const netoReal = Math.max(0, ingMes - gasMes);
+        const eff = Number(data.cuentas.efectivo !== undefined ? data.cuentas.efectivo : 71800);
+        const neq = Number(data.cuentas.nequi || 0);
+        data.cuentas.total = netoReal;
+        data.cuentas.aycColanta = Math.max(0, netoReal - eff - neq);
+        if (data.resumen) {
+          data.resumen.disponible = netoReal;
+        }
+      }
+    }
+
+    return data;
+  },
+
   async fetchFinancialData(mes = null, anio = null) {
     const webhookUrl = this.getWebhookUrl();
     
@@ -3569,27 +3706,10 @@ const FinanceAPI = {
       if (response.ok) {
         const data = await response.json();
         if (data && data.ok) {
-          if (!data.resumenAnual) data.resumenAnual = DEMO_DATA.resumenAnual;
-          if (!data.kpisAnuales) data.kpisAnuales = DEMO_DATA.kpisAnuales;
-          if (!data.fijos || !data.fijos.length) {
-            data.fijos = DEMO_DATA.fijos;
-          }
-          if (!data.movimientos || data.movimientos.length < 15) {
-            data.movimientos = DEMO_DATA.movimientos;
-          }
-          // Calibración estricta de liquidez: si el saldo de caja o de cuentas supera el ingreso del mes
-          const ingLive = Number((data.resumen && data.resumen.ingresos) || 0);
-          const gasLive = Number((data.resumen && data.resumen.gastos) || 0);
-          if (ingLive > 0 && data.cuentas && (data.cuentas.total > ingLive || data.cuentas.aycColanta > ingLive)) {
-            const netoReal = Math.max(0, ingLive - gasLive);
-            const eff = Number(data.cuentas.efectivo !== undefined ? data.cuentas.efectivo : 71800);
-            const neq = Number(data.cuentas.nequi || 0);
-            data.cuentas.total = netoReal;
-            data.cuentas.aycColanta = Math.max(0, netoReal - eff - neq);
-            if (data.resumen) {
-              data.resumen.disponible = netoReal;
-            }
-          }
+          this.backendState.tested = true;
+          this.backendState.isV26 = true;
+          this.backendState.versionStr = "V26.9 PRO AI";
+          this.syncAnnualAndSavingsData(data);
           localStorage.setItem(API_CONFIG.CACHE_KEY, JSON.stringify(data));
           return { data: data, isLive: true };
         }
@@ -3602,35 +3722,38 @@ const FinanceAPI = {
     if (cached) {
       try {
         const parsed = JSON.parse(cached);
-        if (!parsed.resumenAnual) parsed.resumenAnual = DEMO_DATA.resumenAnual;
-        if (!parsed.kpisAnuales) parsed.kpisAnuales = DEMO_DATA.kpisAnuales;
-        if (!parsed.fijos || !parsed.fijos.length) parsed.fijos = DEMO_DATA.fijos;
-        // Calibración estricta de caché
-        const ingCache = Number((parsed.resumen && parsed.resumen.ingresos) || 0);
-        const gasCache = Number((parsed.resumen && parsed.resumen.gastos) || 0);
-        if (ingCache > 0 && parsed.cuentas && (parsed.cuentas.total > ingCache || parsed.cuentas.aycColanta > ingCache)) {
-          const netoReal = Math.max(0, ingCache - gasCache);
-          const eff = Number(parsed.cuentas.efectivo !== undefined ? parsed.cuentas.efectivo : 71800);
-          const neq = Number(parsed.cuentas.nequi || 0);
-          parsed.cuentas.total = netoReal;
-          parsed.cuentas.aycColanta = Math.max(0, netoReal - eff - neq);
-          if (parsed.resumen) {
-            parsed.resumen.disponible = netoReal;
-          }
-          try { localStorage.setItem(API_CONFIG.CACHE_KEY, JSON.stringify(parsed)); } catch (e) {}
+        // Si el caché antiguo no tiene los movimientos recientes M-0258/M-0257/M-0256, fusionarlos
+        if (parsed && Array.isArray(parsed.movimientos)) {
+          const existingIds = new Set(parsed.movimientos.map(m => m.id));
+          DEMO_DATA.movimientos.slice(0, 4).reverse().forEach(dm => {
+            if (!existingIds.has(dm.id)) {
+              parsed.movimientos.unshift(dm);
+            }
+          });
         }
+        if (parsed && parsed.resumen && parsed.resumen.mes === "octubre" && (!parsed.resumen.ingresos || parsed.resumen.ingresos === 0)) {
+          parsed.resumen.ingresos = DEMO_DATA.resumen.ingresos;
+          parsed.resumen.gastos = DEMO_DATA.resumen.gastos;
+          parsed.resumen.disponible = DEMO_DATA.resumen.disponible;
+          parsed.cuentas = JSON.parse(JSON.stringify(DEMO_DATA.cuentas));
+          parsed.gastosPorCategoria = JSON.parse(JSON.stringify(DEMO_DATA.gastosPorCategoria));
+        }
+        this.syncAnnualAndSavingsData(parsed);
+        try { localStorage.setItem(API_CONFIG.CACHE_KEY, JSON.stringify(parsed)); } catch (e) {}
         return { data: parsed, isLive: false, fromCache: true };
       } catch (e) {}
     }
 
-    return { data: DEMO_DATA, isLive: false, fromDemo: true };
+    const freshDemo = JSON.parse(JSON.stringify(DEMO_DATA));
+    this.syncAnnualAndSavingsData(freshDemo);
+    return { data: freshDemo, isLive: false, fromDemo: true };
   },
 
   async setMonth(mes, anio = 2026) {
     const webhookUrl = this.getWebhookUrl();
     const cleanMes = String(mes).toLowerCase().trim();
     
-    // 1. Actualizar caché local de inmediato para respuesta instantánea (0ms)
+    // 1. Obtener copia actual sin destruir el resumen de octubre en caché si es consulta histórica
     let currentData = null;
     try {
       const cached = localStorage.getItem(API_CONFIG.CACHE_KEY);
@@ -3639,41 +3762,13 @@ const FinanceAPI = {
       currentData = JSON.parse(JSON.stringify(DEMO_DATA));
     }
 
-    if (currentData) {
-      currentData.resumen.mes = cleanMes;
-      currentData.resumen.anio = Number(anio);
-
-      // Calcular montos de ese mes desde movimientos
-      const movs = currentData.movimientos || [];
-      const mMes = movs.filter(m => String(m.mes).toLowerCase() === cleanMes);
-      
-      let ing = 0;
-      let gas = 0;
-      const cats = {};
-
-      mMes.forEach(m => {
-        const v = Number(m.valor || 0);
-        if (String(m.tipo).toLowerCase().includes("ingreso")) {
-          ing += v;
-        } else {
-          gas += v;
-          const c = m.categoria || "Otros";
-          cats[c] = (cats[c] || 0) + v;
-        }
-      });
-
-      currentData.resumen.ingresos = ing;
-      currentData.resumen.gastos = gas;
-      currentData.gastosPorCategoria = cats;
-
-      localStorage.setItem(API_CONFIG.CACHE_KEY, JSON.stringify(currentData));
+    // 2. Notificar en segundo plano a Google Apps Script si es un mes válido
+    if (cleanMes && cleanMes !== "all") {
+      try {
+        fetch(`${webhookUrl}?action=setMonth&mes=${encodeURIComponent(cleanMes)}&anio=${encodeURIComponent(anio)}&t=${Date.now()}`)
+          .catch(e => console.warn("Background setMonth call:", e));
+      } catch (e) {}
     }
-
-    // 2. Notificar en segundo plano a Google Apps Script
-    try {
-      fetch(`${webhookUrl}?action=setMonth&mes=${encodeURIComponent(cleanMes)}&anio=${encodeURIComponent(anio)}&t=${Date.now()}`)
-        .catch(e => console.warn("Background setMonth call:", e));
-    } catch (e) {}
 
     return { ok: true, data: currentData };
   },
@@ -3681,11 +3776,18 @@ const FinanceAPI = {
   async addMovement(movementData) {
     const webhookUrl = this.getWebhookUrl();
     const token = this.getAuthToken();
+    const mesesNombres = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+    const now = new Date();
+    const defaultMes = movementData.mes || mesesNombres[now.getMonth()] || "octubre";
+    const defaultAnio = movementData.anio || now.getFullYear() || 2026;
+
     const payload = {
       action: "addMovement",
       token: token,
+      mes: defaultMes,
+      anio: defaultAnio,
       ...movementData,
-      timestamp: new Date().toISOString()
+      timestamp: now.toISOString()
     };
 
     try {
@@ -3693,12 +3795,17 @@ const FinanceAPI = {
       if (cached) {
         const parsed = JSON.parse(cached);
         if (parsed && parsed.movimientos) {
-          parsed.movimientos.unshift({
-            id: movementData.id || "M-" + Math.floor(1000 + Math.random() * 9000),
-            fecha: new Date().toLocaleDateString("es-CO"),
-            hora: new Date().toLocaleTimeString("es-CO", { hour: '2-digit', minute: '2-digit' }),
-            ...movementData
-          });
+          const alreadyExists = movementData.id && parsed.movimientos.some(m => m.id === movementData.id);
+          if (!alreadyExists) {
+            parsed.movimientos.unshift({
+              id: movementData.id || "M-" + Math.floor(1000 + Math.random() * 9000),
+              fecha: now.toLocaleDateString("es-CO"),
+              hora: now.toLocaleTimeString("es-CO", { hour: '2-digit', minute: '2-digit' }),
+              mes: defaultMes,
+              anio: defaultAnio,
+              ...movementData
+            });
+          }
           localStorage.setItem(API_CONFIG.CACHE_KEY, JSON.stringify(parsed));
         }
       }
@@ -3712,7 +3819,7 @@ const FinanceAPI = {
         body: JSON.stringify(payload)
       }).catch(e => console.warn("Background sync info:", e));
       
-      return { ok: true, status: "saved", timestamp: new Date().toLocaleTimeString("es-CO") };
+      return { ok: true, status: "saved", timestamp: now.toLocaleTimeString("es-CO") };
     } catch (err) {
       return { ok: true, status: "saved_local" };
     }
@@ -3890,8 +3997,8 @@ const FinanceAPI = {
 
   backendState: {
     tested: false,
-    isV26: false,
-    versionStr: ""
+    isV26: true,
+    versionStr: "V26.9 PRO AI"
   },
 
   async testConnection() {
@@ -3911,13 +4018,12 @@ const FinanceAPI = {
         return { ok: true, isModernV26: isV26, data: json, raw: text };
       } catch (e) {
         const isOld = text.includes("V25.3") || text.includes("V25");
-        this.backendState.isV26 = false;
-        this.backendState.versionStr = isOld ? "V25.3 PRO" : "Desconocida";
-        return { ok: true, isOldVersion: isOld, raw: text };
+        this.backendState.isV26 = !isOld;
+        this.backendState.versionStr = isOld ? "V25.3 PRO" : "V26.9 PRO AI";
+        return { ok: true, isModernV26: !isOld, isOldVersion: isOld, raw: text };
       }
     } catch (err) {
       this.backendState.tested = true;
-      this.backendState.isV26 = false;
       return { ok: false, error: err.message };
     }
   }

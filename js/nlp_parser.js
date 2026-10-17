@@ -49,45 +49,31 @@ const FinancialNLP = {
       return 1000;
     }
 
-    // "$ 25.000" o "25000"
-    const matchDirecto = t.match(/\$?\s*(\d{1,3}(?:[.]\d{3})+|\d{4,})/);
+    // "$ 25.000" o "25000" o "8500"
+    const matchDirecto = t.match(/\$?\s*(\d{1,3}(?:[.]\d{3})+|\d{3,})/);
     if (matchDirecto) {
       const limpio = matchDirecto[1].replace(/\./g, "");
-      return parseInt(limpio, 10) || 0;
+      const num = parseInt(limpio, 10) || 0;
+      if (num !== 2026) return num;
     }
 
     return 0;
   },
 
-  // Detecta la cuenta bancaria (Nequi, AyC Colanta, Efectivo)
+  // Detecta la cuenta bancaria (Nequi, AyC Colanta, Efectivo, Bancolombia)
   parseAccount(text) {
     const t = text.toLowerCase();
-    if (/\b(colanta|ayc|cooperativa|banco|cuenta nomina)\b/i.test(t)) return "AyC Colanta";
+    if (/\b(colanta|ayc|cooperativa|cuenta nomina|n[oó]mina)\b/i.test(t)) return "AyC Colanta";
     if (/\b(efectivo|cash|plata en mano|en mano|monedas|billetes)\b/i.test(t)) return "Efectivo";
+    if (/\b(bancolombia)\b/i.test(t)) return "Bancolombia";
     return "Nequi"; // Default en Colombia
   },
 
   // Detecta la intención principal del usuario
   parseIntent(text) {
-    const t = text.toLowerCase();
+    const t = text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
-    // Consultas
-    if (/\b(disponible|saldo|plata|cuanto me queda|cuanto tengo|cuanto hay|caja)\b/i.test(t)) {
-      return { type: "QUERY_AVAILABLE" };
-    }
-    if (/\b(fugas|hormiga|mecato|antojos|micropagos)\b/i.test(t)) {
-      return { type: "QUERY_FUGAS" };
-    }
-    if (/\b(fijos|obligaciones|compromisos|debo|cuotas)\b/i.test(t)) {
-      return { type: "QUERY_FIXED" };
-    }
-    if (/\b(ahorro|ahorros|navideño|ordinario|fondo)\b/i.test(t)) {
-      return { type: "QUERY_SAVINGS" };
-    }
-    if (/\b(resumen|balance|mes|estado)\b/i.test(t)) {
-      return { type: "QUERY_SUMMARY" };
-    }
-    // Borrado / Anulación / Deshacer
+    // 1. Borrado / Anulación / Deshacer
     if (/\b(borrar|eliminar|deshacer|quitar|anular|\/borrar|\/deshacer)\b/i.test(t)) {
       const matchId = t.match(/\b(m-\d{3,4}|cp-\d{3,4}|a-\d{3,4})\b/i);
       return {
@@ -96,37 +82,35 @@ const FinancialNLP = {
       };
     }
 
-    if (/\b(hola|buenos dias|buenas tardes|buenas noches|hey|que tal)\b/i.test(t)) {
-      return { type: "GREETING" };
-    }
-
-    // Registro de movimiento
+    // 2. Registro de movimiento (Prioridad si hay un monto numérico y no es una pregunta explícita)
+    const isExplicitQuestion = /[¿?]|\b(cuanto|cuales|como va|mostrar|consultar|ver\s+mis|ver\s+gastos)\b/i.test(t);
     const amount = this.parseAmount(text);
-    if (amount > 0) {
-      const isIngreso = /\b(recibi|recibo|ingreso|me pagaron|gane|cobre|nomina|sueldo)\b/i.test(t);
-      const isFijo = /\b(epm|tigo|arriendo|spotify|cuota|fijo)\b/i.test(t);
 
-      let category = "Otros";
-      let subcategory = "General";
+    if (amount > 0 && !isExplicitQuestion) {
+      const isIngreso = /\b(recibi|recibo|ingreso|me pagaron|gane|cobre|nomina|sueldo|abono a mi favor)\b/i.test(t);
+      const isFijo = /\b(epm|tigo|arriendo|spotify|cuota|fijo|google one)\b/i.test(t);
+
+      let category = isIngreso ? "Salario" : "Otros";
+      let subcategory = isIngreso ? "Ingreso Extra" : "General";
 
       for (const item of this.categoriesMap) {
-        if (item.regex.test(t)) {
+        if (item.regex.test(t) || item.regex.test(text)) {
           category = item.category;
           subcategory = item.subcategory;
           break;
         }
       }
 
-      // Limpiar descripción bonita
+      // Limpiar descripción ejecutiva
       let desc = text
-        .replace(/\b(pague|pago|abone|cancele|compre|me gaste|gaste|recibi|ingreso)\b/gi, "")
-        .replace(/\b(con|por|de|en|el|la|los|las|un|una|pesos|cop|nequi|colanta|efectivo)\b/gi, "")
-        .replace(/\$?\s*\d+(?:[.,]\d+)?\s*(?:mil|k|lucas|millon|millones|palos)?/gi, "")
+        .replace(/\b(pagu[eé]|pago|abon[eé]|cancel[eé]|compr[eé]|me gast[eé]|gast[eé]|recib[ií]|ingreso|este mes|hoy|ayer)\b/gi, "")
+        .replace(/\b(con|por|de|en|el|la|los|las|un|una|pesos|cop|nequi|colanta|ayc|efectivo|bancolombia|tarjeta)\b/gi, "")
+        .replace(/\$?\s*\d+(?:[.,]\d+)?\s*(?:mil|k|lucas?|mill[oó]n|millones|palos?)?\b/gi, "")
         .replace(/\s+/g, " ")
         .trim();
 
-      if (!desc || desc.length < 3) {
-        desc = category;
+      if (!desc || desc.length < 2) {
+        desc = subcategory !== "General" ? subcategory : category;
       } else {
         desc = desc.charAt(0).toUpperCase() + desc.slice(1);
       }
@@ -141,6 +125,26 @@ const FinancialNLP = {
         description: desc,
         isFixed: isFijo
       };
+    }
+
+    // 3. Consultas Inteligentes
+    if (/\b(disponible|saldo|plata|cuanto me queda|cuanto tengo|cuanto hay|caja|liquidez)\b/i.test(t)) {
+      return { type: "QUERY_AVAILABLE" };
+    }
+    if (/\b(fugas|hormiga|mecato|antojos|micropagos|dulces)\b/i.test(t)) {
+      return { type: "QUERY_FUGAS" };
+    }
+    if (/\b(fijos|obligaciones|compromisos|debo|cuotas|pendientes)\b/i.test(t)) {
+      return { type: "QUERY_FIXED" };
+    }
+    if (/\b(ahorro|ahorros|navideno|ordinario|fondo|aportes)\b/i.test(t)) {
+      return { type: "QUERY_SAVINGS" };
+    }
+    if (/\b(resumen|balance|mes|estado|reporte|consolidado|anual)\b/i.test(t)) {
+      return { type: "QUERY_SUMMARY" };
+    }
+    if (/\b(hola|buenos dias|buenas tardes|buenas noches|hey|que tal|saludos|ayuda)\b/i.test(t)) {
+      return { type: "GREETING" };
     }
 
     return { type: "UNKNOWN" };
