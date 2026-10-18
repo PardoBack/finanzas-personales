@@ -373,7 +373,8 @@ function registrarMovimientoDesdeDashboard_(data) {
   let idFijoFinal = data.idFijo || null;
   if (!idFijoFinal && tipo === "Gasto") {
     const textoCompleto = `${descripcion} ${categoria} ${subcategoria}`.toLowerCase();
-    if (/\b(epm|energia|luz|agua|gas)\b/i.test(textoCompleto)) idFijoFinal = "F-0107";
+    if (/\b(agua|acueducto)\b/i.test(textoCompleto)) idFijoFinal = "F-0122";
+    else if (/\b(epm|energia|luz|electricidad)\b/i.test(textoCompleto)) idFijoFinal = "F-0107";
     else if (/\b(tigo|internet|wifi|une)\b/i.test(textoCompleto)) idFijoFinal = "F-0109";
     else if (/\b(arriendo|casa|apartamento)\b/i.test(textoCompleto)) idFijoFinal = "F-0116";
     else if (/\b(spotify)\b/i.test(textoCompleto)) idFijoFinal = "F-0114";
@@ -729,6 +730,22 @@ function sincronizarFijosOctubreDefinitivo() {
       const concepto = String(r[1] || "").trim();
       const concNorm = concepto.toLowerCase();
 
+      // Si es F-0107 (EPM ENERGIA), forzar $197.000 exactos Pagado
+      if (id === "F-0107" || (concNorm.includes("epm") && !concNorm.includes("agua"))) {
+        r[0] = "F-0107";
+        r[1] = "EPM ENERGIA";
+        r[2] = "Servicios";
+        r[3] = 15;
+        r[4] = 197000;
+        r[5] = 197000;
+        r[6] = "🟢 Pagado";
+        r[7] = "2026-10-17";
+        r[8] = 0;
+        itemsMap.set("F-0107", r);
+        logs.push("F-0107 (EPM ENERGIA) restaurado a $197.000 Pagado");
+        continue;
+      }
+
       // Si es F-0108 (COMIDA), forzar $650.000 exactos
       if (id === "F-0108" || concNorm === "comida") {
         r[0] = "F-0108";
@@ -902,7 +919,8 @@ function autoReconciliarFijosDesdeMovimientos_(ss, mes, anio) {
     const fecha = r[1] instanceof Date ? Utilities.formatDate(r[1], ZONA_HORARIA, "yyyy-MM-dd") : String(r[1] || "");
 
     let targetId = null;
-    if (desc.includes("epm") || subcat.includes("epm") || desc.includes("energia") || desc.includes("luz")) targetId = "F-0107";
+    if (desc.includes("agua") || subcat.includes("agua") || desc.includes("acueducto")) targetId = "F-0122";
+    else if (desc.includes("epm") || subcat.includes("epm") || desc.includes("energia") || desc.includes("luz")) targetId = "F-0107";
     else if (desc.includes("tigo") || subcat.includes("internet") || desc.includes("wifi")) targetId = "F-0109";
     else if (desc.includes("arriendo") || subcat.includes("arriendo")) targetId = "F-0116";
     else if (desc.includes("spotify")) targetId = "F-0114";

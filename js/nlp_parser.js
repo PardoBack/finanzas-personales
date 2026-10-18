@@ -12,7 +12,10 @@ const FinancialNLP = {
     { regex: /\b(parqueadero moto|parking moto|parqueadero de moto)\b/i, category: "Moto", subcategory: "Parqueadero" },
     { regex: /\b(almuerzo|cena|desayuno|comida|restaurante|burger|pizza|corrientazo|frisby|kfc|mcdonalds|mondongo)\b/i, category: "Alimentación", subcategory: "Restaurante" },
     { regex: /\b(mercado|supermercado|d1|exito|carulla|euro|vaquita|mercatodo|viveres|plaza)\b/i, category: "Alimentación", subcategory: "Mercado" },
-    { regex: /\b(epm|energia|luz|agua|gas|alcantarillado|servicios\s*publicos|servicios)\b/i, category: "Servicios", subcategory: "EPM (Agua, Luz, Gas)" },
+    { regex: /\b(agua|acueducto|alcantarillado)\b/i, category: "Servicios", subcategory: "Agua Domiciliaria" },
+    { regex: /\b(epm|energia|luz|electricidad)\b/i, category: "Servicios", subcategory: "EPM Energía" },
+    { regex: /\b(gas\s*natural|gas\s*domiciliario|bombona\s*gas|cilindro\s*gas)\b/i, category: "Servicios", subcategory: "Gas Domiciliario" },
+    { regex: /\b(servicios\s*publicos|servicios)\b/i, category: "Servicios", subcategory: "Servicios Públicos" },
     { regex: /\b(tigo|internet|wifi|fibra|claro|datos|linea celular|plan celular|movistar)\b/i, category: "Servicios", subcategory: "Internet y Telefonía" },
     { regex: /\b(arriendo|alquiler|canon|administracion|apartamento|casa)\b/i, category: "Vivienda", subcategory: "Arriendo" },
     { regex: /\b(dulce|helado|paleta|chocolatina|granizado|mecato|empanada|chucheria|snack|golosina|tinto|cafecito|pan de queso|buñuelo)\b/i, category: "Gastos Hormiga / Dulces", subcategory: "Antojo / Mecato" },
@@ -86,12 +89,12 @@ const FinancialNLP = {
   fixedObligationsCatalog: [
     {
       id: "F-0107",
-      regex: /\b(epm|energ[ií]a|luz|gas|alcantarillado|servicios\s*p[uú]blicos|servicios|factura\s*epm|cuenta\s*epm|factura\s*servicios|factura\s*de\s*(?:la\s*)?luz|cuenta\s*de\s*(?:la\s*)?luz|recibo\s*epm|recibo\s*de\s*(?:la\s*)?luz)\b/i,
+      regex: /\b(epm|energ[ií]a|luz|electricidad|factura\s*epm|cuenta\s*epm|factura\s*de\s*(?:la\s*)?luz|cuenta\s*de\s*(?:la\s*)?luz|recibo\s*epm|recibo\s*de\s*(?:la\s*)?luz)\b/i,
       concepto: "EPM ENERGIA",
-      cuota: 177000,
+      cuota: 197000,
       variable: true,
       categoria: "Servicios",
-      subcategoria: "EPM (Agua, Luz, Gas)"
+      subcategoria: "Energía"
     },
     {
       id: "F-0108",
@@ -226,7 +229,7 @@ const FinancialNLP = {
       cuota: 60000,
       variable: true,
       categoria: "Servicios",
-      subcategoria: "EPM (Agua, Luz, Gas)"
+      subcategoria: "Agua Domiciliaria"
     }
   ],
 

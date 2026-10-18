@@ -1761,28 +1761,54 @@ const FintechApp = {
 
         const idTarget = (intent.idFijo || (matchDirect ? matchDirect.id : "")).toUpperCase();
 
-        const fijo = (this.state.data.fijos || []).find(f => {
-          const fid = String(f.id || "").toUpperCase();
-          if (idTarget && fid === idTarget) return true;
-          if (intent.conceptoFijo && String(f.concepto || "").toLowerCase().includes(intent.conceptoFijo.toLowerCase())) return true;
-          if (matchDirect && String(f.concepto || "").toLowerCase() === matchDirect.concepto.toLowerCase()) return true;
-          if (fid === "F-0107" && /epm|energia|luz|agua|gas|servicios/i.test(originalText + " " + (intent.description || ""))) return true;
-          if (fid === "F-0108" && /comida|mercado/i.test(originalText + " " + (intent.description || ""))) return true;
-          if (fid === "F-0109" && /tigo|internet|wifi|une/i.test(originalText + " " + (intent.description || ""))) return true;
-          if (fid === "F-0110" && /trabajo/i.test(originalText) && /parqueadero|parking/i.test(originalText)) return true;
-          if (fid === "F-0111" && /audifono|samsung/i.test(originalText + " " + (intent.description || ""))) return true;
-          if (fid === "F-0112" && /moto/i.test(originalText) && /parqueadero|parking/i.test(originalText)) return true;
-          if (fid === "F-0113" && /gasolina|tanque|combustible/i.test(originalText + " " + (intent.description || ""))) return true;
-          if (fid === "F-0114" && /spotify/i.test(originalText + " " + (intent.description || ""))) return true;
-          if (fid === "F-0115" && /datos|celular|claro/i.test(originalText + " " + (intent.description || ""))) return true;
-          if (fid === "F-0116" && /arriendo|apartamento|canon/i.test(originalText + " " + (intent.description || ""))) return true;
-          if (fid === "F-0117" && /google/i.test(originalText + " " + (intent.description || ""))) return true;
-          return false;
-        });
+        let fijo = null;
+
+        // 1. Prioridad Máxima: Si el motor NLP ya identificó el ID específico (ej. F-0122 para Agua)
+        if (idTarget) {
+          fijo = (this.state.data.fijos || []).find(f => String(f.id || "").toUpperCase() === idTarget);
+        }
+
+        // 2. Coincidencia por concepto específico si fue extraído
+        if (!fijo && intent.conceptoFijo) {
+          fijo = (this.state.data.fijos || []).find(f => {
+            const fc = String(f.concepto || "").toLowerCase().trim();
+            const ic = String(intent.conceptoFijo).toLowerCase().trim();
+            return fc === ic || fc.includes(ic) || ic.includes(fc);
+          });
+        }
+
+        // 3. Coincidencia por matchDirect
+        if (!fijo && matchDirect) {
+          fijo = (this.state.data.fijos || []).find(f => {
+            return String(f.id || "").toUpperCase() === String(matchDirect.id || "").toUpperCase() ||
+                   String(f.concepto || "").toLowerCase().trim() === String(matchDirect.concepto || "").toLowerCase().trim();
+          });
+        }
+
+        // 4. Fallback contextual ESTRICTO (cada compromiso con sus propios términos específicos)
+        if (!fijo) {
+          const combined = (originalText + " " + (intent.description || "")).toLowerCase();
+          fijo = (this.state.data.fijos || []).find(f => {
+            const fid = String(f.id || "").toUpperCase();
+            if (fid === "F-0122" && /\b(agua|acueducto)\b/i.test(combined)) return true;
+            if (fid === "F-0107" && /\b(epm|energia|luz|electricidad)\b/i.test(combined) && !/\bagua\b/i.test(combined)) return true;
+            if (fid === "F-0108" && /\b(comida|mercado)\b/i.test(combined)) return true;
+            if (fid === "F-0109" && /\b(tigo|internet|wifi|une)\b/i.test(combined)) return true;
+            if (fid === "F-0110" && /trabajo/i.test(combined) && /parqueadero|parking/i.test(combined)) return true;
+            if (fid === "F-0111" && /audifono|samsung/i.test(combined)) return true;
+            if (fid === "F-0112" && /moto/i.test(combined) && /parqueadero|parking/i.test(combined)) return true;
+            if (fid === "F-0113" && /gasolina|tanque|combustible/i.test(combined)) return true;
+            if (fid === "F-0114" && /spotify/i.test(combined)) return true;
+            if (fid === "F-0115" && /datos|celular|claro/i.test(combined)) return true;
+            if (fid === "F-0116" && /arriendo|apartamento|canon/i.test(combined)) return true;
+            if (fid === "F-0117" && /google/i.test(combined)) return true;
+            return false;
+          });
+        }
 
         if (fijo) {
           const valorPago = intent.amount;
-          if (intent.isVariableInvoice || valorPago > (fijo.cuota || 0) || String(fijo.id).toUpperCase() === "F-0107") {
+          if (intent.isVariableInvoice || valorPago > (fijo.cuota || 0) || Boolean(fijo.variable)) {
             fijo.cuota = valorPago;
           }
           fijo.abonado = valorPago;
@@ -2146,8 +2172,13 @@ const FintechApp = {
           if (mFromSub && mFromSub.id === idUpper) return true;
         }
 
-        if (idUpper === "F-0107" && /epm|energia|luz|agua|gas|servicios/i.test(d + " " + s)) return true;
+        if (idUpper === "F-0122" && /agua|acueducto/i.test(d + " " + s)) return true;
+        if (idUpper === "F-0107" && /epm|energia|luz|electricidad/i.test(d + " " + s) && !/agua/i.test(d + " " + s)) return true;
+        if (idUpper === "F-0108" && /comida|mercado/i.test(d + " " + s)) return true;
         if (idUpper === "F-0109" && /tigo|internet|wifi|une/i.test(d + " " + s)) return true;
+        if (idUpper === "F-0110" && /trabajo/i.test(d) && /parqueadero/i.test(d)) return true;
+        if (idUpper === "F-0112" && /moto/i.test(d) && /parqueadero/i.test(d)) return true;
+        if (idUpper === "F-0113" && /gasolina/i.test(d + " " + s)) return true;
         if (idUpper === "F-0114" && /spotify|musica/i.test(d + " " + s)) return true;
         if (idUpper === "F-0115" && /datos|celular|telefonia|claro/i.test(d + " " + s)) return true;
         if (idUpper === "F-0116" && /arriendo|apartamento|canon/i.test(d + " " + s)) return true;
