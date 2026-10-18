@@ -1,0 +1,629 @@
+================================================================================
+          MANUAL INTEGRAL TÉCNICO Y DE USUARIO: FINANZAS PRO / PARDOFINANZAS V25
+                                (EDICIÓN 2026)
+================================================================================
+
+--------------------------------------------------------------------------------
+1. RESUMEN DE ARQUITECTURA Y TECNOLOGÍAS DE DESARROLLO
+--------------------------------------------------------------------------------
+
+1.1 Visión del Sistema y Filosofía de Software:
+    PardoFinanzas V25 (Finanzas Pro) es una plataforma móvil de alto rendimiento diseñada para la gestión financiera personal de alta precisión. Su arquitectura combina un enfoque "Offline-First" con persistencia local ultrarrápida, analítica predictiva mediante Inteligencia Artificial y sincronización transparente con Google Sheets a través de webhooks de Google Apps Script.
+
+1.2 Arquitectura del Sistema (Clean Architecture + MVVM + Android Architecture Components):
+    El proyecto está estructurado rigurosamente bajo Clean Architecture y el patrón MVVM (Model-View-ViewModel), logrando un desacoplamiento total entre la lógica de interfaz, las reglas de negocio y las fuentes de datos.
+
+    a) Capa de Presentación (UI Layer):
+       - Construida al 100% en Jetpack Compose (Declarativa, sin XMLs de View).
+       - Gestión de estado reactivo mediante StateFlow y SharedFlow scoped a ViewModels.
+       - Arquitectura Unidireccional de Datos (UDF - Unidirectional Data Flow), garantizando que las pantallas rendericen estados inmutables (UI State) y envíen eventos de usuario de forma limpia.
+
+    b) Capa de Dominio (Domain Layer):
+       - Contiene la lógica de negocio pura, agnóstica de frameworks o librerías de Android.
+       - Casos de Uso (Use Cases / Interactors) inyectados con Hilt/Dagger:
+         * AddMovementUseCase: Procesa y valida nuevos registros de ingresos, gastos y transferencias, asignando IDs únicos con prefijo M- y agrupadores B-.
+         * PayFixedExpenseUseCase: Gestiona el pago de cuotas recurrentes, actualizando el estado de la obligación, acumulando abonos e inyectando la etiqueta estructurada PAGO_FIJO|F-XXXX|MM-yyyy.
+         * RollbackLastBatchUseCase: Ejecuta la reversión atómica del último grupo de registros insertados.
+         * GenerateUniqueIdUseCase: Genera identificadores únicos alfanuméricos deterministas por estampa de tiempo y entropía.
+         * GetDashboardStatusUseCase: Calcula consolidado de disponible real, alertas de sobregiro y deudas comprometidas.
+       - Modelos de Dominio Puros: PardoMovement, PardoFixedExpense, BudgetAlert, DashboardStatus, FinancialNotification.
+
+    c) Capa de Datos (Data Layer):
+       - Implementación del patrón Repository para coordinar fuentes de datos locales y remotas.
+       - Persistencia Local (Room DB): Base de datos SQLite empaquetada mediante Room Database (FinanceDatabase), con consultas optimizadas y transacciones atómicas (@Transaction).
+         * TransactionDao: Gestión de la tabla 'transactions' con filtrado por perfil (profileId) y control de sincronización (isSynced).
+         * FixedExpenseDao: Gestión de la tabla 'fixed_expenses'.
+         * SavingsGoalDao: Gestión de la tabla 'savings_goals'.
+       - Preferencias y Estado Ligero (DataStore Preferences): UserPreferencesRepository y SecurityRepository administrando tokens, perfiles, PIN de seguridad y URLs.
+       - Cliente de Red y Sincronización Remota: OkHttpClient adaptado sin auto-redirección para capturar saltos 302/307 hacia script.googleusercontent.com preservando payloads POST JSON.
+
+1.3 Stack Tecnológico y Lenguaje de Programación:
+    - Lenguaje: Kotlin 2.x (100% idiomático, Corrutinas, Flujos asíncronos con Flow / StateFlow / SharedFlow).
+    - Inyección de Dependencias: Hilt / Dagger (@HiltViewModel, @Singleton, @Inject).
+    - Serialización de Datos: Kotlinx Serialization (Json configurado con ignoreUnknownKeys = true).
+    - Persistencia Local: Room DB 2.6+ & DataStore Preferences.
+    - Cliente HTTP: OkHttp3 con interceptor manual de redirecciones.
+    - Inteligencia Artificial: Integración nativa con la API REST beta de Google Gemini (gemini-1.5-flash).
+
+1.4 Interfaz de Usuario y Sistema de Diseño (Jetpack Compose Material 3 Expressive):
+    - OLED Dark Theme: Paleta de color optimizada para pantallas AMOLED con fondo negro absoluto (#000000, Slate950/Slate900), minimizando el consumo de energía y ofreciendo un contraste visual profundo.
+    - Glassmorphism UI: Componentes visuales translúcidos (GlassCard, GlassButton) con efecto de cristal esmerilado (Frosted Glass Blur), bordes suaves (GlassBorder) y gradientes dinámicos.
+    - Física de Resortes (Spring Physics): Transiciones de pantalla y microinteracciones animadas con resortes elásticos (Modifier.bounceClick()), brindando una respuesta táctil orgánica.
+    - Feedback Háptico (Haptics): Integración con LocalHapticFeedback (HapticFeedbackType.LongPress / TextHandleMove) que vibra sutilmente al presionar botones de 1-Tap, confirmar pagos de cuotas, ingresar PIN o superar el límite diario de gastos hormiga.
+    - Soporte Edge-to-Edge: Renderizado de pantalla completa respetando insets del sistema (WindowInsets, Status Bar y Navigation Bar transparentes).
+
+
+--------------------------------------------------------------------------------
+2. EXPLICACIÓN DETALLADA DE TODOS LOS MÓDULOS Y PANTALLAS
+--------------------------------------------------------------------------------
+
+2.1 Dashboard Maestro (Panel Principal)
+    El Dashboard Maestro es el centro de mando y visualización financiera ejecutiva.
+
+    a) Tarjeta de Saldo Principal (Hero Balance Card):
+       - Saldo Total Consolidado: Cálculo automático en tiempo real de Ingresos Totales menos Gastos Totales.
+       - Botón Toggle de Privacidad (Ocultar/Mostrar Saldo): Ícono de ojo que permite ocultar los valores numéricos reemplazándolos por asteriscos (•••••) para garantizar privacidad en lugares públicos.
+       - Comparativa de Caja Líquida:
+         * "Disponible Real": Dinero líquido efectivamente libre para gastar, obtenido restando del Saldo Total la suma de Gastos Fijos Comprometidos del mes actual.
+         * "Comprometido Fijos": Sumatoria exacta de las cuotas y servicios fijos pendientes por pagar en el periodo actual.
+
+    b) Accesos Rápidos de Acción Inmediata:
+       - Botón [+ Gasto]: Abre la modal interactiva para registrar un egreso especificado.
+       - Botón [+ Ingreso]: Abre el formulario para registrar un ingreso de dinero.
+       - Botón [🐜 Hormiga 1-Tap]: Acceso directo al menú de microgastos rápidos.
+
+    c) Smart Insights Banner por Inteligencia Artificial:
+       - Componente dinámico superior (SmartInsightsBanner.kt) que analiza el comportamiento financiero reciente y proyecta consejos, alertas de sobregiro o felicitaciones.
+
+
+2.2 Movimientos con Buscador Multicriterio en Tiempo Real
+    Módulo de consulta, filtrado y auditoría de todas las transacciones registradas.
+
+    a) Buscador Multicriterio Instantáneo:
+       - Filtrado en tiempo real mientras el usuario escribe en la barra de búsqueda.
+       - Evalúa simultáneamente: Nombre del establecimiento/comercio, Categoría, Cuenta o Método de pago (Nequi, Bancolombia, Efectivo) y Observaciones/Notas.
+
+    b) Chips de Filtro Rápido por Tipo:
+       - Opciones: "Todos", "Gastos", "Ingresos".
+       - Actualización reactiva instantánea de la lista mediante StateFlow.
+
+    c) Interacción y Gestos:
+       - Pull-to-Refresh: Gesto de arrastre vertical para recargar y sincronizar con la base de datos local.
+       - Swipe-to-Delete / Swipe-to-Edit: Eliminación o edición directa deslizando tarjetas de movimiento.
+
+
+2.3 Control de Gastos Hormiga 1-Tap
+    Módulo especializado en visibilizar y contener las pequeñas fugas invisibles de dinero diario.
+
+    a) Chips de Registro en 1-Tap:
+       - Botones preconfigurados con montos habituales ($2.000, $5.000, $12.000, $20.000 COP) y accesos a categorías de ocio/antojos (Café, Snack, Propina, Taxi).
+       - Permite guardar el gasto en menos de 1.5 segundos con respuesta háptica inmediata.
+
+    b) Barra de Umbral Diario Animada ($30.000 COP Límite Predeterminado):
+       - Visualización gráfica del acumulado de gastos hormiga realizados en el día actual.
+       - Indicadores Visuales por Estado:
+         * Verde (0% - 70%): Rango de gasto seguro.
+         * Amarillo (71% - 99%): Advertencia de proximidad al techo diario.
+         * Rojo Pulsante (100%+): Límite superado, disparando una vibración de alerta háptica y una notificación del sistema.
+
+
+2.4 Control de Obligaciones y Gastos Fijos (Calendario de Pagos)
+    Módulo de administración de compromisos financieros mensuales recurrentes (servicios públicos, arriendo, cuotas de crédito, suscripciones).
+
+    a) Calendario y Matriz de Vencimientos:
+       - Vista organizada de fijos por día de cobro mensual (1 al 31).
+
+    b) Semáforo Visual de Estados:
+       - 🔴 Vencido: Cuota cuya fecha de pago ya pasó y no registra pago.
+       - 🟡 Parcial: Cuota con abonos registrados pero inferior a la cuota base.
+       - 🟢 Pagado: Cuota satisfecha en su totalidad para el mes en curso.
+       - ⚪ Pendiente: Cuota próxima a vencer en el mes.
+
+    c) Lógica del Botón "Pagar Cuota" e Inyección de Tag de Trazabilidad:
+       - Al presionar "Pagar Cuota", el caso de uso PayFixedExpenseUseCase registra automáticamente un egreso en la tabla 'transactions'.
+       - Inyección de Etiqueta de Trazabilidad (Tag):
+         Formato Estructurado: `PAGO_FIJO|F-XXXX|MM-yyyy`
+         Donde `F-XXXX` es el ID del gasto fijo y `MM-yyyy` es el mes y año del periodo pagado. Esto permite que la aplicación identifique de forma determinista qué fijos ya fueron saldados en el mes sin duplicar cobros.
+
+
+2.5 Presupuestos con Alertas `🚨 SOBREGIRO`
+    Módulo de planificación y contención de gastos por categoría.
+
+    a) Techos Presupuestales Mensuales:
+       - Asignación de montos máximos permitidos por categoría (ej. Alimentación, Transporte, Ocio, Servicios).
+
+    b) Indicadores y Alertas Visuales:
+       - Barra de progreso de llenado en tiempo real (monto consumido vs. monto asignado).
+       - Cálculo del "Margen Restante" en dinero.
+       - Alerta Visual `🚨 SOBREGIRO`: Badge rojo brillante de advertencia cuando el gasto de la categoría supera el 100% del tope presupuestado.
+
+
+2.6 Analítica Avanzada & Score de Salud Financiera (Score 0 - 100)
+    Motor de diagnóstico financiero cuantitativo y cualitativo basado en la regla presupuestaria 50/30/20.
+
+    a) Score de Salud Financiera (0 a 100 puntos):
+       - Algoritmo de Evaluación Basado en la Regla 50/30/20:
+         * 50% Necesidades Básicas (Gastos Fijos y Obligaciones) -> Máximo 40 puntos en el score.
+         * 30% Estilo de Vida y Gastos Variables (Deseos/Ocio) -> Máximo 30 puntos en el score.
+         * 20% Ahorro e Inversión (Flujo de Caja Conservado) -> Máximo 30 puntos en el score.
+       - Rangos de Diagnóstico:
+         * 80 - 100: "Excelente 🌟" (Distribución financiera óptima).
+         * 60 - 79: "Saludable 👍" (Manejo adecuado con margen de mejora).
+         * 40 - 59: "En Riesgo ⚠️" (Gastos fijos o de estilo de vida elevados).
+         * 0 - 39: "Atención 🚨" (Egresos superan los ingresos mensuales).
+
+    b) Métricas Clave de Análisis:
+       - Gasto Promedio Diario: Promedio de dinero gastado por día transcurrido.
+       - Proyección a Fin de Mes: Estimación del gasto total al cierre del mes combinando el consumo acumulado, el gasto diario proyectado para los días restantes y las cuotas fijos aún pendientes.
+       - Porcentaje de Fuga Hormiga: Proporción del total de ingresos consumida en microgastos.
+       - Desglose Porcentual por Categoría y Gráficos Comparativos Mensuales.
+
+
+2.7 Asistente de IA Híbrido (IA Pardo & Google Gemini API `gemini-1.5-flash`)
+    Chatbot e interlocutor financiero con inyección de contexto en tiempo real.
+
+    a) Inyección de Contexto Financiero en Tiempo Real:
+       - Cada mensaje enviado a la IA adjunta automáticamente una radiografía estructurada del estado financiero del usuario:
+         * Nombre de usuario y Saldo Total en cuenta.
+         * Disponible Real Líquido y Gastos Fijos Comprometidos.
+         * Ingresos y Gastos acumulados del mes.
+         * Total de Gastos Hormiga y Mayor Categoría de egreso.
+
+    b) Arquitectura Híbrida (Gemini 1.5 Flash + IA Local Heurística):
+       - Modo Online (Gemini API Key configurada): Utiliza el modelo 'gemini-1.5-flash' de Google para respuestas altamente conversacionales, analíticas y empáticas.
+       - Modo Offline / Sin API Key: La aplicación commuta automáticamente a un motor analítico heurístico local que responde consultas comunes sobre capacidad de compra, reducción de gastos y metas.
+
+    c) Prompts Rápidos e Interactivos:
+       - Preguntas preconfiguradas en 1-Tap: "¿Puedo comprar algo de $150.000 hoy sin sobregirarme?", "¿En qué estoy gastando más este mes?", "¿Cómo reduzco mis gastos hormiga?".
+
+
+2.8 Módulo de Seguridad Avanzado (PIN 4 Dígitos + Biometría + Auto-Bloqueo)
+    Sistema de protección y privacidad de datos sensibles gestionado por SecurityRepository.
+
+    a) PIN Numérico de 4 Dígitos:
+       - Teclado numérico táctil personalizado con animación de puntos de confirmación y respuesta háptica.
+
+    b) Autenticación Biométrica Dual (Android BiometricPrompt API):
+       - Compatibilidad con Huella Dactilar (Fingerprint) y Reconocimiento Facial (Face Unlock).
+
+    c) Auto-Bloqueo Inteligente en Segundo Plano:
+       - Al minimizar la aplicación o pasar a segundo plano, SecurityRepository activa automáticamente el estado de bloqueo (_isAppLocked = true), exigiendo reautenticación inmediata al reingresar.
+
+
+2.9 Sistema Multi-Perfil (Compartir con Amigos) y Restauración en Nube
+    Funcionalidades avanzadas para la gestión de múltiples cuentas independientes y portabilidad total de datos.
+
+    a) Sistema Multi-Perfil Independiente:
+       - Permite crear y alternar entre múltiples perfiles de usuario (ej. "Marlon", "Perfil Amigo 1", "Perfil Amigo 2").
+       - Cada perfil mantiene su propia base de datos Room aislada (filtrada mediante el campo profileId en todas las tablas), con sus propios saldos, presupuestos, historial de transacciones y su propia URL de Google Apps Script.
+
+    b) Detección de URL del Editor y Guardado Automático:
+       - Sanitización y validación automática de la URL ingresada. Si el usuario pega por error la URL del editor de Google Apps Script (.../home/projects/.../edit), la app la detecta y convierte automáticamente a la URL canónica de ejecución terminada en /exec.
+
+    c) Restauración Completa desde la Nube ("Cambio de Celular"):
+       - Función restoreDataFromDrive(profileId): Al instalar la aplicación en un teléfono nuevo o reformatado, el usuario ingresa su URL de Apps Script y presiona "📥 Restaurar Copia desde Google Drive".
+       - La aplicación ejecuta una solicitud GET con el parámetro '?accion=restaurar', descarga todo el historial de la hoja de cálculo (movimientos, fijos, metas) y repuebla de forma transparente la base de datos Room local.
+
+
+2.10 Centro de Notificaciones e Inteligencia Financiera Proactiva (`NotificationsDialog.kt`)
+     Centro de alertas proactivas accesible mediante el ícono de campana con Badge rojo de notificaciones pendientes.
+
+     - Alertas de Cuotas Fijos Próximas a Vencer.
+     - Alertas de Presupuesto Superado (`⚡ Presupuesto Superado`).
+     - Alertas de Exceso en Gastos Hormiga (`⚡ Alerta de Gastos Hormiga`).
+     - Recomendaciones Proactivas de la IA Pardo para abonar exedentes a Metas de Ahorro.
+     - Botones de Acción Directa en 1-Tap para pagar cuotas o navegar a la sección correspondiente.
+
+
+2.11 Perfil de Usuario y Configuración Nube (`ProfileDialog.kt`)
+     Centro de parametrización del usuario y conectividad externa.
+
+     - Gestión de datos personales (Nombre, Moneda COP, Salario Promedio).
+     - Configuración de la URL / Script ID de Google Apps Script con prueba de conexión.
+     - Visualizador y botón de Copiar Código de la Plantilla de Google Apps Script (.gs).
+     - Configuración de la API Key de Google Gemini con enlace directo a Google AI Studio (aistudio.google.com).
+     - Botón directo a Ajustes de Seguridad (PIN y Biometría).
+
+
+2.12 Exportador de Reportes (CSV) y Metas de Ahorro
+     - Exportación de movimientos a formato CSV estándar (UTF-8, delimitado por comas) para auditoría o apertura en Excel.
+     - Módulo de Metas de Ahorro con barras de progreso animadas y depósitos directos.
+
+
+--------------------------------------------------------------------------------
+3. MAPEO TÉCNICO DE TABLAS GOOGLE SHEETS (14 Y 8 COLUMNAS)
+--------------------------------------------------------------------------------
+
+3.1 Tabla `MOVIMIENTOS` (14 Columnas Exactas):
+    1. ID (String, ej. `M-20260905-8F31`): Identificador único de la transacción.
+    2. Fecha (String, formato `YYYY-MM-DD`): Fecha de ejecución.
+    3. Hora (String, formato `HH:mm:ss`): Hora exacta del registro.
+    4. Tipo (String: `INGRESO`, `EGRESO`, `TRANSFERENCIA`, `NEUTRO`): Naturaleza del flujo.
+    5. Categoría (String, ej. `Alimentación`, `Servicios`, `Ocio`): Categoría principal.
+    6. Subcategoría (String, ej. `Restaurante`, `Gasto Hormiga`): Clasificación secundaria.
+    7. Descripción / Concepto (String, ej. `Almuerzo`, `Pago Factura Luz`): Detalle del movimiento.
+    8. Valor (Número Decimal / Entero): Monto de la operación.
+    9. Método (String, ej. `Efectivo`, `Nequi`, `Bancolombia`, `Tarjeta`): Medio de pago.
+    10. Cuenta (String, ej. `Nequi`, `Bancolombia`, `Efectivo`): Cuenta financiera afectada.
+    11. Mes (String, ej. `Septiembre`): Mes del registro.
+    12. Año (String, ej. `2026`): Año del registro.
+    13. Origen (String: `"Android App"`, `"Telegram"`, `"Gmail"`): Canal origen del registro.
+    14. Referencia / Tags (String): Etiquetas de trazabilidad estructuradas (ej. `PAGO_FIJO|F-1042|Septiembre 2026`, `ABONO_FIJO|...`, `CXC|...`, `|MOVIMIENTO_NEUTRO`, `GASTO_HORMIGA`).
+
+
+3.2 Tabla `CONTROL FIJOS` (8 Columnas Exactas):
+    1. ID (String, ej. `F-1042`): Identificador único de la obligación fija.
+    2. Concepto (String, ej. `Arriendo Depto`, `Internet Fibra`): Nombre del compromiso.
+    3. Categoría (String, ej. `Vivienda`, `Servicios`): Categoría del gasto.
+    4. Día de cobro (Entero, 1 al 31): Día habitual del mes fijado para el pago.
+    5. Valor mensual (Número Decimal): Cuota esperada del periodo.
+    6. Último mes pagado (String, ej. `Septiembre 2026`): Periodo del último pago saldado.
+    7. Fecha último pago (String, formato `YYYY-MM-DD`): Fecha exacta del último pago.
+    8. Notas/Deuda (String): Observaciones adicionales o saldo acumulado.
+
+
+3.3 Obras y Hojas Adicionales de la Plantilla Máster:
+    - `PANEL`: Snapshot consolidado de Saldo Total, Disponible Real, Ingresos y Gastos.
+    - `PRESUPUESTO Y ALERTAS`: Matriz de límites y estado de sobregiros por categoría.
+    - `REGLAS COMERCIOS`: Inferencias automáticas de categoría por nombre de establecimiento.
+    - `CUENTAS POR COBRAR`: Registro de deudas pendientes a favor.
+    - `METAS AHORRO`: Registro de objetivos de ahorro y depósitos acumulados.
+
+
+3.4 Generación Determinista de IDs Únicos:
+    - Prefijo `M-`: Para transacciones en MOVIMIENTOS (ej. `M-20260905-A1B2`).
+    - Prefijo `F-`: Para obligaciones en CONTROL FIJOS (ej. `F-1001`).
+    - Prefijo `A-`: Para registros en METAS AHORRO (ej. `A-5001`).
+    - Prefijo `B-`: Para identificadores de bloque transaccional (ej. `B-9988`).
+
+
+3.5 Tratamiento de Transferencias Internas (Operaciones Neutras):
+    - Las transferencias de dinero entre cuentas del mismo usuario (ej. Transferir de Bancolombia a Nequi) son clasificadas como `TRANSFERENCIA_INTERNA`.
+    - No alteran el Patrimonio Neto ni el Saldo Total Consolidado, excluyéndose de los cálculos de Gastos o Ingresos del mes para evitar distorsionar la analítica.
+
+
+3.6 Reversión Atómica por Bloque (`borrarUltimoConjunto`):
+    - El caso de uso RollbackLastBatchUseCase ejecuta una transacción atómica local en Room DB para revertir el último grupo de transacciones (blockId).
+    - Si el movimiento eliminado corresponde a un pago de cuota fija (`PAGO_FIJO|F-XXXX|MM-yyyy`), la aplicación restablece automáticamente el estado de la obligación en CONTROL FIJOS a `PENDIENTE`.
+    - Transmite el comando 'borrar_ultimo' a Google Apps Script para eliminar la última fila en la hoja de cálculo.
+
+
+--------------------------------------------------------------------------------
+4. SINCRONIZACIÓN INTELIGENTE DE GOOGLE APPS SCRIPT
+--------------------------------------------------------------------------------
+
+4.1 Aceptación Flexible de Entrada (ID Simple o URL Completa):
+    - La aplicación acepta indistintamente un Script ID directo (ej. `AKfycb...`, longitud >= 20 caracteres) o una URL completa (`https://script.google.com/macros/s/.../exec` o `/edit`).
+    - Función sanitizeUrl(): Elimina caracteres invisibles, espacios, comillas y caracteres de ancho cero (`\uFEFF`, `\u200B`, etc.).
+    - Función extractScriptExecUrl(): Extrae la clave del script y construye de forma canónica la URL terminada en `/exec`.
+
+4.2 Manejo Especializado de Redirecciones HTTP 302/307:
+    - Problema Técnico de Google Apps Script: Al enviar peticiones HTTP POST a la Web App de Google, Google responde con un código de redirección HTTP 302/307 redirigiendo la petición a un servidor temporal en `script.googleusercontent.com`. Los clientes HTTP estándar convierten automáticamente la petición POST en un GET durante el salto 302, destruyendo el payload JSON.
+    - Solución Implementada en GoogleDriveSyncRepositoryImpl: Se utiliza un cliente OkHttpClient con auto-redirección deshabilitada (followRedirects(false)). La app captura el código 302/307, extrae la cabecera 'Location', y reejecuta manualmente la solicitud HTTP POST preservando el cuerpo JSON codificado en UTF-8 hasta por 5 saltos.
+    - Fallback de Respaldo: Si OkHttp falla, se ejecuta un algoritmo de contingencia mediante HttpURLConnection manteniendo la transmisión del flujo POST.
+
+4.3 Arquitectura Offline-First (Room DB) y Auto-Sincronización:
+    - La aplicación funciona al 100% sin conexión a internet utilizando la base de datos Room local.
+    - Cada registro guardado en local posee la bandera isSynced = false.
+    - Al recuperar la conectividad o presionar "Sincronizar ahora con Google Drive", syncAllDataToDrive() empaqueta todos los registros no sincronizados, transmite la carga batch a Google Apps Script y actualiza la bandera local a isSynced = true tras recibir respuesta exitosa HTTP 200.
+
+4.4 Restauración Completa desde la Nube (`restoreDataFromDrive`):
+    - Permite recuperar toda la información guardada en Google Sheets tras un cambio de dispositivo o reinstalación.
+    - Envía una petición GET con el parámetro `?accion=restaurar`, parsea el JSON con movimientos, fijos y metas, limpian las tablas locales del perfil e insertan en lote los registros restaurados.
+
+
+--------------------------------------------------------------------------------
+5. CÓDIGO FUENTE COMPLETO DEL HANDLER GOOGLE APPS SCRIPT
+   (GoogleAppsScript_V25.3_PRO_REST.gs)
+--------------------------------------------------------------------------------
+
+```javascript
+/**
+ * ============================================================================
+ * GOOGLE APPS SCRIPT V25.3 PRO REST - PARDOFINANZAS / FINANZAS PRO (2026)
+ * ============================================================================
+ * Edición con Extensión REST API (doGet y doPost) para sincronización con
+ * Android App, Telegram Bot, Gmail Parser y Google Sheets.
+ */
+
+const HOJA_MOVIMIENTOS = "MOVIMIENTOS";
+const HOJA_CONTROL_FIJOS = "CONTROL FIJOS";
+const HOJA_PANEL = "PANEL";
+const HOJA_PRESUPUESTO = "PRESUPUESTO Y ALERTAS";
+const HOJA_REGLAS = "REGLAS COMERCIOS";
+const HOJA_CXC = "CUENTAS POR COBRAR";
+const HOJA_METAS = "METAS AHORRO";
+const EXCLUIR_CUENTA = "Clara Aide";
+
+function doGet(e) {
+  try {
+    const params = (e && e.parameter) ? e.parameter : {};
+    const accion = params.accion || "resumen";
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+    switch (accion) {
+      case "resumen": return jsonResponse(obtenerResumenFinanciero(ss));
+      case "movimientos": return jsonResponse(obtenerListaMovimientos(ss));
+      case "fijos": return jsonResponse(obtenerListaGastosFijos(ss));
+      case "disponible": return jsonResponse(obtenerDisponibleReal(ss));
+      case "fugas": return jsonResponse(obtenerGastosHormigaFugas(ss));
+      case "restaurar": return jsonResponse(obtenerDatosCompletosRestauracion(ss));
+      default:
+        return jsonResponse({ status: "ok", message: "Google Apps Script V25.3 PRO REST activo" });
+    }
+  } catch (err) {
+    return jsonResponse({ status: "error", message: err.toString() });
+  }
+}
+
+function doPost(e) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let body = {};
+    if (e && e.postData && e.postData.contents) {
+      body = JSON.parse(e.postData.contents);
+    }
+    const params = (e && e.parameter) ? e.parameter : {};
+    const accion = body.accion || body.action || params.accion || "sync";
+
+    switch (accion) {
+      case "nuevo_movimiento": return jsonResponse(registrarNuevoMovimiento(ss, body));
+      case "pagar_fijo": return jsonResponse(registrarPagoGastoFijo(ss, body));
+      case "borrar_ultimo": return jsonResponse(borrarUltimoConjunto(ss));
+      case "sync":
+      default: return jsonResponse(procesarSincronizacionCompleta(ss, body));
+    }
+  } catch (err) {
+    return jsonResponse({ status: "error", message: err.toString() });
+  }
+}
+
+function obtenerResumenFinanciero(ss) {
+  const sheetMov = getOrCreateSheet(ss, HOJA_MOVIMIENTOS);
+  const rows = sheetMov.getDataRange().getValues();
+  let totalIngresos = 0, totalGastos = 0;
+
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i];
+    if (!row[0]) continue;
+    const tipo = String(row[3] || "").toUpperCase();
+    const cuenta = String(row[9] || "");
+    const valor = Number(row[7]) || 0;
+    if (cuenta.includes(EXCLUIR_CUENTA)) continue;
+    if (tipo === "INGRESO") totalIngresos += valor;
+    else if (tipo === "EGRESO" || tipo === "GASTO") totalGastos += valor;
+  }
+  return { balance: totalIngresos - totalGastos, disponible: obtenerDisponibleRealMonto(ss), ingresos: totalIngresos, gastos: totalGastos };
+}
+
+function obtenerListaMovimientos(ss) {
+  const sheetMov = getOrCreateSheet(ss, HOJA_MOVIMIENTOS);
+  const rows = sheetMov.getDataRange().getValues();
+  const resultado = [];
+  for (let i = 1; i < rows.length; i++) {
+    const r = rows[i];
+    if (!r[0]) continue;
+    if (String(r[9] || "").includes(EXCLUIR_CUENTA)) continue;
+    resultado.push({
+      id: String(r[0]), fecha: formatFecha(r[1]), hora: String(r[2] || ""), tipo: String(r[3] || "EGRESO"),
+      categoria: String(r[4] || ""), subcategoria: String(r[5] || ""), descripcion: String(r[6] || ""),
+      valor: Number(r[7]) || 0, metodo: String(r[8] || ""), cuenta: String(r[9] || ""),
+      mes: String(r[10] || ""), ano: String(r[11] || ""), origen: String(r[12] || "Android App"), referencia: String(r[13] || "")
+    });
+  }
+  return resultado;
+}
+
+function obtenerListaGastosFijos(ss) {
+  const sheetFijos = getOrCreateSheet(ss, HOJA_CONTROL_FIJOS);
+  const rows = sheetFijos.getDataRange().getValues();
+  const resultado = [];
+  for (let i = 1; i < rows.length; i++) {
+    const r = rows[i];
+    if (!r[0]) continue;
+    resultado.push({
+      id: String(r[0]), concepto: String(r[1] || ""), categoria: String(r[2] || ""), diaCobro: Number(r[3]) || 1,
+      valorMensual: Number(r[4]) || 0, ultimoMesPagado: String(r[5] || ""), fechaUltimoPago: formatFecha(r[6]), notasDeuda: String(r[7] || "")
+    });
+  }
+  return resultado;
+}
+
+function obtenerDatosCompletosRestauracion(ss) {
+  const movs = obtenerListaMovimientos(ss);
+  const fijos = obtenerListaGastosFijos(ss);
+
+  const sheetMetas = getOrCreateSheet(ss, HOJA_METAS);
+  const rowsMetas = sheetMetas.getDataRange().getValues();
+  const metas = [];
+  for (let i = 1; i < rowsMetas.length; i++) {
+    const r = rowsMetas[i]; if (!r[0]) continue;
+    metas.push({
+      id: Number(r[0]) || i,
+      name: String(r[1] || "Meta"),
+      targetAmount: Number(r[2]) || 0,
+      currentAmount: Number(r[3]) || 0,
+      category: String(r[4] || "General")
+    });
+  }
+
+  return {
+    status: "success",
+    movimientos: movs.map(m => ({
+      id: m.id, fecha: m.fecha, concepto: m.descripcion || m.concepto || "",
+      monto: m.valor, tipo: m.tipo.toLowerCase(), categoria: m.categoria, cuenta: m.cuenta, observaciones: m.referencia
+    })),
+    gastosFijos: fijos.map(f => ({
+      id: parseInt(f.id.replace("F-", "")) || 1, concepto: f.concepto, monto: f.valorMensual, diaPago: f.diaCobro
+    })),
+    metasAhorro: metas
+  };
+}
+
+function obtenerDisponibleRealMonto(ss) {
+  const res = obtenerResumenFinancieroPuro(ss);
+  const fijos = obtenerListaGastosFijos(ss);
+  const now = new Date();
+  const mesAno = getMesNombre(now.getMonth()) + " " + now.getFullYear();
+  let comp = 0;
+  fijos.forEach(f => { if (f.ultimoMesPagado !== mesAno) comp += f.valorMensual; });
+  return Math.max(0, res.balance - comp);
+}
+
+function obtenerDisponibleReal(ss) {
+  return { disponibleReal: obtenerDisponibleRealMonto(ss), fechaConsulta: new Date().toISOString() };
+}
+
+function obtenerGastosHormigaFugas(ss) {
+  const sheetMov = getOrCreateSheet(ss, HOJA_MOVIMIENTOS);
+  const rows = sheetMov.getDataRange().getValues();
+  let total = 0; const detalles = [];
+  for (let i = 1; i < rows.length; i++) {
+    const r = rows[i]; if (!r[0]) continue;
+    const cat = String(r[4] || "").toLowerCase();
+    const ref = String(r[13] || "").toLowerCase();
+    if (cat.includes("hormiga") || ref.includes("gasto_hormiga")) {
+      const val = Number(r[7]) || 0; total += val;
+      detalles.push({ id: String(r[0]), descripcion: String(r[6] || ""), valor: val, fecha: formatFecha(r[1]) });
+    }
+  }
+  return { totalFugasHormiga: total, cantidadRegistros: detalles.length, detalles: detalles };
+}
+
+function registrarNuevoMovimiento(ss, data) {
+  const sheetMov = getOrCreateSheet(ss, HOJA_MOVIMIENTOS);
+  const m = data.movimiento || data;
+  const now = new Date();
+  const idStr = m.id || "M-" + now.getTime();
+  sheetMov.appendRow([
+    idStr, m.fecha || now.toISOString().split('T')[0], m.hora || now.toTimeString().split(' ')[0],
+    m.tipo || "EGRESO", m.categoria || "General", m.subcategoria || "", m.descripcion || m.concepto || "",
+    Number(m.valor || m.monto) || 0, m.metodo || "Efectivo", m.cuenta || "Efectivo",
+    m.mes || getMesNombre(now.getMonth()), m.ano || String(now.getFullYear()), "Android App", m.referencia || m.observaciones || ""
+  ]);
+  return { success: true, message: "Movimiento registrado", id: idStr };
+}
+
+function registrarPagoGastoFijo(ss, data) {
+  const sheetFijos = getOrCreateSheet(ss, HOJA_CONTROL_FIJOS);
+  const rows = sheetFijos.getDataRange().getValues();
+  const idFijo = data.idFijo || data.id;
+  const now = new Date();
+  const mesAno = data.periodo || (getMesNombre(now.getMonth()) + " " + now.getFullYear());
+  const fechaHoy = now.toISOString().split('T')[0];
+  let encontrado = false, concepto = "Gasto Fijo", valor = Number(data.monto) || 0;
+  for (let i = 1; i < rows.length; i++) {
+    if (String(rows[i][0]) === String(idFijo)) {
+      concepto = String(rows[i][1]); if (valor === 0) valor = Number(rows[i][4]) || 0;
+      sheetFijos.getRange(i + 1, 6).setValue(mesAno);
+      sheetFijos.getRange(i + 1, 7).setValue(fechaHoy);
+      encontrado = true; break;
+    }
+  }
+  const tagRef = "PAGO_FIJO|" + idFijo + "|" + mesAno;
+  registrarNuevoMovimiento(ss, {
+    id: "M-" + now.getTime(), fecha: fechaHoy, hora: now.toTimeString().split(' ')[0], tipo: "EGRESO",
+    categoria: "Servicios/Fijos", descripcion: "Pago Cuota: " + concepto, valor: valor,
+    metodo: data.metodoPago || "Nequi", cuenta: data.cuenta || "Nequi", origen: "Android App", referencia: tagRef
+  });
+  return { success: true, message: "Pago registrado", idFijo: idFijo, tag: tagRef };
+}
+
+function borrarUltimoConjunto(ss) {
+  const sheetMov = getOrCreateSheet(ss, HOJA_MOVIMIENTOS);
+  const lastRow = sheetMov.getLastRow();
+  if (lastRow <= 1) return { success: false, message: "No hay movimientos" };
+  const values = sheetMov.getRange(lastRow, 1, 1, 14).getValues()[0];
+  const ref = String(values[13] || "");
+  if (ref.startsWith("PAGO_FIJO|")) {
+    const p = ref.split("|"); if (p.length >= 2) revertirEstadoGastoFijo(ss, p[1]);
+  }
+  sheetMov.deleteRow(lastRow);
+  return { success: true, message: "Último movimiento eliminado", idEliminado: values[0] };
+}
+
+function revertirEstadoGastoFijo(ss, idFijo) {
+  const sheetFijos = getOrCreateSheet(ss, HOJA_CONTROL_FIJOS);
+  const rows = sheetFijos.getDataRange().getValues();
+  for (let i = 1; i < rows.length; i++) {
+    if (String(rows[i][0]) === String(idFijo)) {
+      sheetFijos.getRange(i + 1, 6).setValue("");
+      sheetFijos.getRange(i + 1, 7).setValue("");
+      break;
+    }
+  }
+}
+
+function procesarSincronizacionCompleta(ss, data) {
+  if (data.movimientos && Array.isArray(data.movimientos)) {
+    const sheetMov = getOrCreateSheet(ss, HOJA_MOVIMIENTOS);
+    sheetMov.clearContents();
+    sheetMov.appendRow(["ID", "Fecha", "Hora", "Tipo", "Categoría", "Subcategoría", "Descripción", "Valor", "Método", "Cuenta", "Mes", "Año", "Origen", "Referencia"]);
+    data.movimientos.forEach(m => {
+      sheetMov.appendRow([
+        m.id || "", m.fecha || "", m.hora || "", m.tipo || "EGRESO", m.categoria || "", m.subcategoria || "",
+        m.descripcion || m.concepto || "", Number(m.valor || m.monto) || 0, m.metodo || "", m.cuenta || "Efectivo",
+        m.mes || "", m.ano || "", "Android App", m.referencia || m.observaciones || ""
+      ]);
+    });
+  }
+  if (data.gastosFijos && Array.isArray(data.gastosFijos)) {
+    const sheetFijos = getOrCreateSheet(ss, HOJA_CONTROL_FIJOS);
+    sheetFijos.clearContents();
+    sheetFijos.appendRow(["ID", "Concepto", "Categoría", "Día de cobro", "Valor mensual", "Último mes pagado", "Fecha último pago", "Notas/Deuda"]);
+    data.gastosFijos.forEach(f => {
+      sheetFijos.appendRow([
+        f.id || "", f.concepto || "", f.categoria || "", Number(f.diaCobro || f.diaPago) || 1,
+        Number(f.valorMensual || f.monto) || 0, f.ultimoMesPagado || "", f.fechaUltimoPago || "", f.notasDeuda || ""
+      ]);
+    });
+  }
+  if (data.metasAhorro && Array.isArray(data.metasAhorro)) {
+    const sheetMetas = getOrCreateSheet(ss, HOJA_METAS);
+    sheetMetas.clearContents();
+    sheetMetas.appendRow(["ID", "Nombre", "MontoObjetivo", "MontoActual", "Categoría"]);
+    data.metasAhorro.forEach(g => {
+      sheetMetas.appendRow([g.id, g.name, g.targetAmount, g.currentAmount, g.category || 'General']);
+    });
+  }
+  return { status: "success", message: "Sincronización exitosa", syncedCount: data.movimientos ? data.movimientos.length : 0 };
+}
+
+function obtenerResumenFinancieroPuro(ss) {
+  const sheetMov = getOrCreateSheet(ss, HOJA_MOVIMIENTOS);
+  const rows = sheetMov.getDataRange().getValues();
+  let ing = 0, gas = 0;
+  for (let i = 1; i < rows.length; i++) {
+    const r = rows[i]; if (!r[0] || String(r[9] || "").includes(EXCLUIR_CUENTA)) continue;
+    const t = String(r[3] || "").toUpperCase(), v = Number(r[7]) || 0;
+    if (t === "INGRESO") ing += v; else if (t === "EGRESO" || t === "GASTO") gas += v;
+  }
+  return { balance: ing - gas, ingresos: ing, gastos: gas };
+}
+
+function getOrCreateSheet(ss, name) {
+  let sheet = ss.getSheetByName(name);
+  if (!sheet) sheet = ss.insertSheet(name);
+  return sheet;
+}
+
+function jsonResponse(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
+}
+
+function formatFecha(val) {
+  if (!val) return "";
+  if (val instanceof Date) return val.toISOString().split('T')[0];
+  return String(val);
+}
+
+function getMesNombre(mesIdx) {
+  const meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+  return meses[mesIdx] || "Enero";
+}
+```
+
+================================================================================
+FIN DEL DOCUMENTO OFICIAL DE DOCUMENTACIÓN TÉCNICA Y DE USUARIO
+PARDOFINANZAS V25 / FINANZAS PRO (EDICIÓN 2026)
+================================================================================

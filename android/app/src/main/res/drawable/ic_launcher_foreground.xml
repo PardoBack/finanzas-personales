@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Layer 1: Electric Violet Geometric Fold Ribbon (#8B5CF6 -> #C084FC) -->
+    <path
+        android:pathData="M28,64 L28,34 L64,34 L54,44 L38,44 L38,54 L48,64 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="28"
+                android:startY="34"
+                android:endX="64"
+                android:endY="64">
+                <item android:offset="0.0" android:color="#FF8B5CF6" />
+                <item android:offset="0.5" android:color="#FFA855F7" />
+                <item android:offset="1.0" android:color="#FFC084FC" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Layer 2: Emerald Green Ascending Growth Arrow (#10B981 -> #34D399) -->
+    <path
+        android:pathData="M36,78 L46,78 L80,44 L80,28 L64,28 L71,35 L36,70 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="36"
+                android:startY="78"
+                android:endX="80"
+                android:endY="28">
+                <item android:offset="0.0" android:color="#FF059669" />
+                <item android:offset="0.4" android:color="#FF10B981" />
+                <item android:offset="1.0" android:color="#FF34D399" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Layer 3: Interlocking Depth Facet (Glassmorphic Intersection Highlight) -->
+    <path
+        android:pathData="M38,54 L48,44 L58,54 L48,64 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="38"
+                android:startY="44"
+                android:endX="58"
+                android:endY="64">
+                <item android:offset="0.0" android:color="#70FFFFFF" />
+                <item android:offset="1.0" android:color="#2010B981" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Layer 4: Arrowhead Precision Edge Highlight Line -->
+    <path
+        android:pathData="M64,28 L80,28 L80,44"
+        android:strokeWidth="2"
+        android:strokeColor="#FFFFFF"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+
+    <!-- Layer 5: Dynamic Spark Accent at Arrow Peak (80, 28) -->
+    <path
+        android:pathData="M80,20 L82,26 L88,28 L82,30 L80,36 L78,30 L72,28 L78,26 Z"
+        android:fillColor="#FFFFFF" />
+
+    <!-- Core Spark Glow Center -->
+    <path
+        android:pathData="M80,25 L81,27 L83,28 L81,29 L80,31 L79,29 L77,28 L79,27 Z"
+        android:fillColor="#A7F3D0" />
+
+    <!-- Layer 6: Origin Node Accent (#10B981 Glowing Origin Dot at 36,78) -->
+    <path
+        android:pathData="M41,78 A2.5,2.5 0 1,1 41,78.01"
+        android:strokeWidth="2.5"
+        android:strokeColor="#A7F3D0"
+        android:strokeLineCap="round" />
+
+</vector>

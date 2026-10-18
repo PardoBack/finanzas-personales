@@ -26,3 +26,13 @@ desktop.ini
 *.log
 exports/*.xlsx
 !exports/.gitkeep
+
+# Android build & cache
+.gradle/
+**/build/
+*.apk
+*.aab
+android/local.properties
+android/.idea/
+android/**/.gradle/
+android/*.iml
