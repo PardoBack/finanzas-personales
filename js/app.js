@@ -34,6 +34,9 @@ const FintechApp = {
   },
 
   init() {
+    if (typeof FinanceAPI !== "undefined" && typeof FinanceAPI.initOfflineListeners === "function") {
+      FinanceAPI.initOfflineListeners();
+    }
     this.initCloudShield();
     this.initServiceWorker();
     this.bindPWAInstall();
@@ -45,6 +48,8 @@ const FintechApp = {
     this.bindModals();
     this.setupDateContext();
     this.initRippleEffects();
+    this.initSmartInsightsCarousel();
+    this.bindQuickAntChips();
     this.loadData();
     this.checkBackendHealth();
 
@@ -606,7 +611,13 @@ const FintechApp = {
     // Actualizar pills en la barra rápida (en todas las barras de las vistas)
     document.querySelectorAll(".month-strip-pill").forEach(p => {
       const pMonth = p.getAttribute("data-month");
-      p.classList.toggle("active", pMonth === month);
+      const isAct = pMonth === month;
+      p.classList.toggle("active", isAct);
+      if (isAct) {
+        try {
+          p.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+        } catch(e) {}
+      }
     });
 
     document.querySelectorAll(".btn-all-year-pill").forEach(b => {
@@ -1106,6 +1117,18 @@ const FintechApp = {
     const d = new Date();
     const lbl = document.getElementById("label-active-month");
     if (lbl) lbl.textContent = `${meses[d.getMonth()]} ${d.getFullYear()}`;
+    const activeKey = (this.state.activeMonth || "octubre").toLowerCase();
+    setTimeout(() => {
+      document.querySelectorAll(".month-strip-pill").forEach(p => {
+        const isAct = p.getAttribute("data-month") === activeKey;
+        p.classList.toggle("active", isAct);
+        if (isAct) {
+          try {
+            p.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+          } catch(e) {}
+        }
+      });
+    }, 250);
   },
 
   bindNavigation() {
@@ -1130,6 +1153,54 @@ const FintechApp = {
       });
     });
 
+    // 2b. Menú Móvil "Más" (Estilo Compose Dropdown & Sheet)
+    const moreSheet = document.getElementById("mobile-more-sheet");
+    const btnMore = document.getElementById("btn-m-more");
+    const btnCloseMore = document.getElementById("btn-close-more-sheet");
+    const backdropMore = document.getElementById("more-sheet-backdrop");
+
+    const closeMoreSheet = () => {
+      moreSheet?.classList.remove("open");
+      const isSecondary = !["overview", "movements", "fixed"].includes(this.state.activeView || "overview");
+      btnMore?.classList.toggle("active", isSecondary);
+    };
+
+    btnMore?.addEventListener("click", () => {
+      this.haptic(12);
+      const willOpen = !moreSheet?.classList.contains("open");
+      if (willOpen) {
+        moreSheet?.classList.add("open");
+        btnMore.classList.add("active");
+      } else {
+        closeMoreSheet();
+      }
+    });
+
+    btnCloseMore?.addEventListener("click", () => {
+      this.haptic(8);
+      closeMoreSheet();
+    });
+
+    backdropMore?.addEventListener("click", () => {
+      closeMoreSheet();
+    });
+
+    document.querySelectorAll(".more-menu-item").forEach(item => {
+      item.addEventListener("click", () => {
+        this.haptic(12);
+        closeMoreSheet();
+        const target = item.getAttribute("data-target");
+        if (target) {
+          if (target === "colilla") {
+            const modal = document.getElementById("modal-upload-colilla");
+            if (modal) modal.classList.add("open");
+          } else {
+            this.switchView(target);
+          }
+        }
+      });
+    });
+
     // Botón en vista Overview para ver todos los movimientos en el módulo
     document.getElementById("btn-goto-all-movements")?.addEventListener("click", () => {
       this.haptic(12);
@@ -1145,15 +1216,40 @@ const FintechApp = {
     // Mobile Center Add Button
     document.getElementById("btn-m-add")?.addEventListener("click", () => {
       this.haptic(15);
+      const chatDrawer = document.getElementById("chat-cfo-drawer");
+      if (chatDrawer && chatDrawer.classList.contains("open")) {
+        chatDrawer.classList.remove("open");
+        const activeNav = document.querySelector(`.mobile-nav-btn[data-target="${this.state.activeView || 'overview'}"]`);
+        activeNav?.classList.add("active");
+        document.getElementById("btn-m-chat")?.classList.remove("active");
+      }
       document.getElementById("modal-add-movement")?.classList.add("open");
       document.getElementById("input-mov-valor")?.focus();
     });
 
-    // Mobile Chat Button
+    // Mobile Chat Button con sincronización de estado activo
     document.getElementById("btn-m-chat")?.addEventListener("click", () => {
       this.haptic(15);
       const drawer = document.getElementById("chat-cfo-drawer");
-      drawer?.classList.toggle("open");
+      const isOpen = drawer?.classList.toggle("open");
+      if (isOpen) {
+        document.querySelectorAll(".mobile-nav-btn").forEach(b => b.classList.remove("active"));
+        document.getElementById("btn-m-chat")?.classList.add("active");
+      } else {
+        document.getElementById("btn-m-chat")?.classList.remove("active");
+        const activeNav = document.querySelector(`.mobile-nav-btn[data-target="${this.state.activeView || 'overview'}"]`);
+        activeNav?.classList.add("active");
+      }
+    });
+
+    // Botón cerrar cajón de chat CFO
+    document.getElementById("btn-cfo-close")?.addEventListener("click", () => {
+      this.haptic(10);
+      const drawer = document.getElementById("chat-cfo-drawer");
+      drawer?.classList.remove("open");
+      document.getElementById("btn-m-chat")?.classList.remove("active");
+      const activeNav = document.querySelector(`.mobile-nav-btn[data-target="${this.state.activeView || 'overview'}"]`);
+      activeNav?.classList.add("active");
     });
 
     // 3. Segmented Controls (Tabs en Tablas)
@@ -1330,6 +1426,14 @@ const FintechApp = {
 
     this.state.activeView = cleanKey;
 
+    // Cerrar cajón de chat CFO y menú Más si están abiertos al cambiar de vista
+    const chatDrawer = document.getElementById("chat-cfo-drawer");
+    if (chatDrawer && chatDrawer.classList.contains("open")) {
+      chatDrawer.classList.remove("open");
+    }
+    document.getElementById("btn-m-chat")?.classList.remove("active");
+    document.getElementById("mobile-more-sheet")?.classList.remove("open");
+
     // 1. Ocultar todos los paneles y activar únicamente la vista solicitada
     document.querySelectorAll(".view-panel").forEach(panel => {
       panel.classList.remove("active");
@@ -1351,6 +1455,10 @@ const FintechApp = {
       const btnTarget = (btn.getAttribute("data-target") || "").toLowerCase().replace(/^section-/, "");
       btn.classList.toggle("active", btnTarget === cleanKey);
     });
+
+    // Si la vista activa es secundaria (está agrupada en "Más"), iluminar el botón Más
+    const isMainMobileTab = ["overview", "movements", "fixed"].includes(cleanKey);
+    document.getElementById("btn-m-more")?.classList.toggle("active", !isMainMobileTab);
 
     // 4. Scroll suave hacia arriba
     const scrollContainer = document.getElementById("main-content-scroll");
@@ -1390,6 +1498,146 @@ const FintechApp = {
     });
     document.querySelectorAll(".tab-pane").forEach(p => {
       p.classList.toggle("active", p.id === tabId);
+    });
+  },
+
+  initSmartInsightsCarousel() {
+    const banner = document.getElementById("smart-insights-banner");
+    if (!banner) return;
+
+    const insights = [
+      {
+        category: "DISPONIBLE IA",
+        emoji: "💡",
+        title: "Optimización de Cupo",
+        desc: "Tu disponible real te permite abonar $50.000 a la cuota de tu tarjeta sin afectar tus gastos fijos de este mes.",
+        actionText: "Abonar $50.000",
+        actionView: "fixed"
+      },
+      {
+        category: "FONDOS COLANTA",
+        emoji: "🎄",
+        title: "Fondo Navideño en Curso",
+        desc: "Llevas $2.280.000 acumulados en tu fondo navideño Colanta. Entrega oficial programada para el 1 de Diciembre 2026.",
+        actionText: "Ver Fondos Colanta",
+        actionView: "savings"
+      },
+      {
+        category: "ALERTAS FIJAS",
+        emoji: "📅",
+        title: "Compromisos del Mes",
+        desc: "Tienes compromisos fijos pendientes por $1.530.000. Tu proyección de nómina y caja cubre la totalidad.",
+        actionText: "Auditar Gastos Fijos",
+        actionView: "fixed"
+      },
+      {
+        category: "RADAR ANTOJOS",
+        emoji: "☕",
+        title: "Control de Micro-Gastos",
+        desc: "Has consumido el 75% del cupo diario sugerido ($30.000). Mantén los consumos menores para cuidar tu saldo.",
+        actionText: "Ver Radar Antojos",
+        actionView: "fugas"
+      }
+    ];
+
+    let currentIdx = 0;
+
+    const catEl = document.getElementById("insight-category-label");
+    const emojiEl = document.getElementById("insight-emoji");
+    const titleEl = document.getElementById("insight-title");
+    const descEl = document.getElementById("insight-desc");
+    const actionBtn = document.getElementById("btn-insight-action");
+    const actionTextEl = document.getElementById("insight-action-text");
+    const dotsContainer = document.getElementById("insight-dots");
+    const prevBtn = document.getElementById("btn-insight-prev");
+    const nextBtn = document.getElementById("btn-insight-next");
+    const dismissBtn = document.getElementById("btn-insight-dismiss");
+
+    const renderInsight = (idx) => {
+      const item = insights[idx];
+      if (!item) return;
+      if (catEl) catEl.textContent = item.category;
+      if (emojiEl) emojiEl.textContent = item.emoji;
+      if (titleEl) titleEl.textContent = item.title;
+      if (descEl) descEl.textContent = item.desc;
+      if (actionTextEl) actionTextEl.textContent = item.actionText;
+
+      if (dotsContainer) {
+        dotsContainer.querySelectorAll(".insight-dot").forEach((dot, i) => {
+          dot.classList.toggle("active", i === idx);
+        });
+      }
+    };
+
+    prevBtn?.addEventListener("click", () => {
+      this.haptic(10);
+      currentIdx = (currentIdx - 1 + insights.length) % insights.length;
+      renderInsight(currentIdx);
+    });
+
+    nextBtn?.addEventListener("click", () => {
+      this.haptic(10);
+      currentIdx = (currentIdx + 1) % insights.length;
+      renderInsight(currentIdx);
+    });
+
+    dotsContainer?.querySelectorAll(".insight-dot").forEach((dot, i) => {
+      dot.addEventListener("click", () => {
+        this.haptic(10);
+        currentIdx = i;
+        renderInsight(currentIdx);
+      });
+    });
+
+    dismissBtn?.addEventListener("click", () => {
+      this.haptic(10);
+      banner.style.display = "none";
+    });
+
+    actionBtn?.addEventListener("click", () => {
+      this.haptic(12);
+      const item = insights[currentIdx];
+      if (item && item.actionView) {
+        this.switchView(item.actionView);
+      }
+    });
+
+    renderInsight(0);
+
+    // Alerta de presupuesto si aplica
+    const alertBanner = document.getElementById("budget-alert-banner");
+    alertBanner?.addEventListener("click", () => {
+      this.haptic(12);
+      this.switchView("wallet");
+    });
+  },
+
+  bindQuickAntChips() {
+    document.querySelectorAll(".chip-quick-ant").forEach(chip => {
+      chip.addEventListener("click", () => {
+        this.haptic(15);
+        const antName = chip.getAttribute("data-ant") || "Antojo";
+        const antVal = chip.getAttribute("data-val") || "5000";
+
+        const inputConcept = document.getElementById("input-mov-concepto");
+        const inputValor = document.getElementById("input-mov-valor");
+        const selCat = document.getElementById("select-mov-categoria");
+        const selAcc = document.getElementById("select-mov-cuenta");
+
+        if (inputConcept) inputConcept.value = antName;
+        if (inputValor) inputValor.value = antVal;
+        if (selCat) {
+          if (antName.toLowerCase().includes("taxi")) selCat.value = "Transporte";
+          else selCat.value = "Alimentación";
+        }
+        if (selAcc) selAcc.value = "Nequi";
+
+        const radioGasto = document.getElementById("radio-gasto");
+        if (radioGasto) radioGasto.checked = true;
+
+        document.getElementById("modal-add-movement")?.classList.add("open");
+        this.showToast(`Preparado gasto hormiga: ${antName} ($${this.formatCOP(antVal)})`, "info");
+      });
     });
   },
 
@@ -3120,6 +3368,12 @@ const FintechApp = {
     tbody.innerHTML = items.map(m => {
       const isIngreso = String(m.tipo).toLowerCase().includes("ingreso");
       const pretty = this.prettifyMovement(m);
+      const orig = String(m.origen || m.fuente || "");
+      const notas = String(m.notas || "");
+      const isAndroid = /android|wallet|nequi.*notif|nfc|notificaci/i.test(orig) || /android/i.test(notas);
+      const androidBadge = isAndroid 
+        ? `<span class="badge-origin-android" title="Movimiento sincronizado por app Android (notificación/wallet)"><i class="fa-brands fa-android"></i> ${this.escapeHTML(orig || 'Android')}</span>`
+        : '';
 
       return `
         <tr data-id="${m.id}" style="cursor:pointer;" title="Clic para ver recibo digital y editar concepto">
@@ -3133,6 +3387,7 @@ const FintechApp = {
                 <span class="concept-title">${this.escapeHTML(pretty.title)}</span>
                 <div class="concept-subline">
                   ${pretty.isDian ? '<span class="dian-tag"><i class="fa-solid fa-receipt"></i> Factura DIAN</span>' : ''}
+                  ${androidBadge}
                   <span>${this.escapeHTML(pretty.subline)}</span>
                 </div>
               </div>
@@ -3214,6 +3469,13 @@ const FintechApp = {
     tbody.innerHTML = items.map(m => {
       const isIngreso = String(m.tipo).toLowerCase().includes("ingreso");
       const pretty = this.prettifyMovement(m);
+      const orig = String(m.origen || m.fuente || "");
+      const notas = String(m.notas || "");
+      const isAndroid = /android|wallet|nequi.*notif|nfc|notificaci/i.test(orig) || /android/i.test(notas);
+      const androidBadge = isAndroid 
+        ? `<span class="badge-origin-android" style="font-size:0.65rem; padding:1px 6px; border-radius:6px; background:rgba(16,185,129,0.12); color:#34D399; border:1px solid rgba(16,185,129,0.25); display:inline-flex; align-items:center; gap:3px; margin-right:4px;"><i class="fa-brands fa-android"></i> ${this.escapeHTML(orig || 'Android')}</span>`
+        : '';
+
       return `
         <tr data-id="${m.id}" style="cursor:pointer;" title="Clic para ver recibo">
           <td><code style="color:#64748B; font-weight:700;">${m.id}</code></td>
@@ -3222,7 +3484,7 @@ const FintechApp = {
               <div class="concept-avatar ${pretty.avatarClass}">${pretty.avatar}</div>
               <div class="concept-texts">
                 <span class="concept-title">${this.escapeHTML(pretty.title)}</span>
-                <span class="concept-subline">${this.escapeHTML(pretty.subline || m.descripcion || "")}</span>
+                <span class="concept-subline">${androidBadge}${this.escapeHTML(pretty.subline || m.descripcion || "")}</span>
               </div>
             </div>
           </td>
@@ -3289,6 +3551,15 @@ const FintechApp = {
     if (subcatEl) subcatEl.textContent = m.subcategoria || (pretty.isDian ? "Factura DIAN" : "Consumo");
     if (accEl) accEl.textContent = m.cuenta || "AyC Colanta";
     if (methodEl) methodEl.textContent = m.metodo || "Transferencia";
+
+    const originEl = document.getElementById("detail-origin");
+    const syncStatusEl = document.getElementById("detail-sync-status");
+    if (originEl) {
+      originEl.textContent = m.origen || (m.notas && /android/i.test(m.notas) ? "App Android (Notif / NFC)" : "Dashboard Web");
+    }
+    if (syncStatusEl) {
+      syncStatusEl.textContent = m.syncStatus || (m.id ? "Sincronizado con Sheets" : "Local");
+    }
 
     modal?.classList.add("open");
     this.haptic(15);
@@ -3440,8 +3711,13 @@ const FintechApp = {
     this.renderMovementsTable();
     this.renderFugasTable();
 
-    FinanceAPI.deleteMovement(targetId);
-    this.showToast(`🗑️ ${targetId} eliminado de Google Sheets`, "success");
+    FinanceAPI.deleteMovement(targetId, {
+      descripcion: movToDelete.descripcion,
+      valor: movToDelete.valor,
+      monto: movToDelete.valor,
+      tipo: movToDelete.tipo
+    });
+    this.showToast(`🗑️ ${targetId} eliminado`, "success");
   },
 
   filterMovements() {
@@ -3474,12 +3750,16 @@ const FintechApp = {
       // Select de Cuenta
       const matchAcc = acc === "ALL" || m.cuenta === acc;
 
-      // Chip rápido estilo Revolut
+      // Chip rápido estilo Revolut / Compose
       let matchChip = true;
       if (chip === "GASTO") {
         matchChip = !tipo.includes("ingreso");
       } else if (chip === "INGRESO") {
         matchChip = tipo.includes("ingreso");
+      } else if (chip === "ANDROID") {
+        const orig = String(m.origen || m.fuente || "").toLowerCase();
+        const notas = String(m.notas || "").toLowerCase();
+        matchChip = orig.includes("android") || orig.includes("wallet") || orig.includes("notif") || orig.includes("nfc") || notas.includes("android");
       } else if (chip === "ALIMENTACION") {
         matchChip = c.includes("alimentaci") || d.includes("almuerzo") || d.includes("colanta") || d.includes("rest") || d.includes("menu");
       } else if (chip === "MOTO") {
@@ -4094,7 +4374,9 @@ const FintechApp = {
       }
     }
 
+    const nuevoId = this.getNextMovementId();
     const payload = {
+      id: nuevoId,
       tipo: tipo,
       valor: valor,
       descripcion: desc,
@@ -4108,7 +4390,7 @@ const FintechApp = {
     };
 
     const nuevo = {
-      id: this.getNextMovementId(),
+      id: nuevoId,
       fecha: new Date().toLocaleDateString("es-CO"),
       hora: new Date().toLocaleTimeString("es-CO", { hour: '2-digit', minute: '2-digit' }),
       ...payload

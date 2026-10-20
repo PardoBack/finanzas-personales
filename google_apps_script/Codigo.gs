@@ -246,10 +246,16 @@ function doPost(e) {
       const id = data.id || data.idRegistro;
       let resDelete = null;
       if (id) {
-        resDelete = borrarRegistroCompletoPorID(id);
+        resDelete = borrarRegistroCompletoPorID(id, data);
       }
       if (!resDelete || resDelete.ok === false) {
-        resDelete = borrarUltimoRegistro();
+        // Fallback inteligente: buscar por descripción y monto si el ID no coincidió exactamente
+        if (data.descripcion || data.valor || data.monto) {
+          resDelete = borrarRegistroCompletoPorID("", data);
+        }
+      }
+      if (!resDelete || resDelete.ok === false) {
+        resDelete = borrarUltimoConjunto();
       }
       return ContentService.createTextOutput(JSON.stringify({
         ok: resDelete && resDelete.ok !== false,
@@ -323,16 +329,17 @@ function registrarMovimientoDesdeDashboard_(data) {
   const mesActual = meses[d.getMonth()];
   const anioActual = d.getFullYear();
 
-  // Generar ID consecutivo M-xxxx respetando el último registro
+  // Generar ID consecutivo M-xxxx respetando el ID enviado por la App o el último registro
   let maxNum = 255;
   if (shMov.getLastRow() >= 5) {
     const idsRange = shMov.getRange(5, 1, Math.min(20, shMov.getLastRow() - 4), 1).getValues();
     idsRange.forEach(row => {
-      const m = String(row[0] || "").match(/^M-(\d+)$/);
+      const m = String(row[0] || "").match(/^M-(\d+)$/i);
       if (m) maxNum = Math.max(maxNum, parseInt(m[1], 10));
     });
   }
-  const nuevoId = "M-" + String(maxNum + 1).padStart(4, "0");
+  const idFromApp = data.id ? String(data.id).trim().toUpperCase() : "";
+  const nuevoId = (idFromApp && /^M-\d+$/i.test(idFromApp)) ? idFromApp : ("M-" + String(maxNum + 1).padStart(4, "0"));
 
   const fechaStr = Utilities.formatDate(d, ZONA_HORARIA, "yyyy-MM-dd");
   const horaStr = Utilities.formatDate(d, ZONA_HORARIA, "hh:mm a");
@@ -1516,10 +1523,13 @@ function obtenerDatosCompletosDashboard_(mesFiltro, anioFiltro) {
   let mesActivo = mesFiltro ? String(mesFiltro).toLowerCase() : "octubre";
   let anioActivo = anioFiltro ? Number(anioFiltro) : 2026;
 
-  // Auto-reconciliación de fijos para asegurar que los compromisos pagados (ej. EPM M-0259) se reflejen
+  // Auto-reconciliación de fijos y movimiento inmediato de correos leídos en Gmail
   try {
     autoReconciliarFijosDesdeMovimientos_(ss, mesActivo, anioActivo);
   } catch (eRec) {}
+  try {
+    archivarCorreosFinancierosViejos_();
+  } catch (eArc) {}
 
   let ingreso = 0, gasto = 0, ahorro = 0, disponible = 0, fijosPendientes = 0;
   let saldoColanta = 0, saldoNequi = 0, saldoEfectivo = 0, totalLiquidez = 0;
@@ -2289,37 +2299,24 @@ function probarLecturaAhoraMismo() {
  */
 
 function asegurarTriggersActivos_() {
-
   try {
-
     const triggers = ScriptApp.getProjectTriggers();
-
     const funcionesActivas = new Set(triggers.map(t => t.getHandlerFunction()));
 
     if (!funcionesActivas.has("procesarCorreosFacturas")) {
-
-      ScriptApp.newTrigger("procesarCorreosFacturas").timeBased().everyMinutes(5).create();
-
+      ScriptApp.newTrigger("procesarCorreosFacturas").timeBased().everyMinutes(1).create();
     }
 
     if (!funcionesActivas.has("procesarMensajesTelegram")) {
-
       if (!WEBHOOK_URL) { ScriptApp.newTrigger("procesarMensajesTelegram").timeBased().everyMinutes(1).create(); }
-
     }
 
     if (!funcionesActivas.has("enviarRecordatoriosFijos_")) {
-
       ScriptApp.newTrigger("enviarRecordatoriosFijos_").timeBased().everyDays(1).atHour(8).create();
-
     }
-
   } catch (e) {
-
     console.warn("Error en asegurarTriggersActivos_:", e);
-
   }
-
 }
 
 /**
@@ -5358,72 +5355,53 @@ function limpiarEtiquetasFinanzasDeHilo_(hilo) {
 
  */
 
-function esCorreoNoFactura_(asunto, remitente, cuerpo) {
+function esCorreoNoFactura_(asunto, remitente, cuerpo, tieneAdjuntoFacturacion = false) {
 
   const t = normalizarTexto((asunto || "") + " " + (remitente || "") + " " + (cuerpo || ""));
 
-  
-
   // 1. REGLA ABSOLUTA: Clara Aide
+  if (t.includes("clara aide")) return true;
 
-  if (t.includes("clara aide") || t.includes("clara aide")) return true;
+  // Si el correo trae adjunto .zip o .xml de facturación o formato DIAN en el asunto, NUNCA descartarlo como publicidad
+  const esAsuntoDian = /\b\d{6,12}\s*;.*;\s*(01|02|03|91|92)\b/i.test(asunto || "") ||
+                       /(attacheddocument|factura\s+electronica|documento\s+electronico|representacion\s+grafica)/i.test(asunto || "");
+  if (tieneAdjuntoFacturacion || esAsuntoDian) {
+    return false;
+  }
 
   // 2. Transacciones Rechazadas, Fallidas o Canceladas (NUNCA son gastos reales)
-
   if (/(transaccion|pago|operacion|compra|cargo)\s+(rechazad[ao]|fallid[ao]|cancelad[ao]|declinad[ao]|no\s+exitosa|no\s+aprobad[ao]|denegad[ao])/i.test(t) ||
-
       /(fondos\s+insuficientes|saldo\s+insuficiente|intento\s+de\s+pago\s+fallido|orden\s+cancelada)/i.test(t)) {
-
     return true;
-
   }
 
   // 3. Códigos de Seguridad, OTP y Alertas de Inicio de Sesión
-
   if (/(codigo\s+de\s+seguridad|codigo\s+de\s+verificacion|clave\s+dinamica|tu\s+codigo\s+otp|token\s+de\s+seguridad|codigo\s+temporal)/i.test(t) ||
-
       /(inicio\s+de\s+sesion|nuevo\s+inicio\s+de\s+sesion|alerta\s+de\s+seguridad|cambio\s+de\s+clave|cambio\s+de\s+contrasena|dispositivo\s+no\s+reconocido)/i.test(t)) {
-
     return true;
-
   }
 
   // 4. Créditos Preaprobados y Publicidad Financiera (No son gastos)
-
   if (/(credito\s+preaprobado|prestamo\s+preaprobado|solicita\s+tu\s+credito|credito\s+disponible|cupo\s+disponible|aumento\s+de\s+cupo|tienes\s+un\s+credito|simula\s+tu\s+credito|prestamo\s+digital|libre\s+inversion|adelanto\s+de\s+nomina|tarjeta\s+de\s+credito\s+preaprobada)/i.test(t)) {
-
     return true;
-
   }
 
   // 5. Carrito Abandonado y Cotizaciones
-
   if (/(olvidaste\s+algo\s+en\s+tu\s+carrito|dejaste\s+productos|tu\s+carrito\s+te\s+espera|retoma\s+tu\s+compra|completa\s+tu\s+compra|cotizacion\s+n[°o]|propuesta\s+comercial)/i.test(t)) {
-
     return true;
-
   }
 
   // 6. Extractos Mensuales Informativos / Estados de Cuenta
-
   if (/(extracto\s+mensual|extracto\s+de\s+cuenta|estado\s+de\s+cuenta\s+consolidado|resumen\s+de\s+cuenta|informe\s+mensual\s+de\s+saldos)/i.test(t)) {
-
     return true;
-
   }
 
-  // 7. Publicidad y Marketing Promocional
+  // 7. Publicidad y Marketing Promocional (solo en asunto para no falsos positivos por pie de firma de supermercados/bancos)
+  const asuntoNorm = normalizarTexto(asunto || "");
+  const esMarketingAsunto = /(oferta\s+especial|gran\s+venta|hasta\s+\d+%\s*off|descuento\s+exclusivo|rebajas?|cyber\s*monday|black\s*friday|hot\s*sale|aprovecha\s+esta\s+oferta|cupon\s+de\s+descuento|newsletter|no\s+te\s+lo\s+pierdas|preventa)/i.test(asuntoNorm);
 
-  const esMarketing = /(oferta\s+especial|gran\s+venta|hasta\s+\d+%\s*off|descuento\s+exclusivo|rebajas?|cyber\s*monday|black\s*friday|hot\s*sale|aprovecha\s+esta\s+oferta|cupon\s+de\s+descuento|liquidaci[oó]n|newsletter|no\s+te\s+lo\s+pierdas|preventa|catalogo|beneficios\s+exclusivos|gana\s+puntos|puntos\s+colombia|redime\s+tus\s+puntos|conoce\s+nuestros\s+planes)/i.test(t);
-
-  
-
-  // Si parece marketing y NO tiene comprobante explícito de pago aprobado (CUS / Factura electrónica UBL / Pedido Confirmado / Total COP)
-
-  if (esMarketing && !/(\bcus\b|transaccion\s+aprobada|pago\s+exitoso|pago\s+confirmado|factura\s+electronica|attacheddocument|pedido\s+confirmado|confirmacion\s+(?:de\s+)?(?:tu\s+)?pedido|tu\s+pedido\s+esta\s+confirmado|gracias.*tu\s+compra|compra\s+confirmada|orden\s+de\s+compra|total.*cop|\$\s*[\d.,]+)/i.test(t)) {
-
+  if (esMarketingAsunto && !/(\bcus\b|transaccion\s+aprobada|pago\s+exitoso|pago\s+confirmado|factura|attacheddocument|pedido\s+confirmado|compra\s+confirmada|comprobante)/i.test(t)) {
     return true;
-
   }
 
   return false;
@@ -5431,249 +5409,431 @@ function esCorreoNoFactura_(asunto, remitente, cuerpo) {
 }
 
 /**
-
  * Detecta si una factura o transacción ya fue registrada en MOVIMIENTOS
-
- * evitando duplicar gastos cuando llegan múltiples correos por la misma compra
-
- * (ej: Correo PSE + Correo del Comercio + Factura Electrónica DIAN).
-
+ * evitando duplicar gastos cuando llegan múltiples correos por la misma compra,
+ * pero permitiendo compras legítimas del mismo valor en días distintos o con distinto número de factura.
  */
-
-function esFacturaDuplicadaEnMovimientos_(idReferencia, proveedor, valor, fechaStr) {
-
+function esFacturaDuplicadaEnMovimientos_(idReferencia, proveedor, valor, fechaStr, idMensajeGmail) {
   try {
-
     const sh = obtenerLibro_().getSheetByName("MOVIMIENTOS");
-
     if (!sh || sh.getLastRow() < 4) return { esDuplicado: false };
 
     const numRows = sh.getLastRow() - 3;
-
     const rows = sh.getRange(4, 1, numRows, 14).getValues();
-
     const valNum = Number(valor || 0);
-
     const provNorm = normalizarTexto(proveedor || "");
-
     const refLimpia = String(idReferencia || "").replace(/^(CUS|FAC|FACTURA|REF|ORDEN)[:\s-]*/i, "").trim().toLowerCase();
-
-    const esRefSignificativa = refLimpia.length >= 4 && !/^(n\/a|ninguno|null|undefined|comercio|otros)$/i.test(refLimpia);
+    const esRefSignificativa = refLimpia.length >= 4 && !/^(n\/a|ninguno|null|undefined|comercio|otros|dian|electronica)$/i.test(refLimpia);
+    const idMsgLimpio = String(idMensajeGmail || "").trim().toLowerCase();
 
     // Equivalencias comerciales (Greenfit = Oasis Punto Cero = MercadoPago)
-
     const esGrupoGreenfit = /greenfit|oasis punto cero|mercadopago|mercado pago/.test(provNorm);
 
-    // Extraer mes y fecha de referencia
-
-    const fechaRefDInfo = obtenerMesYAnioDeFecha(fechaStr || "", null, null);
-
-    const mesTarget = normalizarTexto(fechaRefDInfo.mes || "");
-
     const parsearFecha = s => {
-
       if (!s) return null;
-
-      const p = String(s).split(/[/ -]/);
-
+      if (s instanceof Date) return new Date(s.getFullYear(), s.getMonth(), s.getDate());
+      const str = String(s).trim().split(" ")[0];
+      const p = str.split(/[/ -]/);
       if (p.length === 3) {
-
         if (p[0].length === 4) return new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
-
         return new Date(Number(p[2]), Number(p[1]) - 1, Number(p[0]));
-
       }
-
       return null;
-
     };
 
     const dTarget = parsearFecha(fechaStr);
 
     for (let i = 0; i < rows.length; i++) {
-
       const fila = rows[i];
-
       const rowId = String(fila[0] || "");
-
-      const rowFecha = String(fila[1] || "");
-
+      const rowFecha = fila[1];
       const rowDesc = normalizarTexto(String(fila[6] || ""));
-
       const rowValor = Number(fila[7] || 0);
-
-      const rowMes = normalizarTexto(String(fila[10] || ""));
-
       const rowRef = normalizarTexto(String(fila[13] || ""));
 
-      // 1. Coincidencia por ID de Referencia / CUS / Factura exacto
-
-      if (esRefSignificativa && (rowRef.includes(refLimpia) || rowDesc.includes(refLimpia))) {
-
+      // 0. Coincidencia exacta por ID de mensaje de Gmail
+      if (idMsgLimpio && rowRef.includes("gmail:" + idMsgLimpio)) {
         return {
-
           esDuplicado: true,
-
           idExistente: rowId,
-
-          motivo: "Referencia (" + idReferencia + ") ya registrada en " + rowId
-
+          motivo: "Mensaje Gmail (" + idMensajeGmail + ") ya registrado en " + rowId
         };
-
       }
 
-      // 2. Coincidencia por Mismo Monto exacto
+      // 1. Coincidencia por ID de Referencia / CUS / Número de Factura exacto
+      if (esRefSignificativa && (rowRef.includes(refLimpia) || rowDesc.includes(refLimpia))) {
+        return {
+          esDuplicado: true,
+          idExistente: rowId,
+          motivo: "Referencia (" + idReferencia + ") ya registrada en " + rowId
+        };
+      }
 
+      // Si ambos registros tienen número de factura DIAN distinto, NO son duplicados (ej. dos almuerzos o dos tanqueadas con distinta factura)
+      const matchFacRow = rowRef.match(/factura:\s*([a-z0-9_-]{4,})/i);
+      const refRowExistente = matchFacRow ? matchFacRow[1].trim().toLowerCase() : "";
+      const rowTieneOtraFacturaDistinta = refRowExistente &&
+        !/^(dian|electronica|ninguno|null)$/i.test(refRowExistente) &&
+        esRefSignificativa &&
+        refRowExistente !== refLimpia;
+
+      if (rowTieneOtraFacturaDistinta) {
+        continue;
+      }
+
+      // 2. Coincidencia por Mismo Monto + Mismo Comercio en fecha cercana (máximo 1 día de diferencia: ej. registro manual + correo posterior)
       if (valNum > 0 && Math.abs(rowValor - valNum) < 1) {
-
         const filaEsGrupoGreenfit = /greenfit|oasis punto cero|mercadopago|mercado pago/.test(rowDesc + " " + rowRef);
-
         const comercioCoincide = (esGrupoGreenfit && filaEsGrupoGreenfit) ||
-
           (provNorm.length >= 3 && (rowDesc.includes(provNorm) || provNorm.includes(rowDesc.split(" ")[0])));
 
         let diffDias = 999;
-
         const dRow = parsearFecha(rowFecha);
-
         if (dTarget && dRow) {
-
           diffDias = Math.abs(Math.round((dTarget.getTime() - dRow.getTime()) / (1000 * 60 * 60 * 24)));
-
         }
 
-        const mismoMes = (mesTarget && rowMes && mesTarget === rowMes);
-
-        // A. Si coincide el comercio o ambos son del grupo Greenfit
-
-        if (comercioCoincide) {
-
+        if (comercioCoincide && diffDias <= 1) {
           return {
-
             esDuplicado: true,
-
             idExistente: rowId,
-
-            motivo: "Mismo valor ($" + formatearCOP(valNum) + ") y comercio (" + proveedor + ") ya registrado en " + rowId
-
+            motivo: "Mismo valor ($" + formatearCOP(valNum) + "), comercio (" + proveedor + ") y fecha cercana en " + rowId
           };
-
         }
-
-        // B. Para montos >= $10.000 COP dentro del mismo mes o con diferencia <= 5 días entre pago y factura
-
-        if (valNum >= 10000 && (mismoMes || diffDias <= 5)) {
-
-          return {
-
-            esDuplicado: true,
-
-            idExistente: rowId,
-
-            motivo: "Mismo monto exacto ($" + formatearCOP(valNum) + ") ya registrado en " + rowId + " (" + rowFecha + ")"
-
-          };
-
-        }
-
       }
-
     }
 
     return { esDuplicado: false };
-
   } catch (e) {
-
     return { esDuplicado: false };
-
   }
-
 }
 
-function pareceCorreoFinancieroValido_(asunto, remitente, cuerpo, tieneAdjuntos) {
+/**
+ * Determina si un correo tiene adjuntos o estructura de factura electrónica / comprobante financiero.
+ * Soporta adjuntos .zip, .xml, .pdf (incluso cuando vienen con MIME application/octet-stream o x-zip-compressed)
+ * y asuntos estándar DIAN separados por punto y coma (NIT;RazónSocial;Factura;01;...).
+ */
+function pareceCorreoFinancieroValido_(asunto, remitente, cuerpo, adjuntosOFlag) {
+  const listaAdj = Array.isArray(adjuntosOFlag) ? adjuntosOFlag : [];
+  const tieneAdjuntos = Array.isArray(adjuntosOFlag) ? listaAdj.length > 0 : Boolean(adjuntosOFlag);
 
-  // Filtro negativo inmediato: Si es publicidad, OTP, crédito preaprobado, etc.
+  let tieneAdjuntoFacturacion = false;
+  let textoNombresAdj = "";
 
-  if (esCorreoNoFactura_(asunto, remitente, cuerpo)) return false;
-
-  const t = normalizarTexto((asunto || "") + " " + (remitente || "") + " " + (cuerpo || ""));
-
-  // 1. Adjuntos típicos DIAN / XML / Factura / ZIP
-
-  if (tieneAdjuntos) {
-
-    const nombresAdj = normalizarTexto(asunto + " " + cuerpo);
-
-    if (/(\.xml|\.zip|\.pdf|factura|attacheddocument|ubl|dian|colanta|epm|tigo)/i.test(nombresAdj)) {
-
-      return true;
-
+  if (listaAdj.length > 0) {
+    for (let i = 0; i < listaAdj.length; i++) {
+      try {
+        const n = String(listaAdj[i].getName() || "").toLowerCase();
+        const m = String(listaAdj[i].getContentType() || "").toLowerCase();
+        textoNombresAdj += " " + n + " " + m;
+        if (
+          n.endsWith(".zip") ||
+          n.endsWith(".xml") ||
+          n.endsWith(".pdf") ||
+          m.includes("zip") ||
+          m.includes("xml") ||
+          m.includes("pdf") ||
+          m.includes("octet-stream") ||
+          /(factura|attacheddocument|ad0|fv0|fe-|fe_|nc0|nd0|recibo|comprobante|colanta|epm|tigo|dian)/i.test(n)
+        ) {
+          tieneAdjuntoFacturacion = true;
+        }
+      } catch (eAdj) {}
     }
+  }
 
+  // Filtro negativo: Si es publicidad, OTP, crédito preaprobado, etc. (respetando adjuntos reales de facturación)
+  if (esCorreoNoFactura_(asunto, remitente, cuerpo, tieneAdjuntoFacturacion)) return false;
+
+  if (tieneAdjuntoFacturacion) return true;
+
+  // Formato estándar DIAN Colombia en asunto: NIT;NombreEmisor;NumeroFactura;01;NombreComercial
+  if (/\b\d{6,12}\s*;.*;\s*(01|02|03|91|92)\b/i.test(asunto || "") || (asunto || "").split(";").length >= 4) {
+    return true;
+  }
+
+  const t = normalizarTexto((asunto || "") + " " + (remitente || "") + " " + (cuerpo || "") + " " + textoNombresAdj);
+
+  // 1. Adjuntos o menciones típicas DIAN / XML / Factura / ZIP
+  if (tieneAdjuntos && /(\.xml|\.zip|\.pdf|factura|attacheddocument|documento\s+electronico|representacion\s+grafica|ubl|dian|colanta|epm|tigo|siesa|carvajal|siigo|alegra|cadena|gosocket)/i.test(t)) {
+    return true;
   }
 
   // 2. Comprobantes bancarios y pasarelas de pago colombianas
-
-  const esBancarioOPasarela = /pse|achcolombia|cus|dlocal|eneba|mercadopago|mercado\s*pago|wompi|bold|payu|bancolombia|nequi|daviplata|colpatria|davivienda|bbva/.test(t) &&
-
-                             /(aprobada|exitosa|confirmad|transaccion|pago|debito|transferencia|envio|compra|abono|notificacion)/.test(t);
+  const esBancarioOPasarela = /pse|achcolombia|cus|dlocal|eneba|mercadopago|mercado\s*pago|wompi|bold|payu|bancolombia|nequi|daviplata|colpatria|davivienda|bbva|nu\s*colombia|lulo/.test(t) &&
+                             /(aprobada|exitosa|confirmad|transaccion|pago|debito|transferencia|envio|compra|abono|notificacion|recibo|comprobante)/.test(t);
 
   // 3. Facturas formales, cuentas de cobro y servicios públicos
+  const esFacturaOServicio = /(factura\s+electronica|factura\s+de\s+venta|documento\s+electronico|facturacion\s+electronica|cuenta\s+de\s+cobro|comprobante\s+de\s+pago|recibo\s+de\s+pago|debito\s+por\s+compra|transferencia\s+exitosa|total\s+a\s+pagar|epm|tigo|claro|une|emvarias|afinia|vanti|gases|siesa)/.test(t);
 
-  const esFacturaOServicio = /(factura\s+electronica|factura\s+de\s+venta|cuenta\s+de\s+cobro|comprobante\s+de\s+pago|recibo\s+de\s+pago|debito\s+por\s+compra|transferencia\s+exitosa|total\s+a\s+pagar|epm|tigo|claro|une|emvarias|afinia|vanti|gases)/.test(t);
-
-  // 4. Confirmaciones de pedidos y compras de e-commerce (Greenfit, Mercado Libre, Amazon, etc.)
-
+  // 4. Confirmaciones de pedidos y compras de e-commerce
   const esPedidoOCompra = /(confirmacion\s+(?:de\s+)?(?:tu\s+)?pedido|pedido\s+confirmado|tu\s+pedido\s+esta\s+confirmado|orden\s+de\s+compra|gracias\s+por\s+tu\s+compra|compra\s+confirmada|compra\s+exitosa|pago\s+confirmado|recibo\s+de\s+compra|detalles?\s+del\s+pedido|resumen\s+de\s+tu\s+pedido)/.test(t);
 
   // 5. Comercios conocidos con mención de valor o pago
-
-  const esComercioReconocido = /(greenfit|mercadolibre|mercado\s*libre|amazon|shein|temu|falabella|zara|koaj|mattelsa|tennis|gef|punto\s+blanco|exito|d1|rappi|didi|uber|uber\s*eats)/.test(t) &&
-
-                               /(total|cop|\$|pago|orden|pedido|compra)/.test(t);
+  const esComercioReconocido = /(colanta|mercolanta|greenfit|mercadolibre|mercado\s*libre|amazon|shein|temu|falabella|zara|koaj|mattelsa|tennis|gef|punto\s+blanco|exito|carulla|la\s+vaquita|euro|d1|ara|rappi|didi|uber|uber\s*eats|terpel|primax|biomax)/.test(t) &&
+                               /(total|cop|\$|pago|orden|pedido|compra|factura|recibo|valor)/.test(t);
 
   return esBancarioOPasarela || esFacturaOServicio || esPedidoOCompra || esComercioReconocido;
-
 }
 
-function extraerDatosDianXml_(xmlStr) {
+/**
+ * Parsea montos decimales provenientes de etiquetas XML UBL 2.1 (ej. "12500.00" -> 12500, "197,000.00" -> 197000).
+ */
+function parsearMontoXmlUbl_(rawStr) {
+  if (rawStr === null || rawStr === undefined) return 0;
+  let s = String(rawStr).trim().replace(/[^\d.,-]/g, "");
+  if (!s) return 0;
+  if (s.includes(",") && s.includes(".")) {
+    if (s.lastIndexOf(".") > s.lastIndexOf(",")) {
+      s = s.replace(/,/g, "");
+    } else {
+      s = s.replace(/\./g, "").replace(",", ".");
+    }
+  } else if (/^\d+\.\d{1,2}$/.test(s)) {
+    // Formato estándar XML UBL: punto decimal con 1 o 2 decimales (ej. 12500.00)
+  } else if (/^\d+,\d{1,2}$/.test(s)) {
+    s = s.replace(",", ".");
+  } else {
+    s = s.replace(/[.,]/g, "");
+  }
+  const n = parseFloat(s);
+  return isNaN(n) ? 0 : Math.round(Math.abs(n));
+}
+
+/**
+ * Descomprime de forma segura cualquier adjunto .zip enviado por entidades económicas / facturadores DIAN.
+ * Normaliza el MIME type a "application/zip" y detecta firmas binarias PK (0x50, 0x4B) para evitar fallos de Utilities.unzip().
+ * Extrae recursivamente todos los archivos .xml, .pdf e imágenes dentro del .zip (incluyendo .zip anidados).
+ */
+function desempacarAdjuntosCorreo_(adjuntos) {
+  const resultado = {
+    xmlBlobs: [],
+    pdfImagenBlobs: []
+  };
+  if (!adjuntos || !adjuntos.length) return resultado;
+
+  const procesarBlob = (blob, profundidad) => {
+    if (!blob || profundidad > 2) return;
+    try {
+      const nombre = String(blob.getName() || "adjunto").trim();
+      const nombreLower = nombre.toLowerCase();
+      const mime = String(blob.getContentType() || "").toLowerCase();
+      let bytes = null;
+      try {
+        bytes = blob.getBytes();
+      } catch (eB) {}
+
+      // Detectar firma PK (0x50 = 80, 0x4B = 75) típica de todo archivo .zip incluso si viene como application/octet-stream
+      const tieneFirmaZip = bytes && bytes.length > 4 && bytes[0] === 0x50 && bytes[1] === 0x4B;
+      const esZip = nombreLower.endsWith(".zip") || mime.includes("zip") || tieneFirmaZip;
+
+      if (esZip && bytes && bytes.length > 0) {
+        try {
+          const nombreZipNormalizado = nombreLower.endsWith(".zip") ? nombre : (nombre + ".zip");
+          const zipNormalizado = Utilities.newBlob(bytes, "application/zip", nombreZipNormalizado);
+          const internos = Utilities.unzip(zipNormalizado) || [];
+          for (let i = 0; i < internos.length; i++) {
+            procesarBlob(internos[i], profundidad + 1);
+          }
+          return;
+        } catch (errUnzip) {
+          console.warn("Aviso al descomprimir ZIP (" + nombre + "):", errUnzip);
+        }
+      }
+
+      if (nombreLower.endsWith(".xml") || mime.includes("xml")) {
+        resultado.xmlBlobs.push(blob);
+      } else if (
+        nombreLower.endsWith(".pdf") ||
+        mime.includes("pdf") ||
+        mime.includes("image") ||
+        /\.(png|jpg|jpeg|webp)$/i.test(nombreLower)
+      ) {
+        resultado.pdfImagenBlobs.push(blob);
+      } else if (bytes && bytes.length > 20) {
+        // Algunos proveedores DIAN adjuntan el XML como application/octet-stream sin extensión
+        try {
+          const inicioTxt = Utilities.newBlob(bytes.slice(0, 300)).getDataAsString("UTF-8").trim();
+          if (inicioTxt.startsWith("<?xml") || /<(AttachedDocument|Invoice|CreditNote|DebitNote)/i.test(inicioTxt)) {
+            resultado.xmlBlobs.push(blob);
+          } else if (inicioTxt.startsWith("%PDF")) {
+            resultado.pdfImagenBlobs.push(Utilities.newBlob(bytes, "application/pdf", nombre + ".pdf"));
+          }
+        } catch (eSniff) {}
+      }
+    } catch (eProc) {
+      console.warn("Error procesando adjunto individual:", eProc);
+    }
+  };
+
+  for (let a = 0; a < adjuntos.length; a++) {
+    procesarBlob(adjuntos[a], 0);
+  }
+
+  return resultado;
+}
+
+/**
+ * Extrae datos contables de un XML estándar DIAN Colombia (UBL 2.1).
+ * Soporta contenedores <AttachedDocument> con <Invoice> embebido en CDATA o entidades escapadas,
+ * ignora montos en 0.00 (ej. PayableAmount=0 cuando PrepaidAmount>0) y evita confundir el receptor (Marlon) con el proveedor.
+ */
+function extraerDatosDianXml_(xmlStr, asuntoOpcional) {
   if (!xmlStr) return null;
   try {
-    let cleanXml = String(xmlStr);
-    // Si viene codificado en entidades XML/HTML (típico en AttachedDocument UBL de Colombia)
+    let rawXml = String(xmlStr);
+    // Decodificar entidades HTML/XML si el Invoice interno viene escapado dentro del AttachedDocument
+    let cleanXml = rawXml;
     if (cleanXml.includes("&lt;")) {
-      cleanXml = cleanXml.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&").replace(/&quot;/g, '"');
+      cleanXml = cleanXml
+        .replace(/&lt;/g, "<")
+        .replace(/&gt;/g, ">")
+        .replace(/&amp;/g, "&")
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'");
     }
 
+    // Extraer el bloque <Invoice> o <CreditNote> interno si existe (para no confundir IDs o descripciones del contenedor AttachedDocument)
+    let invoiceBlock = cleanXml;
+    const mInvoiceInterno = cleanXml.match(/<(?:fe:|ubl:)?Invoice\b[\s\S]*?<\/(?:fe:|ubl:)?Invoice>/i) ||
+                            cleanXml.match(/<(?:fe:|ubl:)?CreditNote\b[\s\S]*?<\/(?:fe:|ubl:)?CreditNote>/i);
+    if (mInvoiceInterno) {
+      invoiceBlock = mInvoiceInterno[0];
+    }
+
+    // 1. Extraer Proveedor / Emisor desde AccountingSupplierParty o SenderParty (nunca desde AccountingCustomerParty / ReceiverParty)
     let emisor = "";
-    let mEmisor = cleanXml.match(/<cac:AccountingSupplierParty>[\s\S]*?<cbc:RegistrationName[^>]*>([\s\S]*?)<\/cbc:RegistrationName>/i);
-    if (!mEmisor) mEmisor = cleanXml.match(/<cbc:RegistrationName[^>]*>([\s\S]*?)<\/cbc:RegistrationName>/i);
-    if (!mEmisor) mEmisor = cleanXml.match(/<cac:PartyName[^>]*>[\s\S]*?<cbc:Name[^>]*>([\s\S]*?)<\/cbc:Name>/i);
-    if (mEmisor) emisor = mEmisor[1].trim();
+    const bloquesEmisor = [
+      invoiceBlock.match(/<cac:AccountingSupplierParty>([\s\S]*?)<\/cac:AccountingSupplierParty>/i),
+      cleanXml.match(/<cac:AccountingSupplierParty>([\s\S]*?)<\/cac:AccountingSupplierParty>/i),
+      cleanXml.match(/<cac:SenderParty>([\s\S]*?)<\/cac:SenderParty>/i)
+    ];
+    for (let b = 0; b < bloquesEmisor.length; b++) {
+      if (bloquesEmisor[b] && bloquesEmisor[b][1]) {
+        const subXml = bloquesEmisor[b][1];
+        const mReg = subXml.match(/<cbc:RegistrationName[^>]*>([\s\S]*?)<\/cbc:RegistrationName>/i) ||
+                     subXml.match(/<cbc:Name[^>]*>([\s\S]*?)<\/cbc:Name>/i);
+        if (mReg && mReg[1]) {
+          const candidato = mReg[1].replace(/<!\[CDATA\[|\]\]>/g, "").trim();
+          if (candidato && !/marlon.*pardo/i.test(candidato)) {
+            emisor = candidato;
+            break;
+          }
+        }
+      }
+    }
 
+    // Fallback de emisor desde asunto DIAN (NIT;RazónSocial;NumFactura;01;NombreComercial)
+    if (!emisor && asuntoOpcional && asuntoOpcional.includes(";")) {
+      const partesAsunto = asuntoOpcional.split(";");
+      if (partesAsunto.length >= 2 && partesAsunto[1].trim().length >= 2) {
+        emisor = partesAsunto[1].trim();
+      }
+    }
+
+    // 2. Extraer Monto real (> 0) priorizando el bloque <cac:LegalMonetaryTotal>
     let monto = 0;
-    let mMonto = cleanXml.match(/<cbc:PayableAmount[^>]*>([\d\.\,]+)<\/cbc:PayableAmount>/i);
-    if (!mMonto) mMonto = cleanXml.match(/<cbc:TaxInclusiveAmount[^>]*>([\d\.\,]+)<\/cbc:TaxInclusiveAmount>/i);
-    if (!mMonto) mMonto = cleanXml.match(/<cbc:LineExtensionAmount[^>]*>([\d\.\,]+)<\/cbc:LineExtensionAmount>/i);
-    if (!mMonto) mMonto = cleanXml.match(/<cbc:ChargeTotalAmount[^>]*>([\d\.\,]+)<\/cbc:ChargeTotalAmount>/i);
-    if (mMonto) monto = Math.round(Number(mMonto[1].replace(/,/g, ""))) || 0;
+    const mMonetary = invoiceBlock.match(/<(?:cac:|fe:)?LegalMonetaryTotal>([\s\S]*?)<\/(?:cac:|fe:)?LegalMonetaryTotal>/i) ||
+                      cleanXml.match(/<(?:cac:|fe:)?LegalMonetaryTotal>([\s\S]*?)<\/(?:cac:|fe:)?LegalMonetaryTotal>/i);
+    const zonaMontos = mMonetary ? mMonetary[1] : invoiceBlock;
 
+    const tagsMonto = [
+      "TaxInclusiveAmount",
+      "PayableAmount",
+      "PrepaidAmount",
+      "LineExtensionAmount",
+      "ChargeTotalAmount"
+    ];
+
+    for (let t = 0; t < tagsMonto.length; t++) {
+      const tag = tagsMonto[t];
+      const regex = new RegExp("<(?:cbc:)?" + tag + "[^>]*>\\s*([\\d.,]+)\\s*<\\/(?:cbc:)?" + tag + ">", "gi");
+      let match;
+      while ((match = regex.exec(zonaMontos)) !== null) {
+        const val = parsearMontoXmlUbl_(match[1]);
+        if (val > 0) {
+          monto = val;
+          break;
+        }
+      }
+      if (monto > 0) break;
+    }
+
+    // Si en zonaMontos no hubo monto > 0, buscar en todo el documento limpio
+    if (monto <= 0) {
+      for (let t = 0; t < tagsMonto.length; t++) {
+        const tag = tagsMonto[t];
+        const regex = new RegExp("<(?:cbc:)?" + tag + "[^>]*>\\s*([\\d.,]+)\\s*<\\/(?:cbc:)?" + tag + ">", "gi");
+        let match;
+        while ((match = regex.exec(cleanXml)) !== null) {
+          const val = parsearMontoXmlUbl_(match[1]);
+          if (val > 0) {
+            monto = val;
+            break;
+          }
+        }
+        if (monto > 0) break;
+      }
+    }
+
+    // 3. Extraer ID de la Factura (ParentDocumentID en AttachedDocument o primer cbc:ID de Invoice)
     let idFac = "";
-    let mId = cleanXml.match(/<cbc:ID[^>]*>([\s\S]*?)<\/cbc:ID>/i);
-    if (mId) idFac = mId[1].trim();
+    const mParentId = cleanXml.match(/<cbc:ParentDocumentID[^>]*>([\s\S]*?)<\/cbc:ParentDocumentID>/i);
+    if (mParentId && mParentId[1]) {
+      idFac = mParentId[1].replace(/<!\[CDATA\[|\]\]>/g, "").trim();
+    }
+    if (!idFac && mInvoiceInterno) {
+      // Eliminar UBLExtensions antes de buscar el cbc:ID principal de la factura
+      const invoiceSinExt = invoiceBlock.replace(/<ext:UBLExtensions>[\s\S]*?<\/ext:UBLExtensions>/i, "");
+      const mIdInv = invoiceSinExt.match(/<cbc:ID[^>]*>([\s\S]*?)<\/cbc:ID>/i);
+      if (mIdInv && mIdInv[1]) {
+        idFac = mIdInv[1].replace(/<!\[CDATA\[|\]\]>/g, "").trim();
+      }
+    }
+    if (!idFac && asuntoOpcional && asuntoOpcional.includes(";")) {
+      const pAsunto = asuntoOpcional.split(";");
+      if (pAsunto.length >= 3) idFac = pAsunto[2].trim();
+    }
 
+    // 4. Extraer Fecha de emisión
     let fecha = "";
-    let mFecha = cleanXml.match(/<cbc:IssueDate[^>]*>([\s\S]*?)<\/cbc:IssueDate>/i);
-    if (mFecha) {
-      const p = mFecha[1].trim().split("-");
+    const mFecha = invoiceBlock.match(/<cbc:IssueDate[^>]*>([\s\S]*?)<\/cbc:IssueDate>/i) ||
+                   cleanXml.match(/<cbc:IssueDate[^>]*>([\s\S]*?)<\/cbc:IssueDate>/i);
+    if (mFecha && mFecha[1]) {
+      const p = mFecha[1].replace(/<!\[CDATA\[|\]\]>/g, "").trim().split("-");
       if (p.length === 3) fecha = p[2] + "/" + p[1] + "/" + p[0];
       else fecha = mFecha[1].trim();
     }
 
+    // 5. Extraer Descripción de las líneas de factura (<cac:InvoiceLine>...<cac:Item>...<cbc:Description>)
+    // Nunca tomar el <cbc:Description> de <cac:ExternalReference> porque contiene el XML embebido
     let desc = "";
-    let mDesc = cleanXml.match(/<cac:InvoiceLine>[\s\S]*?<cac:Item>[\s\S]*?<cbc:Description[^>]*>([\s\S]*?)<\/cbc:Description>/i);
-    if (!mDesc) mDesc = cleanXml.match(/<cbc:Description[^>]*>([\s\S]*?)<\/cbc:Description>/i);
-    if (mDesc) desc = mDesc[1].trim().replace(/<!\[CDATA\[|\]\]>/g, "");
+    const descripcionesLineas = [];
+    const regexLineas = /<cac:(?:InvoiceLine|CreditNoteLine)>([\s\S]*?)<\/cac:(?:InvoiceLine|CreditNoteLine)>/gi;
+    let mLinea;
+    while ((mLinea = regexLineas.exec(invoiceBlock)) !== null && descripcionesLineas.length < 3) {
+      const bloqueLinea = mLinea[1];
+      const mDescItem = bloqueLinea.match(/<cac:Item>[\s\S]*?<cbc:Description[^>]*>([\s\S]*?)<\/cbc:Description>/i) ||
+                        bloqueLinea.match(/<cbc:Description[^>]*>([\s\S]*?)<\/cbc:Description>/i);
+      if (mDescItem && mDescItem[1]) {
+        const dLimpia = mDescItem[1].replace(/<!\[CDATA\[|\]\]>/g, "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+        if (dLimpia && dLimpia.length <= 140 && !dLimpia.startsWith("<?xml") && !dLimpia.includes("Invoice")) {
+          descripcionesLineas.push(dLimpia);
+        }
+      }
+    }
+    if (descripcionesLineas.length > 0) {
+      desc = descripcionesLineas.join(" + ");
+    } else {
+      const mNota = invoiceBlock.match(/<cbc:Note[^>]*>([\s\S]*?)<\/cbc:Note>/i);
+      if (mNota && mNota[1]) {
+        const nLimpia = mNota[1].replace(/<!\[CDATA\[|\]\]>/g, "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+        if (nLimpia && nLimpia.length <= 120 && !nLimpia.includes("Invoice")) {
+          desc = nLimpia;
+        }
+      }
+    }
 
     return {
       emisor: emisor,
@@ -5814,135 +5974,97 @@ function clasificarComercioColombianoUniversal_(nombreComercio, textoCompleto) {
 function extraerFacturaGmailLocal(asunto, remitente, cuerpo) {
 
   // 1. Si parece publicidad, OTP, crédito preaprobado, etc., NUNCA extraer
-
-  if (esCorreoNoFactura_(asunto, remitente, cuerpo)) return null;
+  if (esCorreoNoFactura_(asunto, remitente, cuerpo, false)) return null;
 
   const texto = (asunto || "") + "\n" + (cuerpo || "");
-
   const limpio = normalizarTexto(texto);
 
-  // 2. Detección estricta de PSE / ACH Colombia Aprobado
-
-  const esPSE = /pse|achcolombia|cus/.test(limpio) && /(aprobada|exitosa|confirmad)/.test(limpio);
-
+  // 2. Detección de PSE / ACH Colombia / Pasarelas (Wompi, Bold, PayU, MercadoPago)
+  const esPSE = /(pse|achcolombia|cus|wompi|bold|payu|mercadopago)/.test(limpio) && /(aprobada|exitosa|confirmad|pagad|exitoso)/.test(limpio);
   let cusMatch = texto.match(/cus\s*[:#-]?\s*(\d+)/i);
-
   let idRef = cusMatch ? "CUS " + cusMatch[1] : "";
 
-  // 3. Detección de Factura Electrónica de Venta
+  // 3. Detección de Factura Electrónica de Venta o Asunto DIAN (NIT;Emisor;Factura;01;...)
+  const partesAsunto = String(asunto || "").split(";");
+  const esAsuntoDian = /\b\d{6,12}\s*;.*;\s*(01|02|03|91|92)\b/i.test(asunto || "") || partesAsunto.length >= 4;
+  const esFacturaVenta = esAsuntoDian || /factura\s+electr[oó]nica|documento\s+electr[oó]nico|representaci[oó]n\s+gr[aá]fica|attacheddocument|cuenta\s+de\s+cobro|recibo\s+de\s+pago|comprobante\s+de\s+pago/i.test(texto);
 
-  const esFacturaVenta = /factura\s+electr[oó]nica\s+de\s+venta|attacheddocument/i.test(texto);
-
-  let facMatch = texto.match(/factura\s*(?:electr[oó]nica)?\s*(?:de\s+venta)?\s*n[°o.]?\s*([A-Za-z0-9-]+)/i);
-
+  if (esAsuntoDian && partesAsunto.length >= 3 && !idRef) {
+    idRef = partesAsunto[2].trim();
+  }
+  let facMatch = texto.match(/(?:factura|documento|comprobante|recibo)\s*(?:electr[oó]nica)?\s*(?:de\s+venta)?\s*(?:n[°o.]?|nro\.?|#|:)\s*([A-Za-z0-9-]{3,25})/i);
   if (facMatch && !idRef) idRef = facMatch[1];
 
-  // 4. Detección de Débito Bancario Confirmado
-
-  const esDebito = /(debito\s+por\s+compra|transferencia\s+exitosa|pago\s+exitoso)/i.test(texto);
+  // 4. Detección de Débito Bancario / Nequi / Bancolombia / Daviplata Confirmado
+  const esDebito = /(debito\s+por\s+compra|transferencia\s+exitosa|pago\s+exitoso|compra\s+exitosa|envio\s+exitoso|realizaste\s+un\s+pago|pagaste|compraste|recibiste\s+una\s+transferencia)/i.test(limpio);
 
   // 5. Detección de Confirmación de Pedido / Compra en Tiendas y E-Commerce (Greenfit, Mercado Libre, etc.)
-
   const esPedidoEcommerce = /(confirmacion\s+(?:de\s+)?(?:tu\s+)?pedido|pedido\s+confirmado|tu\s+pedido\s+esta\s+confirmado|gracias\s+por\s+tu\s+compra|compra\s+confirmada|orden\s+de\s+compra|recibo\s+de\s+compra)/i.test(limpio);
 
-  // Si no cumple ninguna condición estricta de transacción real aprobada, NO es factura
-
   if (!esPSE && !esFacturaVenta && !esDebito && !esPedidoEcommerce) {
-
     return null;
-
   }
 
   if (esPedidoEcommerce && !idRef) {
-
     let orderMatch = texto.match(/(?:pedido|orden|order)\s*[:#n°o.]*\s*([A-Za-z0-9-_]+)/i);
-
     if (orderMatch) idRef = "ORDEN " + orderMatch[1];
-
   }
 
   // Extraer el monto neto de la transacción confirmada
-
   let valor = 0;
-
-  let m = texto.match(/(?:total(?:\s+a\s+pagar)?|valor(?:\s+de\s+la\s+transacci[oó]n)?|monto\s+pagado|importe)\s*[:#-]?\s*\$?\s*([\d\.\,]+)/i);
-
+  let m = texto.match(/(?:total(?:\s+a\s+pagar|\s+factura|\s+pagado)?|valor(?:\s+total|\s+pagado|\s+de\s+la\s+transacci[oó]n|\s+de\s+la\s+compra)?|monto(?:\s+pagado|\s+total)?|importe|neto\s+a\s+pagar)\s*[:#-]?\s*(?:cop|\$)?\s*\$?\s*([\d\.\,]{3,20})/i);
   if (m) {
-
-    valor = parsearMontoFlexibleV24_(m[1]);
-
-  } else {
-
-    m = texto.match(/\$\s*([\d\.\,]+)/);
-
-    if (m) valor = parsearMontoFlexibleV24_(m[1]);
-
+    valor = limpiarMontoCOP_(m[1]);
+  }
+  if (valor <= 0) {
+    m = texto.match(/(?:\$|cop)\s*([\d\.\,]{4,20})/i);
+    if (m) valor = limpiarMontoCOP_(m[1]);
   }
 
   if (valor <= 0) return null;
 
   // Clasificar comercio
-
   let proveedor = "Comercio";
+  if (esAsuntoDian && partesAsunto.length >= 2 && partesAsunto[1].trim().length >= 2) {
+    proveedor = partesAsunto[1].trim();
+  } else {
+    let provMatch = texto.match(/(?:comercio|empresa|establecimiento|convenio|emisor|raz[oó]n\s+social|a\s+favor\s+de)\s*[:#-]?\s*([A-Za-zÁÉÍÓÚÑáéíóúñ0-9 .&'-]{3,50})/i);
+    if (provMatch) proveedor = provMatch[1].trim();
+  }
 
-  let provMatch = texto.match(/(?:comercio|empresa|establecimiento|convenio|a\s+favor\s+de)\s*[:#-]?\s*([A-Za-zÁÉÍÓÚÑáéíóúñ0-9 .&'-]{3,50})/i);
-
-  if (provMatch) proveedor = provMatch[1].trim();
-
-  if (proveedor === "Comercio") {
-
-    if (/greenfit/i.test(texto)) proveedor = "Greenfit";
-
+  if (proveedor === "Comercio" || !proveedor) {
+    if (/colanta|mercolanta|890904478/i.test(texto)) proveedor = "Cooperativa Colanta";
+    else if (/epm|empresas publicas/i.test(texto)) proveedor = "EPM";
+    else if (/tigo|colombia movil|une epm/i.test(texto)) proveedor = "Tigo";
+    else if (/greenfit/i.test(texto)) proveedor = "Greenfit";
     else if (/mercadopago|mercado pago/i.test(texto)) proveedor = "MercadoPago";
-
     else if (/mercadolibre|mercado libre/i.test(texto)) proveedor = "Mercado Libre";
-
     else if (/amazon/i.test(texto)) proveedor = "Amazon";
-
     else if (/falabella/i.test(texto)) proveedor = "Falabella";
-
     else if (/zara/i.test(texto)) proveedor = "Zara";
-
     else if (/koaj/i.test(texto)) proveedor = "Koaj";
-
     else if (/shein/i.test(texto)) proveedor = "Shein";
-
     else if (/temu/i.test(texto)) proveedor = "Temu";
-
     else if (/exito/i.test(texto)) proveedor = "Éxito";
-
-    else if (/d1\b/i.test(texto)) proveedor = "D1";
-
+    else if (/d1\b/i.test(texto)) proveedor = "Tiendas D1";
   }
 
   const clasif = clasificarComercioColombianoUniversal_(proveedor, texto);
+  const cuentaDetectada = (/colanta|890904478|restaurante corporativo/i.test(proveedor + " " + texto)) ? "AyC Colanta" : "Nequi";
 
   return normalizarFacturaGmail_({
-
     es_factura_real: true,
-
     ignorar: false,
-
     proveedor: proveedor,
-
     categoria: clasif.categoria,
-
     subcategoria: clasif.subcategoria,
-
-    descripcion_formal: (esPSE ? "Pago PSE en " : "Compra en ") + proveedor,
-
+    descripcion_formal: embellecerConceptoFinanciero_((esPSE ? "Pago PSE en " : "Compra en ") + proveedor, proveedor, cuerpo, asunto),
     valor: valor,
-
     tipo: "Gasto",
-
     id_referencia: idRef,
-
-    metodo_pago: esPSE ? "PSE" : "Transferencia",
-
-    cuenta: "Nequi",
-
+    metodo_pago: esPSE ? "PSE" : (cuentaDetectada === "AyC Colanta" ? "Transferencia / Nómina" : "Transferencia"),
+    cuenta: cuentaDetectada,
     fecha_factura: Utilities.formatDate(new Date(), ZONA_HORARIA, "dd/MM/yyyy")
-
   }, asunto, cuerpo);
 }
 
@@ -6033,13 +6155,21 @@ function embellecerConceptoFinanciero_(descOriginal, proveedor, cuerpo, asunto) 
 }
 
 /**
- * 📬 ESCÁNER AUTOMÁTICO DE FACTURAS Y COMPROBANTES EN GMAIL
- * Revisa la bandeja de entrada, procesa facturas electrónicas (DIAN XML, ZIP, PDF)
- * y notificaciones bancarias (PSE, Nequi, Bancolombia, Colanta, EPM, etc.)
+ * 📬 ESCÁNER AUTOMÁTICO DE FACTURAS Y COMPROBANTES EN GMAIL (V26.9 PRO)
+ * Regla Oficial de Marlon Muñoz Pardo:
+ * 1. Revisa toda la Bandeja de Entrada (in:inbox), descomprime archivos .zip de entidades económicas
+ *    (normalizando blobs a application/zip y leyendo XML UBL 2.1, PDF internos e imágenes).
+ * 2. Si el correo llega sin leer, lo analiza, registra el movimiento en Google Sheets, le asigna su etiqueta
+ *    FINANZAS/<Carpeta>, LO DEJA SIN MARCAR COMO VISTO (No Leído) y LO DEJA EN LA BANDEJA DE ENTRADA.
+ * 3. Apenas Marlon marca el correo como LEÍDO (visto), el sistema lo mueve AUTOMÁTICAMENTE e INMEDIATAMENTE
+ *    a su carpeta correspondiente (archivándolo de Recibidos hacia FINANZAS/<Carpeta>).
  */
 function procesarCorreosFacturas() {
   let contadorProcesadas = 0;
   try {
+    // Primero: mover de inmediato cualquier correo ya etiquetado que Marlon ya haya marcado como leído
+    archivarCorreosFinancierosViejos_();
+
     const ss = obtenerLibro_();
     const shMov = ss.getSheetByName("MOVIMIENTOS");
     if (!shMov) {
@@ -6054,35 +6184,57 @@ function procesarCorreosFacturas() {
     const anioActual = ahora.getFullYear();
     const horaStr = Utilities.formatDate(ahora, ZONA_HORARIA, "hh:mm a");
 
-    // Buscar hilos en Bandeja de Entrada con términos financieros relevantes
-    const query = 'in:inbox (factura OR facturacion OR comprobante OR "attacheddocument" OR colanta OR nequi OR bancolombia OR daviplata OR pse OR wompi OR bold OR epm OR tigo OR "890904478" OR "compra realizada")';
-    const hilos = GmailApp.search(query, 0, 30);
-    
+    // Escanear directamente los hilos en Bandeja de Entrada (in:inbox) para no perder ningún .zip ni formato DIAN
+    const hilos = GmailApp.search('in:inbox', 0, 50);
+
     if (!hilos || !hilos.length) {
-      archivarCorreosFinancierosViejos_();
       return 0;
     }
 
     for (let h = 0; h < hilos.length; h++) {
       const hilo = hilos[h];
+      // Capturar el estado original de lectura ANTES de tocar el hilo/mensaje
+      const hiloEstabaNoLeido = hilo.isUnread();
       const mensajes = hilo.getMessages() || [];
 
       for (let m = 0; m < mensajes.length; m++) {
         const msg = mensajes[m];
         const idMsg = msg.getId();
+        const msgEstabaNoLeido = msg.isUnread() || hiloEstabaNoLeido;
 
         if (esMensajeGmailYaRegistrado_(idMsg, cacheSet)) {
+          // Si ya estaba registrado y Marlon ya lo leyó, asegurar que se mueva a su carpeta
+          if (!hilo.isUnread()) {
+            const labelsHilo = hilo.getLabels() || [];
+            const tieneEtiquetaFinanzas = labelsHilo.some(l => String(l.getName()).toLowerCase().includes("finanzas"));
+            if (tieneEtiquetaFinanzas) {
+              try { hilo.moveToArchive(); } catch (eMove) {}
+            }
+          }
           continue;
         }
 
         const asunto = msg.getSubject() || "";
         const remitente = msg.getFrom() || "";
-        const cuerpo = msg.getPlainBody() || "";
+        const cuerpoPlano = msg.getPlainBody() || "";
+        let cuerpoHtmlTexto = "";
+        try {
+          cuerpoHtmlTexto = (msg.getBody() || "")
+            .replace(/<style[\s\S]*?<\/style>/gi, " ")
+            .replace(/<script[\s\S]*?<\/script>/gi, " ")
+            .replace(/<[^>]+>/g, " ")
+            .replace(/&nbsp;/gi, " ")
+            .replace(/&amp;/gi, "&")
+            .replace(/\s+/g, " ")
+            .trim();
+        } catch (eHtml) {}
+
+        const cuerpo = (cuerpoPlano + "\n" + cuerpoHtmlTexto).substring(0, GMAIL_MAX_BODY_CHARS);
         const adjuntos = msg.getAttachments() || [];
         const tieneAdj = adjuntos.length > 0;
 
-        if (!pareceCorreoFinancieroValido_(asunto, remitente, cuerpo, tieneAdj)) {
-          if (esCorreoNoFactura_(asunto, remitente, cuerpo)) {
+        if (!pareceCorreoFinancieroValido_(asunto, remitente, cuerpo, adjuntos)) {
+          if (esCorreoNoFactura_(asunto, remitente, cuerpo, false)) {
             registrarIdGmailEnMemoria_(idMsg);
             cacheSet.add(idMsg);
           }
@@ -6091,92 +6243,88 @@ function procesarCorreosFacturas() {
 
         let datosFactura = null;
 
-        // 1. Extraer desde adjuntos XML o ZIP con XML (estándar DIAN UBL Colombia)
-        if (tieneAdj) {
-          for (let a = 0; a < adjuntos.length; a++) {
-            const adj = adjuntos[a];
-            const nombreAdj = (adj.getName() || "").toLowerCase();
-            const mimeType = (adj.getContentType() || "").toLowerCase();
+        // 1. Descomprimir .ZIP y extraer archivos .XML y .PDF (estándar DIAN UBL 2.1 Colombia y entidades económicas)
+        const desempacados = tieneAdj ? desempacarAdjuntosCorreo_(adjuntos) : { xmlBlobs: [], pdfImagenBlobs: [] };
 
-            if (nombreAdj.endsWith(".xml") || mimeType.includes("xml")) {
+        if (desempacados.xmlBlobs.length > 0) {
+          for (let x = 0; x < desempacados.xmlBlobs.length; x++) {
+            try {
+              const xmlBlob = desempacados.xmlBlobs[x];
+              let xmlStr = "";
               try {
-                const xmlStr = adj.getDataAsString();
-                datosFactura = extraerDatosDianXml_(xmlStr);
-                if (datosFactura && datosFactura.monto > 0) break;
-              } catch (eXml) {
-                console.warn("Error leyendo XML adjunto:", eXml);
+                xmlStr = xmlBlob.getDataAsString("UTF-8");
+              } catch (eUtf) {
+                xmlStr = xmlBlob.getDataAsString();
               }
-            } else if (nombreAdj.endsWith(".zip") || mimeType.includes("zip")) {
-              try {
-                const desempacados = Utilities.unzip(adj);
-                for (let d = 0; d < desempacados.length; d++) {
-                  const b = desempacados[d];
-                  if ((b.getName() || "").toLowerCase().endsWith(".xml")) {
-                    const xmlStr = b.getDataAsString();
-                    datosFactura = extraerDatosDianXml_(xmlStr);
-                    if (datosFactura && datosFactura.monto > 0) break;
-                  }
-                }
-                if (datosFactura && datosFactura.monto > 0) break;
-              } catch (eZip) {
-                console.warn("Error desempacando ZIP:", eZip);
+              const extraidoXml = extraerDatosDianXml_(xmlStr, asunto);
+              if (extraidoXml && extraidoXml.monto > 0) {
+                datosFactura = extraidoXml;
+                break;
+              } else if (extraidoXml && !datosFactura) {
+                datosFactura = extraidoXml;
               }
+            } catch (eXml) {
+              console.warn("Error leyendo XML adjunto o extraído de ZIP:", eXml);
             }
           }
         }
 
-        // 2. Si el XML no devolvió monto pero hay PDF/Imagen y Gemini multimodal
-        if ((!datosFactura || !datosFactura.monto || datosFactura.monto <= 0) && tieneAdj && GEMINI_API_KEY) {
-          for (let a = 0; a < adjuntos.length; a++) {
-            const adj = adjuntos[a];
-            const nombreAdj = (adj.getName() || "").toLowerCase();
-            const mimeType = (adj.getContentType() || "").toLowerCase();
-
-            if (nombreAdj.endsWith(".pdf") || mimeType.includes("pdf") || mimeType.includes("image")) {
-              try {
-                const bytes = adj.getBytes();
-                if (bytes.length <= GMAIL_MAX_ATTACHMENT_BYTES) {
-                  const base64 = Utilities.base64Encode(bytes);
-                  const prompt = "Analiza esta factura o comprobante de pago colombiano para Marlon Muñoz Pardo. Extrae ÚNICAMENTE un JSON válido con: { \"proveedor\": string, \"valor\": number, \"id_factura\": string, \"fecha\": \"dd/MM/yyyy\", \"descripcion\": string, \"categoria\": string, \"subcategoria\": string } sin markdown ni explicaciones.";
-                  const respGem = llamarGeminiAPI({
-                    contents: [{
-                      parts: [
-                        { inlineData: { mimeType: mimeType.includes("pdf") ? "application/pdf" : mimeType, data: base64 } },
-                        { text: prompt }
-                      ]
-                    }],
-                    generationConfig: { responseMimeType: "application/json", temperature: 0.1 }
-                  });
-                  if (respGem && respGem.candidates && respGem.candidates[0].content) {
-                    const txtGem = limpiarJSON(respGem.candidates[0].content.parts[0].text);
-                    const jGem = JSON.parse(txtGem);
-                    if (jGem && Number(jGem.valor) > 0) {
-                      datosFactura = {
-                        emisor: jGem.proveedor || "",
-                        monto: Number(jGem.valor),
-                        id_factura: jGem.id_factura || "",
-                        fecha: jGem.fecha || "",
-                        descripcion: jGem.descripcion || ""
-                      };
-                      break;
-                    }
+        // 2. Si el XML no devolvió monto (> 0), analizar los PDFs o imágenes (tanto adjuntos directos como extraídos del .ZIP) con Gemini Multimodal
+        if ((!datosFactura || !datosFactura.monto || datosFactura.monto <= 0) && desempacados.pdfImagenBlobs.length > 0 && GEMINI_API_KEY) {
+          for (let p = 0; p < desempacados.pdfImagenBlobs.length; p++) {
+            const pdfBlob = desempacados.pdfImagenBlobs[p];
+            const nombrePdf = (pdfBlob.getName() || "").toLowerCase();
+            const mimePdf = (pdfBlob.getContentType() || "").toLowerCase();
+            try {
+              const bytes = pdfBlob.getBytes();
+              if (bytes && bytes.length <= GMAIL_MAX_ATTACHMENT_BYTES) {
+                const base64 = Utilities.base64Encode(bytes);
+                const mimeFinal = (nombrePdf.endsWith(".pdf") || mimePdf.includes("pdf")) ? "application/pdf" : (mimePdf.includes("image") ? mimePdf : "application/pdf");
+                const prompt = "Analiza esta factura electrónica o comprobante de pago colombiano para Marlon Muñoz Pardo. Extrae ÚNICAMENTE un JSON válido con: { \"proveedor\": string, \"valor\": number, \"id_factura\": string, \"fecha\": \"dd/MM/yyyy\", \"descripcion\": string, \"categoria\": string, \"subcategoria\": string } sin markdown ni explicaciones.";
+                const respGem = llamarGeminiAPI({
+                  contents: [{
+                    parts: [
+                      { inlineData: { mimeType: mimeFinal, data: base64 } },
+                      { text: prompt }
+                    ]
+                  }],
+                  generationConfig: { responseMimeType: "application/json", temperature: 0.1 }
+                });
+                if (respGem && respGem.candidates && respGem.candidates[0].content) {
+                  const txtGem = limpiarJSON(respGem.candidates[0].content.parts[0].text);
+                  const jGem = JSON.parse(txtGem);
+                  if (jGem && Number(jGem.valor) > 0) {
+                    datosFactura = {
+                      emisor: jGem.proveedor || (datosFactura ? datosFactura.emisor : ""),
+                      monto: Number(jGem.valor),
+                      id_factura: jGem.id_factura || (datosFactura ? datosFactura.id_factura : ""),
+                      fecha: jGem.fecha || (datosFactura ? datosFactura.fecha : ""),
+                      descripcion: jGem.descripcion || (datosFactura ? datosFactura.descripcion : "")
+                    };
+                    break;
                   }
                 }
-              } catch (eGem) {
-                console.warn("Aviso Gemini Factura PDF:", eGem);
               }
+            } catch (eGem) {
+              console.warn("Aviso Gemini Factura PDF/ZIP:", eGem);
             }
           }
         }
 
-        // 3. Normalizar datos o recurrir a extracción local de texto
+        // 3. Normalizar datos o recurrir a extracción local de texto / Gemini sobre el cuerpo del correo
         let facturaFinal = null;
         if (datosFactura && datosFactura.monto > 0) {
           let prov = datosFactura.emisor;
           let idRef = datosFactura.id_factura;
-          
+
+          if ((!prov || prov === "Comercio") && asunto.includes(";")) {
+            const pAsunto = asunto.split(";");
+            if (pAsunto.length >= 2) prov = pAsunto[1].trim();
+          }
           if (!prov || prov === "Comercio") {
-            if (/colanta/i.test(asunto + " " + remitente + " " + cuerpo)) prov = "Cooperativa Colanta";
+            if (/colanta|890904478/i.test(asunto + " " + remitente + " " + cuerpo)) prov = "Cooperativa Colanta";
+            else if (/epm|empresas publicas/i.test(asunto + " " + remitente + " " + cuerpo)) prov = "EPM";
+            else if (/tigo|colombia movil/i.test(asunto + " " + remitente + " " + cuerpo)) prov = "Tigo";
           }
           if (!idRef && asunto.includes(";")) {
             const partes = asunto.split(";");
@@ -6186,15 +6334,15 @@ function procesarCorreosFacturas() {
           let desc = embellecerConceptoFinanciero_(datosFactura.descripcion, prov, cuerpo, asunto);
 
           const clasif = clasificarComercioColombianoUniversal_(prov, cuerpo + " " + desc);
-          if (/restaurante corporativo/i.test(cuerpo)) {
+          if (/restaurante corporativo/i.test(cuerpo + " " + desc)) {
             clasif.categoria = "Alimentación";
             clasif.subcategoria = "Restaurante";
           }
 
-          const cuentaPago = (/colanta|restaurante corporativo/i.test(prov + " " + cuerpo)) ? "AyC Colanta" : "Nequi";
+          const cuentaPago = (/colanta|890904478|restaurante corporativo/i.test(prov + " " + cuerpo)) ? "AyC Colanta" : "Nequi";
 
           facturaFinal = {
-            proveedor: prov || "Colanta",
+            proveedor: prov || "Comercio",
             categoria: clasif.categoria,
             subcategoria: clasif.subcategoria,
             descripcion: desc,
@@ -6216,12 +6364,16 @@ function procesarCorreosFacturas() {
               id_referencia: localFac.id_referencia,
               metodo_pago: localFac.metodo_pago,
               cuenta: localFac.cuenta,
-              fecha_factura: localFac.fecha_factura
+              fecha_factura: localFac.fecha_factura || Utilities.formatDate(msg.getDate(), ZONA_HORARIA, "dd/MM/yyyy")
             };
           }
         }
 
         if (!facturaFinal || !facturaFinal.valor || facturaFinal.valor <= 0) {
+          // Asegurar que si el correo estaba no leído, se conserve como no leído
+          if (msgEstabaNoLeido) {
+            try { msg.markUnread(); hilo.markUnread(); } catch (eUn) {}
+          }
           continue;
         }
 
@@ -6230,14 +6382,15 @@ function procesarCorreosFacturas() {
           facturaFinal.id_referencia,
           facturaFinal.proveedor,
           facturaFinal.valor,
-          facturaFinal.fecha_factura
+          facturaFinal.fecha_factura,
+          idMsg
         );
 
         if (dupCheck.esDuplicado) {
           console.log("Factura duplicada omitida:", dupCheck.motivo);
           registrarIdGmailEnMemoria_(idMsg);
           cacheSet.add(idMsg);
-          moverCorreoAEtiquetaEspecifica(hilo, facturaFinal.proveedor, facturaFinal.categoria, asunto, cuerpo, facturaFinal.subcategoria);
+          moverCorreoAEtiquetaEspecifica(hilo, facturaFinal.proveedor, facturaFinal.categoria, asunto, cuerpo, facturaFinal.subcategoria, msgEstabaNoLeido, msg);
           continue;
         }
 
@@ -6246,8 +6399,8 @@ function procesarCorreosFacturas() {
         if (shMov.getLastRow() >= 5) {
           const idsRange = shMov.getRange(5, 1, Math.min(20, shMov.getLastRow() - 4), 1).getValues();
           idsRange.forEach(row => {
-            const m = String(row[0] || "").match(/^M-(\d+)$/);
-            if (m) maxNum = Math.max(maxNum, parseInt(m[1], 10));
+            const mIdMatch = String(row[0] || "").match(/^M-(\d+)$/);
+            if (mIdMatch) maxNum = Math.max(maxNum, parseInt(mIdMatch[1], 10));
           });
         }
         const nuevoId = "M-" + String(maxNum + 1).padStart(4, "0");
@@ -6287,7 +6440,17 @@ function procesarCorreosFacturas() {
         registrarIdGmailEnMemoria_(idMsg);
         cacheSet.add(idMsg);
 
-        moverCorreoAEtiquetaEspecifica(hilo, facturaFinal.proveedor, facturaFinal.categoria, asunto, cuerpo, facturaFinal.subcategoria);
+        // Aplicar etiqueta FINANZAS/<Carpeta>, mantener NO LEÍDO en bandeja si no ha sido visto, o mover de inmediato si ya fue leído
+        const etiquetaAsignada = moverCorreoAEtiquetaEspecifica(
+          hilo,
+          facturaFinal.proveedor,
+          facturaFinal.categoria,
+          asunto,
+          cuerpo,
+          facturaFinal.subcategoria,
+          msgEstabaNoLeido,
+          msg
+        );
 
         // 6. Notificación a Telegram con botón de deshacer
         const chatId = PropertiesService.getScriptProperties().getProperty("TELEGRAM_CHAT_ID");
@@ -6298,9 +6461,10 @@ function procesarCorreosFacturas() {
               `🍽️ *Detalle:* ${facturaFinal.descripcion}\n` +
               `💵 *Monto:* $${formatearCOP(facturaFinal.valor)} COP\n` +
               `💳 *Cuenta:* ${facturaFinal.cuenta} (${facturaFinal.metodo_pago})\n` +
+              `📂 *Carpeta Gmail:* \`${etiquetaAsignada}\`\n` +
               `📄 *Doc / Ref:* ${facturaFinal.id_referencia || "Electrónica"}\n` +
               `🆔 *ID:* \`${nuevoId}\`\n\n` +
-              `✅ _Registrado automáticamente desde Gmail_`;
+              `📬 _El correo quedó sin leer en tu bandeja; apenas lo marques como leído se moverá automáticamente a ${etiquetaAsignada}_`;
             
             enviarMensajeTelegramConBoton(chatId, msgTg, nuevoId);
           } catch (eTg) {
@@ -6312,6 +6476,7 @@ function procesarCorreosFacturas() {
       }
     }
 
+    // Revisar nuevamente por si algún hilo ya estaba leído y listo para moverse a su carpeta
     archivarCorreosFinancierosViejos_();
 
   } catch (err) {
@@ -6322,310 +6487,192 @@ function procesarCorreosFacturas() {
 }
 
 function esCorreoDuplicado(nombrePestana, idMensaje) {
-
   const sh = obtenerLibro_().getSheetByName(nombrePestana);
-
   if (!sh || sh.getLastRow() < 4) return false;
-
   return sh.getRange(4, 14, sh.getLastRow() - 3, 1).getDisplayValues().some(r => String(r[0]).includes(idMensaje));
-
 }
 
 function obtenerOCrearEtiquetaGmail_(nombreCompleto) {
-
   const partes = String(nombreCompleto || "").split("/");
-
   let acumulado = "";
-
   let etiquetaFinal = null;
 
   for (let i = 0; i < partes.length; i++) {
-
     acumulado = acumulado ? (acumulado + "/" + partes[i]) : partes[i];
-
     etiquetaFinal = GmailApp.getUserLabelByName(acumulado);
-
     if (!etiquetaFinal) {
-
       try {
-
         etiquetaFinal = GmailApp.createLabel(acumulado);
-
       } catch (e) {
-
         etiquetaFinal = GmailApp.getUserLabelByName(acumulado);
-
       }
-
     }
-
   }
-
   return etiquetaFinal;
-
 }
 
-function marcarCorreoParaRevision_(hilo, nombre, archivarInmediato = false) {
-
+/**
+ * Regla Oficial de Marlon Muñoz Pardo:
+ * - Si el correo estaba SIN LEER (estabaNoLeido = true): le asigna su etiqueta FINANZAS/<Carpeta>,
+ *   lo deja explícitamente como NO LEÍDO (sin marcar como visto) y lo mantiene en la Bandeja de Entrada (in:inbox).
+ * - Si el correo YA FUE LEÍDO por Marlon (estabaNoLeido = false) o si archivarInmediato = true:
+ *   lo mueve AUTOMÁTICAMENTE e INMEDIATAMENTE a su carpeta correspondiente (moveToArchive).
+ */
+function marcarCorreoParaRevision_(hilo, nombre, archivarInmediato = false, estabaNoLeido = true, msgOpcional = null) {
   try {
-
     const etiq = obtenerOCrearEtiquetaGmail_(nombre);
-
     if (etiq) hilo.addLabel(etiq);
 
-    // Solo archivar de inmediato si es spam/ignorado/duplicado
-
-    // Las facturas y comprobantes reales se quedan en Recibidos (Inbox) durante 1 hora
-
-    if (archivarInmediato) {
-
+    if (archivarInmediato || !estabaNoLeido) {
       hilo.moveToArchive();
-
+    } else {
+      // Garantizar que permanezca sin marcar como visto en la Bandeja de Entrada hasta que Marlon lo abra
+      try {
+        if (msgOpcional) msgOpcional.markUnread();
+        hilo.markUnread();
+      } catch (eUnread) {}
     }
-
   } catch (e) {}
-
 }
 
+/**
+ * 📬 MOVIMIENTO AUTOMÁTICO E INMEDIATO AL MARCAR COMO LEÍDO
+ * Regla de Marlon Muñoz Pardo:
+ * - Todo correo financiero analizado permanece NO LEÍDO en la Bandeja de Entrada (Recibidos).
+ * - APENAS Marlon lo marca como leído (!hilo.isUnread()), se mueve AUTOMÁTICAMENTE e INMEDIATAMENTE
+ *   a su carpeta FINANZAS/<Subcarpeta> (sacándolo de Recibidos con moveToArchive).
+ * - Si aún está SIN LEER (hilo.isUnread()), NUNCA se archiva (se respeta en la bandeja hasta que Marlon lo vea).
+ */
 function archivarCorreosFinancierosViejos_() {
-
   try {
-
-    // 1. Buscar directamente en Bandeja de Entrada hilos financieros etiquetados
     const hilos = GmailApp.search('in:inbox', 0, 50);
-
     if (!hilos || !hilos.length) return 0;
-
-    const ahora = new Date().getTime();
-
-    // ⏱️ Regla Oficial de Marlon: 3 horas completas de permanencia en Recibidos
-    const TRES_HORAS_MS = 3 * 60 * 60 * 1000;
-    const SEIS_HORAS_MS = 6 * 60 * 60 * 1000;
 
     let archivados = 0;
 
     hilos.forEach(hilo => {
+      // Si el correo sigue SIN LEER, dejarlo quieto en la Bandeja de Entrada
+      if (hilo.isUnread()) return;
 
       const labels = hilo.getLabels() || [];
-
-      // Verificar si tiene alguna etiqueta FINANZAS (FINANZAS/Compras, FINANZAS/Servicios, etc.)
       const esFinanciero = labels.some(l => {
         const n = String(l.getName()).toLowerCase();
-        return n.includes("finanzas") && !n.includes("ignorado") && !n.includes("duplicados");
+        return n.includes("finanzas");
       });
 
-      if (!esFinanciero) return;
-
-      const fechaUltimo = hilo.getLastMessageDate().getTime();
-      const antiguedadMs = ahora - fechaUltimo;
-      const yaFueLeido = !hilo.isUnread();
-
-      // Regla de Marlon Muñoz Pardo:
-      // Solo archivar fuera de Recibidos (Inbox) hacia su etiqueta/carpeta correspondiente si:
-      // 1. Ya transcurrieron al menos 3 horas desde su llegada Y Marlon ya lo leyó (!hilo.isUnread()).
-      // 2. O si ya transcurrieron más de 6 horas para evitar acumulación si no fue abierto.
-      // Si tiene menos de 3 horas, PERMANECE EN BANDEJA DE ENTRADA para que Marlon pueda leerlo cómodamente.
-      if ((antiguedadMs >= TRES_HORAS_MS && yaFueLeido) || antiguedadMs >= SEIS_HORAS_MS) {
-
+      // Si ya tiene su etiqueta FINANZAS/<Carpeta> y Marlon YA LO MARCÓ COMO LEÍDO -> mover inmediatamente a su carpeta
+      if (esFinanciero) {
         hilo.moveToArchive();
-
         archivados++;
-
       }
-
     });
 
     return archivados;
-
   } catch (e) {
-
     console.error("Error en archivarCorreosFinancierosViejos_:", e);
-
     return 0;
-
   }
-
 }
 
 function hiloYaGestionado_(hilo, cacheSet) {
-
   try {
-
     const msgs = hilo.getMessages() || [];
-
     if (!msgs.length) return false;
-
-    // Un hilo solo se omite si TODOS sus mensajes ya están registrados en MOVIMIENTOS
-
     return msgs.every(msg => {
-
       const id = msg.getId();
-
       return id && esMensajeGmailYaRegistrado_(id, cacheSet);
-
     });
-
   } catch (e) { return false; }
-
 }
 
 /**
-
  * 1. MEMORIA PERMANENTE DE IDs DE GMAIL PROCESADOS O ELIMINADOS
-
  * Evita que al borrar un registro desde Telegram el bot vuelva a importar el correo.
-
  */
-
 function obtenerIdsGmailIgnoradosProps_() {
-
   try {
-
     const raw = PropertiesService.getScriptProperties().getProperty("GMAIL_IDS_IGNORADOS") || "[]";
-
     const arr = JSON.parse(raw);
-
     return Array.isArray(arr) ? new Set(arr) : new Set();
-
   } catch (e) {
-
     return new Set();
-
   }
-
 }
 
 function registrarIdGmailEnMemoria_(idMensaje) {
-
   if (!idMensaje) return;
-
   try {
-
     const props = PropertiesService.getScriptProperties();
-
     const raw = props.getProperty("GMAIL_IDS_IGNORADOS") || "[]";
-
     let arr = [];
-
     try { arr = JSON.parse(raw); } catch (e) { arr = []; }
-
     if (!arr.includes(idMensaje)) {
-
       arr.push(idMensaje);
-
-      if (arr.length > 500) arr = arr.slice(-500); // Mantener últimos 500 IDs
-
+      if (arr.length > 500) arr = arr.slice(-500);
       props.setProperty("GMAIL_IDS_IGNORADOS", JSON.stringify(arr));
-
     }
-
   } catch (e) {}
-
 }
 
 function obtenerIdsGmailRegistradosSet_() {
-
   const set = obtenerIdsGmailIgnoradosProps_();
-
   try {
-
     const sh = obtenerLibro_().getSheetByName("MOVIMIENTOS");
-
     if (!sh || sh.getLastRow() < 4) return set;
-
     const rows = sh.getRange(4, 14, sh.getLastRow() - 3, 1).getDisplayValues();
-
     for (let i = 0; i < rows.length; i++) {
-
       const ref = String(rows[i][0] || "");
-
       const matches = ref.match(/GMAIL:([a-zA-Z0-9_-]+)/gi) || [];
-
       matches.forEach(m => {
-
         const cleanId = m.replace(/GMAIL:/i, "").trim();
-
         if (cleanId) set.add(cleanId);
-
       });
-
     }
-
   } catch (e) {}
-
   return set;
-
 }
 
 function esMensajeGmailYaRegistrado_(idMensaje, cacheSet) {
-
   if (!idMensaje) return false;
-
   if (cacheSet && cacheSet.has(idMensaje)) return true;
-
   const ignorados = obtenerIdsGmailIgnoradosProps_();
-
   if (ignorados.has(idMensaje)) return true;
-
   return esCorreoDuplicado("MOVIMIENTOS", "GMAIL:" + idMensaje);
-
 }
 
-function moverCorreoAEtiquetaEspecifica(hilo, proveedor, categoria, asunto, cuerpo, subcategoria) {
-
+function moverCorreoAEtiquetaEspecifica(hilo, proveedor, categoria, asunto, cuerpo, subcategoria, estabaNoLeido = null, msgOpcional = null) {
   const t = normalizarTexto((proveedor || "") + " " + (categoria || "") + " " + (asunto || "") + " " + (cuerpo || "") + " " + (subcategoria || ""));
-
   let subcarpeta = categoria || "Compras";
 
-  if (/csf rentals|csf\s*rent|moto|gasolina|combustible|terpel|coesco|parqueadero moto/.test(t)) {
-
+  if (/csf rentals|csf\s*rent|moto|gasolina|combustible|terpel|primax|biomax|coesco|parqueadero moto/.test(t)) {
     subcarpeta = "Moto";
-
   } else if (/colanta|siesa|890904478|mercolanta|delicatessen caribe/.test(t)) {
-
     subcarpeta = "Colanta";
-
   } else if (/nequi/.test(t)) {
-
     subcarpeta = "Nequi";
-
   } else if (/bancolombia/.test(t)) {
-
     subcarpeta = "Bancolombia";
-
   } else if (/daviplata/.test(t)) {
-
     subcarpeta = "Daviplata";
-
-  } else if (/greenfit|oasis punto cero|shein|temu|ropa|calzado|zapatos/.test(t)) {
-
+  } else if (/greenfit|oasis punto cero|shein|temu|mercado\s*libre|amazon|falabella|ropa|calzado|zapatos/.test(t)) {
     subcarpeta = "Compras";
-
-  } else if (/spotify|netflix|disney|prime|youtube|google one/.test(t)) {
-
+  } else if (/spotify|netflix|disney|prime|youtube|google one|eneba/.test(t)) {
     subcarpeta = "Suscripciones";
-
-  } else if (/epm|tigo|claro|agua|luz|energia|gas|internet/.test(t)) {
-
+  } else if (/epm|tigo|claro|une|emvarias|agua|luz|energia|gas|internet/.test(t)) {
     subcarpeta = "Servicios";
-
-  } else if (/parqueadero|parking/.test(t)) {
-
+  } else if (/parqueadero|parking|metro|civica|didi|uber/.test(t)) {
     subcarpeta = "Transporte";
-
-  } else if (/comida|restaurante|almuerzo|cena|pizza|burger|delicatessen/.test(t)) {
-
+  } else if (/comida|restaurante|almuerzo|cena|pizza|burger|delicatessen|d1|exito|vaquita|euro/.test(t)) {
     subcarpeta = "Alimentación";
-
   }
 
   const nombreEtiquetaCompleta = "FINANZAS/" + subcarpeta;
+  const sigueNoLeido = (estabaNoLeido !== null && estabaNoLeido !== undefined) ? Boolean(estabaNoLeido) : hilo.isUnread();
 
-  // Marlon: No archivar de inmediato. Etiquetar y mantener en Recibidos durante 3 horas.
-  marcarCorreoParaRevision_(hilo, nombreEtiquetaCompleta, false);
+  // Si sigue no leído -> dejar sin marcar como visto en la bandeja. Si ya fue leído -> mover de inmediato a su carpeta.
+  marcarCorreoParaRevision_(hilo, nombreEtiquetaCompleta, !sigueNoLeido, sigueNoLeido, msgOpcional);
 
   return nombreEtiquetaCompleta;
-
 }
 
 /* =========================================================
@@ -9220,88 +9267,98 @@ function borrarUltimoConjunto() {
 
 
 
-function borrarRegistroCompletoPorID(idRaw) {
-
-  const id = String(idRaw || "").trim().toUpperCase();
+function borrarRegistroCompletoPorID(idRaw, extraData) {
+  let id = String(idRaw || "").trim().toUpperCase();
+  if (id && !id.startsWith("M-") && !id.startsWith("CP-") && !id.startsWith("A-") && !id.startsWith("CXC-") && !id.startsWith("F-")) {
+    if (/^\d+$/.test(id)) {
+      id = "M-" + id.padStart(4, "0");
+    }
+  }
 
   if (id.startsWith("CP-")) return borrarColillaCompleta_(id);
-
   if (id.startsWith("A-")) return { ok: borrarFilaPorID_("AHORROS", id), id: id, colilla: 0, movimientos: 0, ahorros: 1 };
 
   if (id.startsWith("M-")) {
-
     const sh = obtenerLibro_().getSheetByName("MOVIMIENTOS");
-
     if (!sh) return { ok: false };
-
-    const rows = sh.getRange(4, 1, sh.getLastRow() - 3, 14).getValues();
-
-    for (let i = 0; i < rows.length; i++) {
-
-      if (String(rows[i][0]).toUpperCase() === id) {
-
-        const ref = String(rows[i][13] || "");
-
-        if (ref.startsWith("PAGO_FIJO|") || ref.startsWith("ABONO_FIJO|")) {
-
-          const fid = ref.split("|")[1];
-
-          v21RevertPayment_(fid);
-
+    const lastRow = sh.getLastRow();
+    if (lastRow >= 4) {
+      const rows = sh.getRange(4, 1, lastRow - 3, 14).getValues();
+      for (let i = 0; i < rows.length; i++) {
+        if (String(rows[i][0]).toUpperCase() === id) {
+          const ref = String(rows[i][13] || "");
+          if (ref.startsWith("PAGO_FIJO|") || ref.startsWith("ABONO_FIJO|")) {
+            const fid = ref.split("|")[1];
+            v21RevertPayment_(fid);
+          }
+          if (ref.startsWith("CXC_PAGO|")) {
+            const cxcId = ref.split("|")[1];
+            const val = Number(rows[i][7] || 0);
+            revertirPagoCuentaPorCobrarV24_(cxcId, val);
+          }
+          if (ref.startsWith("CXC|")) {
+            const cxcId = ref.split("|")[1];
+            borrarFilaPorID_("CUENTAS POR COBRAR", cxcId);
+          }
+          sh.deleteRow(i + 4);
+          return { ok: true, id: id, colilla: 0, movimientos: 1, ahorros: 0 };
         }
-
-        if (ref.startsWith("CXC_PAGO|")) {
-
-          const cxcId = ref.split("|")[1];
-
-          const val = Number(rows[i][7] || 0);
-
-          revertirPagoCuentaPorCobrarV24_(cxcId, val);
-
-        }
-
-        if (ref.startsWith("CXC|")) {
-
-          const cxcId = ref.split("|")[1];
-
-          borrarFilaPorID_("CUENTAS POR COBRAR", cxcId);
-
-        }
-
-        sh.deleteRow(i + 4);
-
-        return { ok: true, id: id, colilla: 0, movimientos: 1, ahorros: 0 };
-
       }
-
     }
+  }
 
+  // Fallback: si no se encontró por ID pero tenemos datos del movimiento (descripción y valor)
+  if (extraData && (extraData.descripcion || extraData.valor || extraData.monto)) {
+    const sh = obtenerLibro_().getSheetByName("MOVIMIENTOS");
+    if (sh && sh.getLastRow() >= 5) {
+      const maxRows = Math.min(80, sh.getLastRow() - 4);
+      const rows = sh.getRange(5, 1, maxRows, 14).getValues();
+      const targetVal = Number(extraData.valor || extraData.monto || 0);
+      const targetDesc = String(extraData.descripcion || "").toLowerCase().trim();
+
+      for (let i = 0; i < rows.length; i++) {
+        const rowId = String(rows[i][0] || "");
+        const rowDesc = String(rows[i][6] || "").toLowerCase().trim();
+        const rowVal = Number(rows[i][7] || 0);
+
+        const valMatches = targetVal === 0 || Math.abs(rowVal - targetVal) < 0.01;
+        const descMatches = targetDesc === "" || rowDesc.includes(targetDesc) || targetDesc.includes(rowDesc);
+
+        if (valMatches && descMatches) {
+          const ref = String(rows[i][13] || "");
+          if (ref.startsWith("PAGO_FIJO|") || ref.startsWith("ABONO_FIJO|")) {
+            const fid = ref.split("|")[1];
+            v21RevertPayment_(fid);
+          }
+          if (ref.startsWith("CXC_PAGO|")) {
+            const cxcId = ref.split("|")[1];
+            revertirPagoCuentaPorCobrarV24_(cxcId, rowVal);
+          }
+          if (ref.startsWith("CXC|")) {
+            const cxcId = ref.split("|")[1];
+            borrarFilaPorID_("CUENTAS POR COBRAR", cxcId);
+          }
+          sh.deleteRow(i + 5);
+          return { ok: true, id: rowId, fallbackMatched: true, colilla: 0, movimientos: 1, ahorros: 0 };
+        }
+      }
+    }
   }
 
   if (id.startsWith("CXC-")) {
-
     const movimientos = borrarFilasPorTexto_("MOVIMIENTOS", "CXC|" + id, 13) +
-
       borrarFilasPorTexto_("MOVIMIENTOS", "CXC_PAGO|" + id, 13);
-
     const ok = borrarFilaPorID_("CUENTAS POR COBRAR", id, 3);
-
     return { ok: ok || movimientos > 0, id: id, movimientos: movimientos, cxc: ok ? 1 : 0 };
-
   }
 
   if (id.startsWith("F-")) {
-
     borrarFilasPorTexto_("MOVIMIENTOS", id, 13);
-
     const ok = borrarFilaPorID_("CONTROL FIJOS", id);
-
     return { ok: ok, id: id, fijos: 1 };
-
   }
 
   return { ok: false };
-
 }
 
 
@@ -9570,4 +9627,4 @@ function parsearMontoFlexibleV24_(texto) {
     if (!isNaN(n) && n > best) best = n;
   });
   return Math.round(best);
-}
+}

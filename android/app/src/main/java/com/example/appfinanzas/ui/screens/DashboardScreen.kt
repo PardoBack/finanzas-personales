@@ -72,7 +72,6 @@ import com.example.appfinanzas.data.remote.Movimiento
 import com.example.appfinanzas.ui.components.GlassCard
 import com.example.appfinanzas.ui.components.QuickActionButton
 import com.example.appfinanzas.ui.components.SmartInsightsBanner
-import com.example.appfinanzas.ui.components.SpatialGlowCard
 import com.example.appfinanzas.ui.components.bounceClick
 import com.example.appfinanzas.ui.components.shimmerEffect
 import com.example.appfinanzas.ui.theme.AmberAlert
@@ -90,6 +89,7 @@ import com.example.appfinanzas.util.CurrencyUtils
 
 import androidx.compose.material.icons.rounded.Security
 import androidx.compose.material.icons.rounded.PieChart
+import androidx.compose.material.icons.rounded.SmartToy
 
 @Composable
 fun DashboardScreen(
@@ -144,11 +144,28 @@ fun DashboardScreen(
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 20.dp),
-                verticalArrangement = Arrangement.spacedBy(20.dp),
+                .padding(horizontal = 18.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
                 contentPadding = PaddingValues(top = topPadding + 8.dp, bottom = padding.calculateBottomPadding() + 32.dp)
             ) {
-                // 1. Smart Insights IA Banner 2026
+                item {
+                    HeroBalanceCard(
+                        totalBalance = uiState.totalBalance,
+                        disponibleReal = uiState.disponibleReal,
+                        comprometidoFijos = uiState.comprometidoFijos,
+                        isVisible = isBalanceVisible,
+                        onToggleVisibility = { isBalanceVisible = !isBalanceVisible }
+                    )
+                }
+
+                item {
+                    QuickActionsSection(
+                        onAddExpense = { onOpenAddTransaction("gasto") },
+                        onAddIncome = { onOpenAddTransaction("ingreso") },
+                        onAddAntExpenseClick = { onAddAntExpense("Café", 5000.0) }
+                    )
+                }
+
                 item {
                     SmartInsightsBanner(
                         onActionClick = { insight ->
@@ -163,23 +180,6 @@ fun DashboardScreen(
                     )
                 }
 
-                // 2. Spatial Glow Card + Hero Card Balance 2026
-                item {
-                    SpatialGlowCard(
-                        modifier = Modifier.fillMaxWidth(),
-                        cornerRadius = 28.dp
-                    ) {
-                        HeroBalanceCard(
-                            totalBalance = uiState.totalBalance,
-                            disponibleReal = uiState.disponibleReal,
-                            comprometidoFijos = uiState.comprometidoFijos,
-                            isVisible = isBalanceVisible,
-                            onToggleVisibility = { isBalanceVisible = !isBalanceVisible }
-                        )
-                    }
-                }
-
-                // 3. Budget Alert Banner (🚨 SOBREGIRO)
                 item {
                     AnimatedVisibility(
                         visible = uiState.overspentCategories.isNotEmpty(),
@@ -193,16 +193,6 @@ fun DashboardScreen(
                     }
                 }
 
-                // 4. Quick Actions
-                item {
-                    QuickActionsSection(
-                        onAddExpense = { onOpenAddTransaction("gasto") },
-                        onAddIncome = { onOpenAddTransaction("ingreso") },
-                        onAddAntExpenseClick = { onAddAntExpense("Café", 5000.0) }
-                    )
-                }
-
-                // 5. Metrics Grid
                 item {
                     MetricsGrid(
                         income = uiState.monthlyIncome,
@@ -246,14 +236,13 @@ fun DashboardTopBar(
     TopAppBar(
         modifier = Modifier.statusBarsPadding(),
         colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = Color.Transparent
+            containerColor = MaterialTheme.colorScheme.background
         ),
         title = {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .clip(RoundedCornerShape(16.dp))
-                    .bounceClick(scaleDown = 0.95f)
                     .clickable {
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         onOpenProfile()
@@ -261,12 +250,10 @@ fun DashboardTopBar(
             ) {
                 Box(
                     modifier = Modifier
-                        .size(42.dp)
+                        .size(40.dp)
                         .clip(CircleShape)
-                        .background(
-                            Brush.linearGradient(listOf(Emerald500, Violet500))
-                        )
-                        .border(1.dp, Color.White.copy(alpha = 0.5f), CircleShape),
+                        .background(Emerald500.copy(alpha = 0.14f))
+                        .border(1.dp, Emerald500.copy(alpha = 0.32f), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -279,22 +266,22 @@ fun DashboardTopBar(
                 Spacer(modifier = Modifier.width(10.dp))
                 Column {
                     Text(
-                        text = "Finanzas Pro Ultra",
-                        fontSize = 11.sp,
+                        text = "Pardo Finanzas",
+                        fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Emerald500
+                        color = Slate400
                     )
                     Text(
                         text = "Hola, $userName 👋",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Black,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
                         color = Color.White
                     )
                 }
             }
         },
         actions = {
-            // 🤖 IA Assistant Direct Action Button
             IconButton(
                 onClick = {
                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -303,23 +290,11 @@ fun DashboardTopBar(
                 modifier = Modifier.bounceClick(scaleDown = 0.9f)
             ) {
                 Surface(
-                    color = Violet500.copy(alpha = 0.22f),
+                    color = Violet500.copy(alpha = 0.12f),
                     shape = CircleShape,
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Violet500.copy(alpha = 0.6f))
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Violet500.copy(alpha = 0.3f))
                 ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Text("🤖", fontSize = 12.sp)
-                        Text(
-                            text = "IA Assistant",
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
-                    }
+                    Icon(Icons.Rounded.SmartToy, contentDescription = "Asistente financiero", tint = Violet500, modifier = Modifier.padding(8.dp).size(20.dp))
                 }
             }
 
@@ -333,7 +308,7 @@ fun DashboardTopBar(
                 Icon(
                     imageVector = Icons.Rounded.Security,
                     contentDescription = "Ajustes de Seguridad",
-                    tint = Emerald500
+                    tint = Slate400
                 )
             }
 
@@ -377,26 +352,11 @@ fun HeroBalanceCard(
 
     GlassCard(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(28.dp),
-        backgroundColor = Slate900.copy(alpha = 0.9f),
-        borderColor = Emerald500.copy(alpha = 0.4f)
+        shape = RoundedCornerShape(24.dp),
+        backgroundColor = Slate900,
+        borderColor = GlassBorder
     ) {
-        Box(modifier = Modifier.fillMaxWidth()) {
-            Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .background(
-                        Brush.radialGradient(
-                            colors = listOf(
-                                Emerald500.copy(alpha = 0.15f),
-                                Violet500.copy(alpha = 0.10f),
-                                Color.Transparent
-                            )
-                        )
-                    )
-            )
-
-            Column {
+        Column {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -408,7 +368,7 @@ fun HeroBalanceCard(
                     ) {
                         Text(
                             text = "BALANCE TOTAL",
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold,
                             color = Emerald500
@@ -420,7 +380,7 @@ fun HeroBalanceCard(
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             onToggleVisibility()
                         },
-                        modifier = Modifier.size(32.dp).bounceClick(scaleDown = 0.88f)
+                        modifier = Modifier.size(44.dp)
                     ) {
                         Icon(
                             imageVector = if (isVisible) Icons.Rounded.Visibility else Icons.Rounded.VisibilityOff,
@@ -435,7 +395,7 @@ fun HeroBalanceCard(
 
                 Text(
                     text = if (isVisible) CurrencyUtils.formatCOP(totalBalance) else "••••••••",
-                    fontSize = 32.sp,
+                    fontSize = 29.sp,
                     fontWeight = FontWeight.Black,
                     letterSpacing = (-1.0).sp,
                     color = Color.White
@@ -508,7 +468,7 @@ fun HeroBalanceCard(
                                 modifier = Modifier.size(14.dp)
                             )
                             Text(
-                                text = "Comprometido Fijos",
+                                text = "Gastos fijos",
                                 fontSize = 11.sp,
                                 color = Slate400,
                                 fontWeight = FontWeight.Medium
@@ -516,14 +476,13 @@ fun HeroBalanceCard(
                         }
                         Text(
                             text = if (isVisible) CurrencyUtils.formatCOP(comprometidoFijos) else "••••••",
-                            fontSize = 16.sp,
+                            fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
-                            letterSpacing = (-0.5).sp,
+                            letterSpacing = (-0.3).sp,
                             color = AmberAlert
                         )
                     }
                 }
-            }
         }
     }
 }
@@ -589,25 +548,28 @@ fun QuickActionsSection(
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceEvenly
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         QuickActionButton(
             icon = Icons.Rounded.RemoveCircleOutline,
-            label = "+ Gasto",
+            label = "Gasto",
             accentColor = RedAlert,
-            onClick = onAddExpense
+            onClick = onAddExpense,
+            modifier = Modifier.weight(1f)
         )
         QuickActionButton(
             icon = Icons.Rounded.AddCircleOutline,
-            label = "+ Ingreso",
+            label = "Ingreso",
             accentColor = Emerald500,
-            onClick = onAddIncome
+            onClick = onAddIncome,
+            modifier = Modifier.weight(1f)
         )
         QuickActionButton(
             icon = Icons.Rounded.BugReport,
-            label = "🐜 Hormiga",
+            label = "Hormiga",
             accentColor = Violet500,
-            onClick = onAddAntExpenseClick
+            onClick = onAddAntExpenseClick,
+            modifier = Modifier.weight(1f)
         )
     }
 }
@@ -616,24 +578,20 @@ fun QuickActionsSection(
 fun MetricsGrid(income: Double, expenses: Double) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(14.dp)
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         MetricCard(
             modifier = Modifier.weight(1f),
             title = "Ingresos",
             amount = income,
-            trendText = "+12% vs mes anterior",
-            isPositiveTrend = true,
-            icon = Icons.Rounded.ArrowDownward,
+            icon = Icons.Rounded.ArrowUpward,
             color = Emerald500
         )
         MetricCard(
             modifier = Modifier.weight(1f),
             title = "Gastos",
             amount = expenses,
-            trendText = "-5% optimizado",
-            isPositiveTrend = true,
-            icon = Icons.Rounded.ArrowUpward,
+            icon = Icons.Rounded.ArrowDownward,
             color = RedAlert
         )
     }
@@ -644,8 +602,6 @@ fun MetricCard(
     modifier: Modifier,
     title: String,
     amount: Double,
-    trendText: String,
-    isPositiveTrend: Boolean,
     icon: ImageVector,
     color: Color,
 ) {
@@ -657,42 +613,29 @@ fun MetricCard(
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
-                    .size(34.dp)
-                    .clip(CircleShape)
-                    .background(color.copy(alpha = 0.2f)),
+                    .size(32.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(color.copy(alpha = 0.12f)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(18.dp))
+                Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(17.dp))
             }
-
-            Surface(
-                color = if (isPositiveTrend) Emerald500.copy(alpha = 0.15f) else RedAlert.copy(alpha = 0.15f),
-                shape = RoundedCornerShape(8.dp)
-            ) {
-                Text(
-                    text = trendText,
-                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                    fontSize = 9.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = if (isPositiveTrend) Emerald500 else RedAlert
-                )
-            }
+            Text(title, fontSize = 12.sp, color = Slate400, fontWeight = FontWeight.Medium, maxLines = 1)
         }
 
-        Spacer(modifier = Modifier.height(10.dp))
-
-        Text(title, fontSize = 12.sp, color = Slate400, fontWeight = FontWeight.Medium)
+        Spacer(modifier = Modifier.height(12.dp))
         Text(
             CurrencyUtils.formatCOP(amount),
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Black,
-            letterSpacing = (-0.5).sp,
-            color = Color.White
+            fontSize = 15.sp,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = (-0.3).sp,
+            color = Color.White,
+            maxLines = 1
         )
     }
 }

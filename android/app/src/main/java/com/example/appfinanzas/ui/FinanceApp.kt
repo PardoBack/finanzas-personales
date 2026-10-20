@@ -15,6 +15,7 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -35,6 +36,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ListAlt
 import androidx.compose.material.icons.rounded.BarChart
 import androidx.compose.material.icons.rounded.Dashboard
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.MoreHoriz
 import androidx.compose.material.icons.rounded.PieChart
 import androidx.compose.material.icons.rounded.Savings
 import androidx.compose.material.icons.rounded.Schedule
@@ -44,6 +47,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -161,7 +166,8 @@ fun FinanceApp(
                             backStack.clear()
                             backStack.add(key)
                         }
-                    }
+                    },
+                    onAddTransaction = { showAddTransactionDialog = true }
                 )
             }
         }
@@ -380,114 +386,95 @@ fun FinanceApp(
 @Composable
 fun FinanceFloatingBottomBar(
     currentKey: FinanceNavKey,
-    onNavigate: (FinanceNavKey) -> Unit
+    onNavigate: (FinanceNavKey) -> Unit,
+    onAddTransaction: () -> Unit
 ) {
-    val items = remember {
-        listOf(
-            Triple(FinanceNavKey.Dashboard, Icons.Rounded.Dashboard, "Resumen"),
-            Triple(FinanceNavKey.Movements, Icons.AutoMirrored.Rounded.ListAlt, "Movs"),
-            Triple(FinanceNavKey.Budgets, Icons.Rounded.PieChart, "Presupuestos"),
-            Triple(FinanceNavKey.FixedExpenses, Icons.Rounded.Schedule, "Fijos"),
-            Triple(FinanceNavKey.Analytics, Icons.Rounded.BarChart, "Análisis"),
-            Triple(FinanceNavKey.Goals, Icons.Rounded.Savings, "Metas"),
-            Triple(FinanceNavKey.AiAssistant, Icons.Rounded.SmartToy, "IA Pardo")
-        )
-    }
-
-    val selectedIndex = when (currentKey) {
-        FinanceNavKey.Dashboard -> 0
-        FinanceNavKey.Movements -> 1
-        FinanceNavKey.Budgets -> 2
-        FinanceNavKey.FixedExpenses -> 3
-        FinanceNavKey.Analytics -> 4
-        FinanceNavKey.Goals -> 5
-        FinanceNavKey.AiAssistant -> 6
-        else -> 0
-    }
+    var moreMenuExpanded by remember { mutableStateOf(false) }
+    val moreKeys = setOf(FinanceNavKey.Budgets, FinanceNavKey.Analytics, FinanceNavKey.Goals, FinanceNavKey.AiAssistant)
+    val moreSelected = currentKey in moreKeys
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .navigationBarsPadding()
-            .padding(horizontal = 14.dp, vertical = 10.dp),
+            .padding(horizontal = 18.dp, vertical = 8.dp),
         contentAlignment = Alignment.Center
     ) {
         Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(32.dp))
-                .border(
-                    width = 1.2.dp,
-                    brush = Brush.linearGradient(
-                        colors = listOf(
-                            Emerald500.copy(alpha = 0.5f),
-                            GlassBorder,
-                            Violet500.copy(alpha = 0.5f)
-                        )
-                    ),
-                    shape = RoundedCornerShape(32.dp)
-                ),
-            shape = RoundedCornerShape(32.dp),
-            color = Slate900.copy(alpha = 0.94f),
-            shadowElevation = 16.dp
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(24.dp),
+            color = Slate900,
+            shadowElevation = 10.dp,
+            border = androidx.compose.foundation.BorderStroke(1.dp, GlassBorder)
         ) {
-            BoxWithConstraints(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp, horizontal = 4.dp)
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 6.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                val tabWidth = maxWidth / items.size
-                val animatedOffsetX by animateDpAsState(
-                    targetValue = tabWidth * selectedIndex,
-                    animationSpec = spring(
-                        dampingRatio = Spring.DampingRatioMediumBouncy,
-                        stiffness = Spring.StiffnessMediumLow
+                BottomNavItem(
+                    modifier = Modifier.weight(1f),
+                    selected = currentKey == FinanceNavKey.Dashboard,
+                    icon = Icons.Rounded.Dashboard,
+                    label = "Inicio",
+                    onClick = { onNavigate(FinanceNavKey.Dashboard) }
+                )
+                BottomNavItem(
+                    modifier = Modifier.weight(1f),
+                    selected = currentKey == FinanceNavKey.Movements,
+                    icon = Icons.AutoMirrored.Rounded.ListAlt,
+                    label = "Movs",
+                    onClick = { onNavigate(FinanceNavKey.Movements) }
+                )
+
+                androidx.compose.material3.FilledIconButton(
+                    onClick = onAddTransaction,
+                    modifier = Modifier.size(52.dp),
+                    colors = androidx.compose.material3.IconButtonDefaults.filledIconButtonColors(
+                        containerColor = Emerald500,
+                        contentColor = Color.White
                     ),
-                    label = "neonLightTracker"
-                )
-
-                // Neon lighting tracker pill smoothly following the active icon
-                Box(
-                    modifier = Modifier
-                        .offset(x = animatedOffsetX)
-                        .width(tabWidth)
-                        .height(52.dp)
-                        .clip(RoundedCornerShape(24.dp))
-                        .background(
-                            Brush.radialGradient(
-                                colors = listOf(
-                                    Emerald500.copy(alpha = 0.35f),
-                                    Violet500.copy(alpha = 0.20f),
-                                    Color.Transparent
-                                )
-                            )
-                        )
-                        .border(
-                            width = 1.dp,
-                            brush = Brush.linearGradient(
-                                colors = listOf(
-                                    Emerald500,
-                                    Violet500
-                                )
-                            ),
-                            shape = RoundedCornerShape(24.dp)
-                        )
-                )
-
-                // Navigation Items Row
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                    verticalAlignment = Alignment.CenterVertically
+                    shape = RoundedCornerShape(18.dp)
                 ) {
-                    items.forEachIndexed { index, (key, icon, label) ->
-                        BottomNavItem(
-                            modifier = Modifier.width(tabWidth),
-                            selected = index == selectedIndex,
-                            icon = icon,
-                            label = label,
-                            onClick = { onNavigate(key) }
-                        )
+                    Icon(Icons.Rounded.Add, contentDescription = "Nuevo movimiento", modifier = Modifier.size(26.dp))
+                }
+
+                BottomNavItem(
+                    modifier = Modifier.weight(1f),
+                    selected = currentKey == FinanceNavKey.FixedExpenses,
+                    icon = Icons.Rounded.Schedule,
+                    label = "Fijos",
+                    onClick = { onNavigate(FinanceNavKey.FixedExpenses) }
+                )
+
+                Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                    BottomNavItem(
+                        selected = moreSelected,
+                        icon = Icons.Rounded.MoreHoriz,
+                        label = "Más",
+                        onClick = { moreMenuExpanded = true }
+                    )
+                    DropdownMenu(
+                        expanded = moreMenuExpanded,
+                        onDismissRequest = { moreMenuExpanded = false },
+                        shape = RoundedCornerShape(18.dp),
+                        containerColor = Slate900
+                    ) {
+                        listOf(
+                            Triple(FinanceNavKey.Budgets, Icons.Rounded.PieChart, "Presupuestos"),
+                            Triple(FinanceNavKey.Analytics, Icons.Rounded.BarChart, "Análisis"),
+                            Triple(FinanceNavKey.Goals, Icons.Rounded.Savings, "Metas de ahorro"),
+                            Triple(FinanceNavKey.AiAssistant, Icons.Rounded.SmartToy, "Asistente IA")
+                        ).forEach { (key, icon, label) ->
+                            DropdownMenuItem(
+                                text = { Text(label, color = Color.White) },
+                                leadingIcon = { Icon(icon, contentDescription = null, tint = if (currentKey == key) Emerald500 else Slate400) },
+                                onClick = {
+                                    moreMenuExpanded = false
+                                    onNavigate(key)
+                                }
+                            )
+                        }
                     }
                 }
             }
@@ -504,41 +491,29 @@ fun BottomNavItem(
     onClick: () -> Unit
 ) {
     val haptic = LocalHapticFeedback.current
-    val scale by animateFloatAsState(
-        targetValue = if (selected) 1.12f else 1.0f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
-        label = "navScale"
-    )
-
-    val iconColor by animateColorAsState(
-        targetValue = if (selected) Emerald500 else Slate400,
-        animationSpec = tween(300),
-        label = "iconColor"
-    )
+    val iconColor = if (selected) Emerald500 else Slate400
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
         modifier = modifier
-            .height(52.dp)
-            .scale(scale)
-            .clip(RoundedCornerShape(20.dp))
-            .bounceClick(scaleDown = 0.90f) {
+            .height(56.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .clickable {
                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                 onClick()
             }
-            .padding(vertical = 2.dp)
+            .padding(horizontal = 2.dp, vertical = 4.dp)
     ) {
         Icon(
             imageVector = icon,
             contentDescription = label,
             tint = iconColor,
-            modifier = Modifier.size(20.dp)
+            modifier = Modifier.size(22.dp)
         )
-        Spacer(modifier = Modifier.height(2.dp))
         Text(
             text = label,
-            fontSize = 9.sp,
+            fontSize = 10.sp,
             fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
             color = iconColor,
             maxLines = 1

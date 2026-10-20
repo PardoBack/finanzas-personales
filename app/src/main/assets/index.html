@@ -1,0 +1,2324 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>PardoFinanzas V26 PRO — Centro Financiero Inteligente</title>
+  <meta name="description" content="Dashboard financiero ultra-moderno para Marlon Muñoz. Conectado en tiempo real con Google Sheets, Colanta y Telegram.">
+  <meta name="theme-color" content="#090D16">
+
+  <!-- PWA & Mobile Native App Support -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.png">
+  <link rel="apple-touch-icon" href="assets/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="PardoFinanzas">
+  <meta name="mobile-web-app-capable" content="yes">
+
+  <!-- Tipografía Ultra-Premium: Outfit (Headings/Cifras) & Plus Jakarta Sans (UI) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- FontAwesome 6 Pro Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <!-- Estilos del Sistema -->
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="theme-fintech">
+  <!-- Fondo Ambiental con Mesh Gradients Dinámicos -->
+  <div class="mesh-bg">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+
+  <div class="app-layout" id="app-root">
+    
+    <!-- SIDEBAR DE NAVEGACIÓN (Desktop & Tablets) -->
+    <aside class="app-sidebar" id="app-sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-gem" style="background:transparent; border:none; padding:0; display:flex; align-items:center;">
+          <img src="assets/icon.svg" alt="PardoFinanzas Icon" width="38" height="38" style="border-radius:10px; box-shadow:0 4px 14px rgba(6,182,212,0.4);">
+        </div>
+        <div class="brand-text">
+          <span class="brand-title">PardoFinanzas</span>
+          <span class="brand-badge">PRO V26</span>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a href="#section-overview" class="nav-item active" data-nav="overview">
+          <i class="fa-solid fa-chart-pie"></i>
+          <span>Resumen General</span>
+        </a>
+        <a href="#section-wallet" class="nav-item" data-nav="wallet">
+          <i class="fa-solid fa-wallet"></i>
+          <span>Billetera & Cuentas</span>
+        </a>
+        <a href="#section-movements" class="nav-item" data-nav="movements">
+          <i class="fa-solid fa-receipt"></i>
+          <span>Movimientos</span>
+          <span class="nav-counter" id="sidebar-mov-count">255</span>
+        </a>
+        <a href="#section-fixed" class="nav-item" data-nav="fixed">
+          <i class="fa-solid fa-calendar-check"></i>
+          <span>Gastos Fijos</span>
+          <span class="nav-badge-alert" id="sidebar-fixed-pending">12</span>
+        </a>
+        <a href="#section-savings" class="nav-item" data-nav="savings">
+          <i class="fa-solid fa-piggy-bank"></i>
+          <span>Fondos Colanta</span>
+        </a>
+        <a href="#section-fugas" class="nav-item" data-nav="fugas">
+          <i class="fa-solid fa-cookie-bite"></i>
+          <span>Radar Antojos</span>
+        </a>
+        <a href="#section-annual" class="nav-item" data-nav="annual">
+          <i class="fa-solid fa-chart-line" style="color:#38BDF8;"></i>
+          <span>Evolución Anual</span>
+        </a>
+        <a href="#modal-upload-colilla" class="nav-item" id="nav-item-colilla" data-nav="colilla">
+          <i class="fa-solid fa-file-invoice-dollar" style="color:#FBBF24;"></i>
+          <span>Subir Colilla (Gemini)</span>
+        </a>
+      </nav>
+
+      <!-- Perfil y Estado en la base del sidebar -->
+      <div class="sidebar-footer">
+        <div class="user-pill">
+          <div class="user-avatar">MM</div>
+          <div class="user-meta">
+            <span class="user-name">Marlon Muñoz</span>
+            <span class="user-role">Colanta • AyC</span>
+          </div>
+          <button class="btn-ghost-sm" id="btn-quick-settings" title="Configurar API">
+            <i class="fa-solid fa-sliders"></i>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ÁREA PRINCIPAL DE CONTENIDO -->
+    <div class="app-main-wrapper">
+      
+      <!-- TOPBAR HEADER -->
+      <header class="app-topbar" id="app-topbar">
+        <div class="topbar-left">
+          <!-- Vista Móvil: Logo y Perfil Oficial -->
+          <div class="mobile-user-profile">
+            <div class="mobile-app-logo" style="display:flex; align-items:center; margin-right:0.6rem;">
+              <img src="assets/icon.svg" alt="PardoFinanzas Logo" width="36" height="36" style="border-radius:10px; box-shadow:0 4px 12px rgba(6,182,212,0.35);">
+            </div>
+            <div class="mobile-user-meta">
+              <span class="mobile-user-title" style="font-weight:800; font-size:0.92rem; display:flex; align-items:center; gap:0.35rem;">
+                PardoFinanzas <span class="badge-mini-ai" style="font-size:0.62rem; background:rgba(6,182,212,0.18); color:#00E5FF; padding:1px 5px; border-radius:6px; border:1px solid rgba(6,182,212,0.35); font-weight:800;">CFO AI</span>
+              </span>
+              <span class="mobile-user-subtitle" style="font-size:0.72rem; color:#94A3B8;">Marlon • Colanta AyC</span>
+            </div>
+          </div>
+
+          <!-- Vista Desktop: Logo Brand -->
+          <div class="desktop-brand-pill">
+            <div class="brand-gem-sm"><i class="fa-solid fa-shapes"></i></div>
+            <span class="desktop-brand-name">PardoFinanzas</span>
+          </div>
+
+          <div class="breadcrumb-group">
+            <div class="month-selector-nav" id="month-selector-nav">
+              <button class="btn-month-nav" id="btn-prev-month" title="Mes anterior (Ej: Septiembre)">
+                <i class="fa-solid fa-chevron-left"></i>
+              </button>
+              
+              <button class="period-pill interactive-period-btn" id="btn-open-month-modal" title="Cambiar mes de consulta">
+                <i class="fa-regular fa-calendar-days"></i>
+                <span id="label-active-month">OCTUBRE 2026</span>
+                <i class="fa-solid fa-caret-down" style="font-size:0.75rem; margin-left:0.25rem;"></i>
+              </button>
+
+              <button class="btn-month-nav" id="btn-next-month" title="Mes siguiente (Ej: Noviembre)">
+                <i class="fa-solid fa-chevron-right"></i>
+              </button>
+            </div>
+
+            <div class="sync-status-indicator" id="sync-status-badge">
+              <span class="pulse-indicator"></span>
+              <span id="sync-status-text">Sheets En Vivo</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="topbar-right">
+          <button class="topbar-btn btn-install" id="btn-install-app" title="Instalar App en tu Celular">
+            <i class="fa-solid fa-mobile-screen-button"></i>
+            <span class="btn-text-desktop">Instalar App</span>
+          </button>
+
+          <button class="topbar-btn btn-sync" id="btn-sync-now" title="Sincronizar en tiempo real">
+            <i class="fa-solid fa-rotate" id="topbar-sync-icon"></i>
+            <span class="btn-text-desktop">Sincronizar</span>
+          </button>
+
+          <button class="topbar-btn btn-report-email" id="btn-topbar-send-report" title="Enviar Reporte Ejecutivo a marlonpardomu@gmail.com">
+            <i class="fa-solid fa-paper-plane" id="topbar-report-icon"></i>
+            <span class="btn-text-desktop">Enviar Reporte</span>
+          </button>
+
+          <button class="topbar-btn btn-colilla" id="btn-topbar-colilla" title="Subir Colilla de Pago (Gemini AI)">
+            <i class="fa-solid fa-file-invoice-dollar"></i>
+            <span class="btn-text-desktop">Subir Colilla</span>
+          </button>
+
+          <button class="topbar-btn btn-scan-gmail" id="btn-scan-gmail" title="Buscar y procesar facturas en Gmail">
+            <i class="fa-solid fa-envelope-open-text" id="topbar-scan-icon"></i>
+            <span class="btn-text-desktop">Escanear Gmail</span>
+          </button>
+
+          <button class="topbar-btn btn-cta" id="btn-open-add-mov" title="Registrar nuevo movimiento">
+            <i class="fa-solid fa-plus"></i>
+            <span>Nuevo</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- CONTENEDOR DE VISTAS (Scrollable) -->
+      
+      <main class="app-content-area" id="main-content-scroll">
+        
+        <!-- =========================================================
+             VISTA 1: RESUMEN GENERAL (OVERVIEW DASHBOARD)
+             ========================================================= -->
+        <div class="view-panel active" id="view-overview">
+          <!-- Selector Rápido de Meses -->
+          <!-- BARRA DE SELECCIÓN RÁPIDA DE MESES (ENERO A DICIEMBRE 2026) -->
+        <div class="months-quick-strip" id="months-quick-strip">
+          <div class="months-strip-header">
+            <span class="strip-title"><i class="fa-solid fa-calendar-week" style="color:#60A5FA;"></i> Periodo Activo:</span>
+            <button class="btn-all-year-pill js-btn-show-all-year" id="btn-show-all-year" title="Ver consolidado de todo el año 2026">
+              <i class="fa-solid fa-layer-group"></i> Ver Todo 2026
+            </button>
+          </div>
+          <div class="months-strip-wrapper">
+            <button class="month-strip-pill" data-month="enero">Ene</button>
+            <button class="month-strip-pill" data-month="febrero">Feb</button>
+            <button class="month-strip-pill" data-month="marzo">Mar</button>
+            <button class="month-strip-pill" data-month="abril">Abr</button>
+            <button class="month-strip-pill" data-month="mayo">May</button>
+            <button class="month-strip-pill" data-month="junio">Jun</button>
+            <button class="month-strip-pill" data-month="julio">Jul</button>
+            <button class="month-strip-pill" data-month="agosto">Ago</button>
+            <button class="month-strip-pill" data-month="septiembre">Sep</button>
+            <button class="month-strip-pill active" data-month="octubre">Oct</button>
+            <button class="month-strip-pill" data-month="noviembre">Nov</button>
+            <button class="month-strip-pill" data-month="diciembre">Dic</button>
+          </div>
+        </div>
+
+          <!-- Tarjeta de Patrimonio Líquido Maestro -->
+          <section class="wallet-cockpit-section" id="section-wallet">
+          <div class="cockpit-grid">
+            
+            <!-- Panel Principal: Patrimonio Líquido Consolidado (Compose HeroBalanceCard) -->
+            <div class="wealth-master-card">
+              <div class="master-card-header">
+                <div class="master-tag-group">
+                  <span class="status-live-dot"></span>
+                  <span class="hero-balance-badge"><i class="fa-solid fa-circle-check"></i> BALANCE TOTAL</span>
+                  <span class="verified-pill"><i class="fa-solid fa-cloud-arrow-up"></i> Sheets Conectado</span>
+                </div>
+                <button type="button" class="balance-visibility-toggle js-toggle-balance-visibility" id="btn-toggle-balance-visibility" title="Ocultar/Mostrar saldo" aria-label="Ocultar/Mostrar saldo">
+                  <i class="fa-solid fa-eye js-icon-eye-balance" id="icon-eye-balance"></i>
+                </button>
+              </div>
+
+              <div class="master-card-body">
+                <span class="master-label" id="overview-master-label">DISPONIBLE REAL EN CAJA (OCTUBRE)</span>
+                <div class="master-amount-row">
+                  <h1 class="master-amount" id="card-total-available">$415.366</h1>
+                  <span class="master-currency">COP</span>
+                </div>
+
+                <!-- Divisor Horizontal Sutil Compose -->
+                <div class="hero-gradient-divider"></div>
+
+                <!-- Fila de Métricas Divididas Compose: Disponible Real vs Gastos Fijos -->
+                <div class="hero-split-row">
+                  <div class="hero-split-col">
+                    <span class="hero-split-col-label"><i class="fa-solid fa-circle-check" style="color:var(--emerald);"></i> Disponible Real</span>
+                    <strong class="hero-split-col-val" style="color:var(--emerald);" id="overview-split-disponible">$415.366</strong>
+                  </div>
+                  <div class="hero-split-divider"></div>
+                  <div class="hero-split-col">
+                    <span class="hero-split-col-label"><i class="fa-solid fa-clock-rotate-left" style="color:var(--amber);"></i> Gastos fijos</span>
+                    <strong class="hero-split-col-val" style="color:var(--amber);" id="overview-split-fijos">$1.530.000</strong>
+                  </div>
+                </div>
+
+                <!-- Banner de Alerta: Esperando Colilla de Nómina Colanta -->
+                <div class="october-colilla-alert" id="october-colilla-notice" style="display: none;">
+                  <div class="alert-icon-pulse"><i class="fa-solid fa-clock-rotate-left"></i></div>
+                  <div class="alert-info">
+                    <strong class="alert-title">Esperando Colilla Q1 Colanta</strong>
+                    <span class="alert-desc">Sube tu comprobante de nómina para acreditar tus ingresos de Octubre.</span>
+                  </div>
+                  <button type="button" class="btn-subir-colilla-badge" id="btn-banner-upload-colilla" title="Subir Colilla de Pago">
+                    <i class="fa-solid fa-cloud-arrow-up"></i> Subir Colilla
+                  </button>
+                </div>
+                
+                <div class="master-stats-strip">
+                  <div class="mstat-item">
+                    <span class="mstat-label">Titular</span>
+                    <strong class="mstat-val">Marlon Muñoz</strong>
+                  </div>
+                  <div class="mstat-sep"></div>
+                  <div class="mstat-item">
+                    <span class="mstat-label">Ahorro 2026</span>
+                    <strong class="mstat-val text-emerald" id="overview-stat-savings-rate">+32.5%</strong>
+                  </div>
+                  <div class="mstat-sep"></div>
+                  <div class="mstat-item">
+                    <span class="mstat-label">Superávit Acumulado</span>
+                    <strong class="mstat-val text-cyan" id="overview-stat-superavit">$11.1M</strong>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Fila Integrada de Acciones Rápidas (Compose QuickActionButton: radio 20px, 44px icon container) -->
+              <div class="master-actions-bar">
+                <button type="button" class="btn-cockpit-action btn-act-expense" id="btn-qa-gasto" title="Registrar Gasto">
+                  <div class="act-icon-box"><i class="fa-solid fa-minus"></i></div>
+                  <span>Gasto</span>
+                </button>
+                <button type="button" class="btn-cockpit-action btn-act-income" id="btn-qa-ingreso" title="Registrar Ingreso">
+                  <div class="act-icon-box"><i class="fa-solid fa-plus"></i></div>
+                  <span>Ingreso</span>
+                </button>
+                <button type="button" class="btn-cockpit-action btn-act-colilla" id="btn-qa-colilla" title="Subir Colilla de Pago (Gemini AI)">
+                  <div class="act-icon-box"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+                  <span>Colilla</span>
+                </button>
+                <button type="button" class="btn-cockpit-action btn-act-cfo" id="btn-qa-cfo" title="Asistente CFO AI por Voz">
+                  <div class="act-icon-box"><i class="fa-solid fa-microphone-lines"></i></div>
+                  <span>CFO Voz</span>
+                </button>
+                <a href="https://docs.google.com/spreadsheets/d/1C9ifm7U8IYGOdY4IwAji9Z3McSlNy3B-e_2Jo-zvBFk/edit" target="_blank" rel="noopener noreferrer" class="btn-cockpit-action btn-act-sheets" id="btn-qa-sheets" title="Abrir Google Sheets en Drive">
+                  <div class="act-icon-box"><i class="fa-solid fa-table"></i></div>
+                  <span>Sheets</span>
+                </a>
+              </div>
+            </div>
+
+            <!-- Columna Derecha: 3 Cuentas & Fondos (Elegantes Tarjetas Obsidian Glass) -->
+            <div class="accounts-vertical-grid">
+              
+              <!-- Cuenta 1: AyC Colanta (Nómina) -->
+              <div class="account-compact-card card-aura-colanta">
+                <div class="acc-card-left">
+                  <div class="acc-brand-badge brand-colanta">
+                    <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <circle cx="16" cy="16" r="14" fill="#E11D48"/>
+                      <path d="M16 13C14 10.5 11.5 10.5 11.5 13C11.5 15.5 14.5 16 16 16C17.5 16 20.5 15.5 20.5 13C20.5 10.5 18 10.5 16 13Z" fill="#FFFFFF"/>
+                      <path d="M13 16C10.5 14 10.5 11.5 13 11.5C15.5 11.5 16 14.5 16 16C16 17.5 15.5 20.5 13 20.5C10.5 20.5 10.5 18 13 16Z" fill="#FFFFFF"/>
+                      <path d="M19 16C21.5 14 21.5 11.5 19 11.5C16.5 11.5 16 14.5 16 16C16 17.5 16.5 20.5 19 20.5C21.5 20.5 21.5 18 19 16Z" fill="#FFFFFF"/>
+                      <path d="M16 16C16 19 14.5 21.5 12.5 22.5" stroke="#FFFFFF" stroke-width="1.8" stroke-linecap="round"/>
+                    </svg>
+                  </div>
+                  <div class="acc-info">
+                    <span class="acc-type-pill">Nómina Principal • San Germán</span>
+                    <h4 class="acc-name">AyC Colanta</h4>
+                    <span class="acc-sub">Cuenta de Ahorros y Crédito</span>
+                  </div>
+                </div>
+                <div class="acc-card-right">
+                  <strong class="acc-amount" id="card-acc-colanta">$343.566</strong>
+                  <span class="acc-badge-pct" id="badge-colanta-status">83% Liquidez</span>
+                </div>
+              </div>
+
+              <!-- Cuenta 2: Fondos Colanta (Ahorros Acumulados) -->
+              <div class="account-compact-card card-aura-gold">
+                <div class="acc-card-left">
+                  <div class="acc-brand-badge brand-savings" style="background: rgba(245, 158, 11, 0.15); border-radius: 12px; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(245, 158, 11, 0.3);">
+                    <i class="fa-solid fa-piggy-bank" style="color:#FBBF24; font-size:1.2rem;"></i>
+                  </div>
+                  <div class="acc-info">
+                    <span class="acc-type-pill pill-gold">Patrimonio Reservado</span>
+                    <h4 class="acc-name">Fondos Colanta</h4>
+                    <span class="acc-sub" id="card-sub-savings">Navideño ($2.28M) • Ordinario • Aportes</span>
+                  </div>
+                </div>
+                <div class="acc-card-right">
+                  <strong class="acc-amount text-amber" id="card-acc-savings">$4.167.420</strong>
+                  <span class="acc-badge-pct badge-gold">Entrega 1 Dic</span>
+                </div>
+              </div>
+
+              <!-- Cuenta 3: Nequi & Efectivo en Mano -->
+              <div class="account-compact-card card-aura-nequi">
+                <div class="acc-card-left">
+                  <div class="acc-brand-badge brand-nequi">
+                    <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <rect width="32" height="32" rx="8" fill="#1F0036"/>
+                      <path d="M10 22V10L22 22V10" stroke="#E11D74" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+                      <path d="M10 22V10L22 22V10" stroke="#FFFFFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </div>
+                  <div class="acc-info">
+                    <span class="acc-type-pill pill-purple">Bolsillo Cotidiano</span>
+                    <h4 class="acc-name">Nequi & Efectivo</h4>
+                    <span class="acc-sub">Compras Diarias y Traslados</span>
+                  </div>
+                </div>
+                <div class="acc-card-right split-right">
+                  <div class="split-sub-item">
+                    <span class="split-lbl">Nequi:</span>
+                    <strong class="split-val" id="card-acc-nequi">$0 COP</strong>
+                  </div>
+                  <div class="split-sub-item">
+                    <span class="split-lbl">Efectivo:</span>
+                    <strong class="split-val" id="card-acc-efectivo">$71.800 COP</strong>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+        </section>
+
+        <!-- BANNER DE INSIGHTS SMART (Compose SmartInsightsBanner: PARDO IA 2026) -->
+        <div class="smart-insights-banner" id="smart-insights-banner">
+          <div class="insight-top-bar">
+            <div class="insight-badge-group">
+              <span class="insight-brand-pill"><i class="fa-solid fa-wand-magic-sparkles"></i> PARDO IA 2026</span>
+              <span class="insight-category-tag" id="insight-category-label">DISPONIBLE IA</span>
+            </div>
+            <div class="insight-controls">
+              <div class="insight-dots" id="insight-dots">
+                <span class="insight-dot active" data-idx="0"></span>
+                <span class="insight-dot" data-idx="1"></span>
+                <span class="insight-dot" data-idx="2"></span>
+                <span class="insight-dot" data-idx="3"></span>
+              </div>
+              <button type="button" class="btn-insight-ctrl" id="btn-insight-prev" title="Anterior insight" aria-label="Anterior insight">
+                <i class="fa-solid fa-chevron-left"></i>
+              </button>
+              <button type="button" class="btn-insight-ctrl" id="btn-insight-next" title="Siguiente insight" aria-label="Siguiente insight">
+                <i class="fa-solid fa-chevron-right"></i>
+              </button>
+              <button type="button" class="btn-insight-ctrl" id="btn-insight-dismiss" title="Cerrar banner" aria-label="Cerrar banner">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="insight-body">
+            <div class="insight-emoji" id="insight-emoji">💡</div>
+            <div class="insight-texts">
+              <h4 class="insight-title" id="insight-title">Optimización de Cupo</h4>
+              <p class="insight-desc" id="insight-desc">
+                Tu disponible real te permite abonar $50.000 a la cuota de tu tarjeta sin afectar tus gastos fijos de este mes.
+              </p>
+              <div class="insight-action-row">
+                <button type="button" class="btn-insight-action" id="btn-insight-action">
+                  <span id="insight-action-text">Abonar $50.000</span>
+                  <i class="fa-solid fa-chevron-right"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ALERTA DE PRESUPUESTO SOBREGIRADO (Compose BudgetAlertBanner) -->
+        <div class="budget-alert-banner" id="budget-alert-banner" style="display: none;">
+          <div class="budget-alert-icon-box">🚨</div>
+          <div class="budget-alert-info">
+            <div class="budget-alert-title">SOBREGIRO EN PRESUPUESTO</div>
+            <p class="budget-alert-desc" id="budget-alert-text">Categoría excedida en el periodo activo. Clic para auditar en Presupuestos.</p>
+          </div>
+          <i class="fa-solid fa-chevron-right" style="color:var(--rose); font-size:0.85rem;"></i>
+        </div>
+
+        <!-- KPI Summary Grid con IDs dinámicos de mes (Compose MetricsGrid) -->
+        <section class="kpi-banner-grid" id="section-overview">
+          
+          <!-- KPI 1: Ingreso -->
+          <div class="kpi-widget widget-income">
+            <div class="widget-icon-box"><i class="fa-solid fa-arrow-up-right-dots"></i></div>
+            <div class="widget-content">
+              <span class="widget-label" id="kpi-label-income">Ingresos Octubre</span>
+              <h3 class="widget-val" id="kpi-val-income">$1.700.605</h3>
+              <div class="widget-meta" id="kpi-meta-income">
+                <span class="meta-tag tag-emerald"><i class="fa-solid fa-circle-check"></i> Nómina + Ingresos Auditados</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- KPI 2: Gastos -->
+          <div class="kpi-widget widget-expense">
+            <div class="widget-icon-box"><i class="fa-solid fa-arrow-down-left-dots"></i></div>
+            <div class="widget-content">
+              <span class="widget-label" id="kpi-label-expense">Gasto Octubre</span>
+              <h3 class="widget-val" id="kpi-val-expense">$1.285.239</h3>
+              <div class="widget-meta">
+                <span class="meta-tag tag-emerald" id="kpi-pct-expense">76% del ingreso</span>
+                <span class="meta-sub">Fijos (EPM, Tigo, Comida $650k) + Var</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- KPI 3: Ritmo Diario Seguro (Brújula Financiera) -->
+          <div class="kpi-widget widget-safe-pace">
+            <div class="widget-icon-box"><i class="fa-solid fa-gauge-high"></i></div>
+            <div class="widget-content">
+              <span class="widget-label">Ritmo Diario Seguro</span>
+              <h3 class="widget-val highlight-emerald" id="kpi-val-pace">$97.491</h3>
+              <div class="widget-meta">
+                <span class="meta-tag tag-emerald"><i class="fa-solid fa-shield-check"></i> Seguro para hoy</span>
+                <span class="meta-sub" id="pace-days-left">15 días restantes</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- KPI 4: Fijos Pendientes -->
+          <div class="kpi-widget widget-fixed-alert">
+            <div class="widget-icon-box"><i class="fa-solid fa-clock-rotate-left"></i></div>
+            <div class="widget-content">
+              <span class="widget-label">Fijos por Pagar</span>
+              <h3 class="widget-val highlight-amber" id="kpi-val-fixed">$1.530.000</h3>
+              <div class="widget-meta">
+                <span class="meta-tag tag-warning" id="kpi-count-fixed">10 pendientes</span>
+                <span class="meta-sub" id="kpi-sub-fixed-names">Arriendo, Gasolina, Otros</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- KPI 5: Ahorro Navideño Colanta -->
+          <div class="kpi-widget widget-savings">
+            <div class="widget-icon-box"><i class="fa-solid fa-tree"></i></div>
+            <div class="widget-content">
+              <span class="widget-label">Fondo Navideño Colanta</span>
+              <h3 class="widget-val highlight-purple" id="kpi-val-navidad">$2.280.000</h3>
+              <div class="widget-meta">
+                <span class="meta-tag tag-purple"><i class="fa-solid fa-gift"></i> Entrega 1 Dic</span>
+                <span class="meta-sub" id="kpi-sub-savings-total">Total Fondos: $4.17M</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- PANEL DE PRÉSTAMOS & CRÉDITOS A CUOTAS (Addi, Bancos, Tarjetas) -->
+        <section class="dashboard-loans-banner" id="dashboard-loans-container" style="display: none;">
+          <div class="loans-card-glass">
+            <div class="loans-card-header">
+              <div class="loans-header-left">
+                <span class="badge-loan-pulse"><i class="fa-solid fa-credit-card"></i> COMPROMISO FINANCIADO ACTIVO</span>
+                <h3 class="loans-title" id="loan-main-title">Crédito Addi — Teléfono (6 cuotas)</h3>
+                <span class="loans-subtitle" id="loan-main-subtitle">Obligación diferida monitoreada por el sistema</span>
+              </div>
+              <div class="loans-header-right">
+                <span class="loan-day-pill" id="loan-due-pill"><i class="fa-solid fa-calendar-day"></i> Pagar el 17 de cada mes</span>
+              </div>
+            </div>
+            <div class="loans-stats-grid">
+              <div class="lstat-item">
+                <span class="lstat-label">Cuota Mensual</span>
+                <strong class="lstat-val highlight-amber" id="loan-monthly-quota">$100.000 COP</strong>
+              </div>
+              <div class="lstat-item">
+                <span class="lstat-label">Progreso</span>
+                <strong class="lstat-val" id="loan-quota-progress">Cuota 1 de 6</strong>
+              </div>
+              <div class="lstat-item">
+                <span class="lstat-label">Saldo Pendiente</span>
+                <strong class="lstat-val text-rose" id="loan-remaining-balance">$600.000 COP</strong>
+              </div>
+              <div class="lstat-item">
+                <span class="lstat-label">Entidad</span>
+                <strong class="lstat-val" id="loan-entity-name">Addi</strong>
+              </div>
+            </div>
+            <div class="loan-progress-bar-wrap">
+              <div class="loan-progress-bar" id="loan-progress-fill" style="width: 16%;"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- RADAR DE GASTOS HORMIGA (Compose AntExpensesSection: Slate900, Violet/Emerald, Chips Rápidos) -->
+        <div class="ant-expenses-card" id="ant-expenses-section">
+          <div class="ant-head">
+            <div class="ant-head-left">
+              <div class="ant-icon-badge">
+                <i class="fa-solid fa-bug"></i>
+              </div>
+              <div class="ant-titles">
+                <h4>Gastos Hormiga Cotidianos</h4>
+                <span>Límite diario sugerido: $30.000 COP</span>
+              </div>
+            </div>
+            <div class="ant-amount-badge">
+              <span id="overview-ant-spent">$22.500</span> <small style="color:var(--text-muted); font-size:0.75rem;">/ $30.000</small>
+            </div>
+          </div>
+
+          <div class="ant-progress-track">
+            <div class="ant-progress-bar" id="overview-ant-bar" style="width: 75%;"></div>
+          </div>
+
+          <div class="ant-footer-row">
+            <span id="overview-ant-pct">75% del cupo diario consumido</span>
+            <strong style="color:var(--emerald);" id="overview-ant-left">Disponible hoy: $7.500 COP</strong>
+          </div>
+
+          <!-- Chips de Registro Inmediato estilo Compose -->
+          <div class="ant-quick-chips-row">
+            <button type="button" class="chip-quick-ant" data-ant="Café" data-val="5000" title="Registrar Café $5.000">
+              <span>☕ Café</span> <strong>$5.000</strong>
+            </button>
+            <button type="button" class="chip-quick-ant" data-ant="Snack" data-val="8000" title="Registrar Snack $8.000">
+              <span>🍫 Snack</span> <strong>$8.000</strong>
+            </button>
+            <button type="button" class="chip-quick-ant" data-ant="Taxi" data-val="15000" title="Registrar Taxi $15.000">
+              <span>🚕 Taxi</span> <strong>$15.000</strong>
+            </button>
+            <button type="button" class="chip-quick-ant" data-ant="Gaseosa" data-val="4000" title="Registrar Gaseosa $4.000">
+              <span>🥤 Gaseosa</span> <strong>$4.000</strong>
+            </button>
+            <button type="button" class="chip-quick-ant" data-ant="Postre" data-val="10000" title="Registrar Postre $10.000">
+              <span>🍰 Postre</span> <strong>$10.000</strong>
+            </button>
+          </div>
+        </div>
+
+        <!-- SECCIÓN DE GRÁFICOS INTERACTIVOS (Desktop 2 cols / Móvil 1 col) -->
+        <section class="analytics-charts-grid">
+          <!-- Gráfico 1: Categorías de Gasto -->
+          <div class="chart-box-panel">
+            <div class="panel-header">
+              <div class="panel-header-title">
+                <i class="fa-solid fa-chart-pie header-icon"></i>
+                <div>
+                  <h3>Gastos por Categoría</h3>
+                  <span class="panel-subtitle">Desglose auditado del periodo seleccionado</span>
+                </div>
+              </div>
+              <span class="period-badge-sub" id="categories-period-badge">Octubre</span>
+            </div>
+            <div class="chart-canvas-container" style="height: 245px;">
+              <canvas id="categoriesDoughnutChart"></canvas>
+            </div>
+            <!-- Lista Ejecutiva de Desglose de Categorías con Barras de Participación -->
+            <div class="category-breakdown-list" id="categories-breakdown-list">
+              <!-- Renderizado dinámicamente por renderCategoriesChart() -->
+            </div>
+          </div>
+
+          <!-- Gráfico 2: Flujo Quincenal Colanta (Q1 vs Q2) -->
+          <div class="chart-box-panel quincena-cockpit-panel">
+            <div class="panel-header">
+              <div class="panel-header-title">
+                <i class="fa-solid fa-scale-balanced header-icon icon-cyan"></i>
+                <div>
+                  <h3>Balanza Quincenal Pro</h3>
+                  <span class="panel-subtitle">Compromisos Fijos vs Variables por Quincena</span>
+                </div>
+              </div>
+              <div class="quincena-summary-pills">
+                <span class="quincena-header-pill pill-q1"><i class="fa-solid fa-calendar-check"></i> Q1: <strong id="quincena-q1-total">$1.539.123</strong></span>
+                <span class="quincena-header-pill pill-q2"><i class="fa-solid fa-calendar-day"></i> Q2: <strong id="quincena-q2-total">$1.256.116</strong></span>
+              </div>
+            </div>
+
+            <!-- Cockpit de Comparativa Dual Q1 vs Q2 -->
+            <div class="quincena-cards-grid">
+              <!-- Quincena 1 (Día 1-15) -->
+              <div class="q-cockpit-card card-q1">
+                <div class="q-cockpit-top">
+                  <div class="q-badge-phase"><span class="q-live-dot"></span> Q1 (Día 1 al 15)</div>
+                  <span class="q-status-tag tag-progress" id="q1-status-tag">Ejecutada</span>
+                </div>
+                <div class="q-cockpit-val-box">
+                  <span class="q-label-sub">TOTAL COMPROMETIDO Q1</span>
+                  <div class="q-val-row">
+                    <strong class="q-val" id="q-cockpit-q1-val">$1.539.123</strong>
+                    <span class="q-curr">COP</span>
+                  </div>
+                </div>
+                <div class="q-progress-bar-wrap">
+                  <div class="q-bar-track">
+                    <div class="q-bar-chunk chunk-fixed" id="q1-bar-fixed" style="width: 86.5%;" title="Fijos: $1.332.000 (86.5%)"></div>
+                    <div class="q-bar-chunk chunk-var" id="q1-bar-var" style="width: 13.5%;" title="Variables: $207.123 (13.5%)"></div>
+                  </div>
+                  <div class="q-bar-legend">
+                    <span class="leg-item" id="q1-leg-fixed"><i class="fa-solid fa-square text-cyan"></i> Fijos $1.33M (86.5%)</span>
+                    <span class="leg-item" id="q1-leg-var"><i class="fa-solid fa-square text-rose"></i> Var $207k (13.5%)</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Quincena 2 (Día 16-30) -->
+              <div class="q-cockpit-card card-q2">
+                <div class="q-cockpit-top">
+                  <div class="q-badge-phase"><span class="q-blue-dot"></span> Q2 (Día 16 al 30)</div>
+                  <span class="q-status-tag tag-upcoming" id="q2-status-tag">En Curso</span>
+                </div>
+                <div class="q-cockpit-val-box">
+                  <span class="q-label-sub">COMPROMISOS + VARIABLES Q2</span>
+                  <div class="q-val-row">
+                    <strong class="q-val" id="q-cockpit-q2-val">$1.256.116</strong>
+                    <span class="q-curr">COP</span>
+                  </div>
+                </div>
+                <div class="q-progress-bar-wrap">
+                  <div class="q-bar-track">
+                    <div class="q-bar-chunk chunk-fixed-q2" id="q2-bar-fixed" style="width: 97.5%;" title="Fijos: $1.225.000 (97.5%)"></div>
+                    <div class="q-bar-chunk chunk-var" id="q2-bar-var" style="width: 2.5%;" title="Variables: $31.116 (2.5%)"></div>
+                  </div>
+                  <div class="q-bar-legend">
+                    <span class="leg-item" id="q2-leg-fixed"><i class="fa-solid fa-square text-amber"></i> Fijos $1.23M (97.5%)</span>
+                    <span class="leg-item" id="q2-leg-var"><i class="fa-solid fa-square text-rose"></i> Var $31k (2.5%)</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="chart-canvas-container" style="position: relative; height: 230px; margin-top: 1rem;">
+              <canvas id="quincenaBarChart"></canvas>
+            </div>
+          </div>
+        </section>
+
+          <!-- Muestra de Últimos Movimientos con acceso al módulo -->
+          <div class="overview-recent-panel">
+            <div class="panel-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem;">
+              <div class="panel-header-title">
+                <i class="fa-solid fa-clock-rotate-left header-icon icon-cyan"></i>
+                <div>
+                  <h3>Últimos Movimientos — <span id="overview-recent-month-lbl">Octubre</span></h3>
+                  <span class="panel-subtitle">Auditoría rápida del periodo activo</span>
+                </div>
+              </div>
+              <button type="button" class="btn-all-movs-link" id="btn-goto-all-movements">
+                <span>Ver todos en Movimientos</span>
+                <i class="fa-solid fa-arrow-right"></i>
+              </button>
+            </div>
+            <div class="table-card-wrapper">
+              <table class="fintech-table" id="table-overview-preview">
+                <thead>
+                  <tr>
+                    <th style="width: 80px;">ID</th>
+                    <th>Concepto & Comercio</th>
+                    <th>Categoría</th>
+                    <th>Cuenta</th>
+                    <th>Fecha & Hora</th>
+                    <th class="text-right">Monto</th>
+                  </tr>
+                </thead>
+                <tbody id="overview-preview-tbody">
+                  <!-- Render dinámico de las 6 transacciones más recientes -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- =========================================================
+             VISTA 2: BILLETERA & CUENTAS (WALLET & ACCOUNTS)
+             ========================================================= -->
+        <div class="view-panel" id="view-wallet">
+          <div class="view-header-title-row">
+            <div>
+              <span class="section-badge-tiny"><i class="fa-solid fa-wallet"></i> BILLETERA & CUENTAS</span>
+              <h2 class="view-title">Centro de Cuentas y Liquidez Auditada</h2>
+              <p class="view-subtitle">Supervisión en tiempo real de saldos disponibles, nómina Colanta, fondos y efectivo</p>
+            </div>
+          </div>
+
+          <section class="wallet-cockpit-section" id="section-wallet-dedicated">
+          <div class="cockpit-grid">
+            
+            <!-- Panel Principal: Patrimonio Líquido Consolidado -->
+            <div class="wealth-master-card">
+              <div class="master-card-glow"></div>
+              
+              <div class="master-card-header">
+                <div class="master-tag-group">
+                  <span class="status-live-dot"></span>
+                  <span class="master-tag">LIQUIDEZ EN TIEMPO REAL</span>
+                  <span class="verified-pill"><i class="fa-solid fa-circle-check"></i> Google Sheets Conectado</span>
+                </div>
+                <div class="balance-visibility-toggle js-toggle-balance-visibility" id="btn-toggle-balance-visibility-wallet" title="Ocultar/Mostrar saldo">
+                  <i class="fa-solid fa-eye js-icon-eye-balance" id="icon-eye-balance-wallet"></i>
+                  <span class="hide-text">Privacidad</span>
+                </div>
+              </div>
+
+              <div class="master-card-body">
+                <span class="master-label" id="wallet-master-label">DISPONIBLE REAL EN CAJA (OCTUBRE)</span>
+                <div class="master-amount-row">
+                  <h1 class="master-amount card-total-available" id="wallet-total-available">$415.366</h1>
+                  <span class="master-currency">COP</span>
+                </div>
+
+                <!-- Banner de Alerta en Billetera -->
+                <div class="october-colilla-alert" id="wallet-colilla-notice" style="display: none;">
+                  <div class="alert-icon-pulse"><i class="fa-solid fa-clock-rotate-left"></i></div>
+                  <div class="alert-info">
+                    <strong class="alert-title">Esperando Colilla Q1 Colanta</strong>
+                    <span class="alert-desc">Sube tu comprobante de nómina para acreditar tus ingresos de Octubre.</span>
+                  </div>
+                  <button type="button" class="btn-subir-colilla-badge" id="btn-wallet-upload-colilla" title="Subir Colilla de Pago">
+                    <i class="fa-solid fa-cloud-arrow-up"></i> Subir Colilla
+                  </button>
+                </div>
+                
+                <div class="master-stats-strip">
+                  <div class="mstat-item">
+                    <span class="mstat-label">Titular</span>
+                    <strong class="mstat-val">Marlon Muñoz</strong>
+                  </div>
+                  <div class="mstat-sep"></div>
+                  <div class="mstat-item">
+                    <span class="mstat-label">Ahorro 2026</span>
+                    <strong class="mstat-val text-emerald" id="wallet-stat-savings-rate">+32.5%</strong>
+                  </div>
+                  <div class="mstat-sep"></div>
+                  <div class="mstat-item">
+                    <span class="mstat-label">Superávit Acumulado</span>
+                    <strong class="mstat-val text-cyan" id="wallet-stat-superavit">$11.1M</strong>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Fila Integrada de Acciones Rápidas -->
+              <div class="master-actions-bar">
+                <button type="button" class="btn-cockpit-action btn-act-expense" id="btn-qa-gasto-w" title="Registrar Gasto Rápido">
+                  <i class="fa-solid fa-minus"></i>
+                  <span>Gasto</span>
+                </button>
+                <button type="button" class="btn-cockpit-action btn-act-income" id="btn-qa-ingreso-w" title="Registrar Ingreso">
+                  <i class="fa-solid fa-plus"></i>
+                  <span>Ingreso</span>
+                </button>
+                <button type="button" class="btn-cockpit-action btn-act-colilla" id="btn-qa-colilla-w" title="Subir Colilla de Pago (Gemini AI)">
+                  <i class="fa-solid fa-file-invoice-dollar"></i>
+                  <span>Colilla</span>
+                </button>
+                <button type="button" class="btn-cockpit-action btn-act-cfo" id="btn-qa-cfo-w" title="Asistente CFO AI por Voz">
+                  <i class="fa-solid fa-microphone-lines"></i>
+                  <span>CFO Voz</span>
+                </button>
+                <a href="https://docs.google.com/spreadsheets/d/1C9ifm7U8IYGOdY4IwAji9Z3McSlNy3B-e_2Jo-zvBFk/edit" target="_blank" rel="noopener noreferrer" class="btn-cockpit-action btn-act-sheets" id="btn-qa-sheets-w" title="Abrir Google Sheets en Drive">
+                  <i class="fa-solid fa-table"></i>
+                  <span>Sheets</span>
+                </a>
+              </div>
+            </div>
+
+            <!-- Columna Derecha: 3 Cuentas & Fondos (Elegantes Tarjetas Obsidian Glass) -->
+            <div class="accounts-vertical-grid">
+              
+              <!-- Cuenta 1: AyC Colanta (Nómina) -->
+              <div class="account-compact-card card-aura-colanta">
+                <div class="acc-card-left">
+                  <div class="acc-brand-badge brand-colanta">
+                    <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <circle cx="16" cy="16" r="14" fill="#E11D48"/>
+                      <path d="M16 13C14 10.5 11.5 10.5 11.5 13C11.5 15.5 14.5 16 16 16C17.5 16 20.5 15.5 20.5 13C20.5 10.5 18 10.5 16 13Z" fill="#FFFFFF"/>
+                      <path d="M13 16C10.5 14 10.5 11.5 13 11.5C15.5 11.5 16 14.5 16 16C16 17.5 15.5 20.5 13 20.5C10.5 20.5 10.5 18 13 16Z" fill="#FFFFFF"/>
+                      <path d="M19 16C21.5 14 21.5 11.5 19 11.5C16.5 11.5 16 14.5 16 16C16 17.5 16.5 20.5 19 20.5C21.5 20.5 21.5 18 19 16Z" fill="#FFFFFF"/>
+                      <path d="M16 16C16 19 14.5 21.5 12.5 22.5" stroke="#FFFFFF" stroke-width="1.8" stroke-linecap="round"/>
+                    </svg>
+                  </div>
+                  <div class="acc-info">
+                    <span class="acc-type-pill">Nómina Principal • San Germán</span>
+                    <h4 class="acc-name">AyC Colanta</h4>
+                    <span class="acc-sub">Cuenta de Ahorros y Crédito</span>
+                  </div>
+                </div>
+                <div class="acc-card-right">
+                  <strong class="acc-amount card-acc-colanta" id="wallet-acc-colanta">$343.566</strong>
+                  <span class="acc-badge-pct" id="wallet-badge-colanta">83% Liquidez</span>
+                </div>
+              </div>
+
+              <!-- Cuenta 2: Fondos Colanta (Ahorros Acumulados) -->
+              <div class="account-compact-card card-aura-gold">
+                <div class="acc-card-left">
+                  <div class="acc-brand-badge brand-savings" style="background: rgba(245, 158, 11, 0.15); border-radius: 12px; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(245, 158, 11, 0.3);">
+                    <i class="fa-solid fa-piggy-bank" style="color:#FBBF24; font-size:1.2rem;"></i>
+                  </div>
+                  <div class="acc-info">
+                    <span class="acc-type-pill pill-gold">Patrimonio Reservado</span>
+                    <h4 class="acc-name">Fondos Colanta</h4>
+                    <span class="acc-sub" id="wallet-sub-savings">Navideño ($2.28M) • Ordinario • Aportes</span>
+                  </div>
+                </div>
+                <div class="acc-card-right">
+                  <strong class="acc-amount text-amber" id="wallet-acc-savings">$4.167.420</strong>
+                  <span class="acc-badge-pct badge-gold">Entrega 1 Dic</span>
+                </div>
+              </div>
+
+              <!-- Cuenta 3: Nequi & Efectivo en Mano -->
+              <div class="account-compact-card card-aura-nequi">
+                <div class="acc-card-left">
+                  <div class="acc-brand-badge brand-nequi">
+                    <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <rect width="32" height="32" rx="8" fill="#1F0036"/>
+                      <path d="M10 22V10L22 22V10" stroke="#E11D74" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+                      <path d="M10 22V10L22 22V10" stroke="#FFFFFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </div>
+                  <div class="acc-info">
+                    <span class="acc-type-pill pill-purple">Bolsillo Cotidiano</span>
+                    <h4 class="acc-name">Nequi & Efectivo</h4>
+                    <span class="acc-sub">Compras Diarias y Traslados</span>
+                  </div>
+                </div>
+                <div class="acc-card-right split-right">
+                  <div class="split-sub-item">
+                    <span class="split-lbl">Nequi:</span>
+                    <strong class="split-val" id="wallet-acc-nequi">$0 COP</strong>
+                  </div>
+                  <div class="split-sub-item">
+                    <span class="split-lbl">Efectivo:</span>
+                    <strong class="split-val" id="wallet-acc-efectivo">$71.800 COP</strong>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+        </section>
+
+          <div class="table-card-wrapper" style="margin-top:1.5rem; padding:1.5rem; background:rgba(18,25,43,0.7); border:1px solid rgba(255,255,255,0.07); border-radius:18px;">
+            <h4 style="font-size:1.05rem; font-weight:700; color:#fff; margin-bottom:0.5rem;"><i class="fa-solid fa-shield-halved text-emerald"></i> Conciliación Bancaria y Liquidez</h4>
+            <p style="font-size:0.82rem; color:#94A3B8; margin-bottom:1.25rem;">Tus saldos se recalculan automáticamente con cada colilla de pago de Colanta San Germán y cada gasto registrado.</p>
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:1rem;">
+              <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); padding:1rem; border-radius:12px;">
+                <span style="font-size:0.7rem; color:#94A3B8; text-transform:uppercase; font-weight:700;">Nómina Colanta AyC</span>
+                <h3 style="font-size:1.35rem; color:#38BDF8; font-weight:800; margin:0.25rem 0;" id="reconcile-colanta-val">$1.390.566</h3>
+                <span style="font-size:0.72rem; color:#10B981;" id="reconcile-colanta-sub">✓ 95.1% de tu liquidez libre</span>
+              </div>
+              <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); padding:1rem; border-radius:12px;">
+                <span style="font-size:0.7rem; color:#94A3B8; text-transform:uppercase; font-weight:700;">Fondos Ahorro Colanta</span>
+                <h3 style="font-size:1.35rem; color:#FBBF24; font-weight:800; margin:0.25rem 0;" id="reconcile-savings-val">$4.167.420</h3>
+                <span style="font-size:0.72rem; color:#FBBF24;" id="reconcile-savings-sub">✓ Entrega 1 Dic ($2.28M Navideño)</span>
+              </div>
+              <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); padding:1rem; border-radius:12px;">
+                <span style="font-size:0.7rem; color:#94A3B8; text-transform:uppercase; font-weight:700;">Nequi + Efectivo</span>
+                <h3 style="font-size:1.35rem; color:#C084FC; font-weight:800; margin:0.25rem 0;" id="reconcile-daily-val">$71.800</h3>
+                <span style="font-size:0.72rem; color:#94A3B8;" id="reconcile-daily-sub">✓ Bolsillo de gastos cotidianos</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- =========================================================
+             VISTA 3: MOVIMIENTOS (MOVEMENTS AUDIT)
+             ========================================================= -->
+        <div class="view-panel" id="view-movements">
+          <div class="view-header-title-row">
+            <div>
+              <span class="section-badge-tiny"><i class="fa-solid fa-receipt"></i> AUDITORÍA DE MOVIMIENTOS</span>
+              <h2 class="view-title">Registro y Control de Movimientos</h2>
+              <p class="view-subtitle">Transacciones filtradas por periodo con desglose de factura DIAN, comercio y recibo digital</p>
+            </div>
+          </div>
+
+          <!-- Selector de Meses dentro del Módulo de Movimientos -->
+          <!-- BARRA DE SELECCIÓN RÁPIDA DE MESES (ENERO A DICIEMBRE 2026) -->
+        <div class="months-quick-strip" id="months-quick-strip-movs">
+          <div class="months-strip-header">
+            <span class="strip-title"><i class="fa-solid fa-calendar-week" style="color:#60A5FA;"></i> Periodo Activo:</span>
+            <button class="btn-all-year-pill js-btn-show-all-year" id="btn-show-all-year-movs" title="Ver consolidado de todo el año 2026">
+              <i class="fa-solid fa-layer-group"></i> Ver Todo 2026
+            </button>
+          </div>
+          <div class="months-strip-wrapper">
+            <button class="month-strip-pill" data-month="enero">Ene</button>
+            <button class="month-strip-pill" data-month="febrero">Feb</button>
+            <button class="month-strip-pill" data-month="marzo">Mar</button>
+            <button class="month-strip-pill" data-month="abril">Abr</button>
+            <button class="month-strip-pill" data-month="mayo">May</button>
+            <button class="month-strip-pill" data-month="junio">Jun</button>
+            <button class="month-strip-pill" data-month="julio">Jul</button>
+            <button class="month-strip-pill" data-month="agosto">Ago</button>
+            <button class="month-strip-pill" data-month="septiembre">Sep</button>
+            <button class="month-strip-pill active" data-month="octubre">Oct</button>
+            <button class="month-strip-pill" data-month="noviembre">Nov</button>
+            <button class="month-strip-pill" data-month="diciembre">Dic</button>
+          </div>
+        </div>
+
+          <div class="interactive-tables-container" style="margin-top:1.25rem;">
+            <!-- BANNER INFORMATIVO: SINCRONIZACIÓN AUTOMÁTICA ANDROID (Sobrio y Verídico) -->
+            <div class="android-sync-info-card">
+              <div class="android-sync-icon-box">
+                <i class="fa-brands fa-android"></i>
+              </div>
+              <div class="android-sync-info-content">
+                <h4>Sincronización Inteligente con la App Android</h4>
+                <p>
+                  Los pagos con tarjeta débito Nequi Visa, Google Wallet y compras por datáfono (NFC) se detectan en tu teléfono mediante el servicio de notificaciones autorizado de la app Android nativa. Aquí puedes auditar, revisar su origen y corregir comercios o categorías de forma inmediata.
+                </p>
+              </div>
+            </div>
+
+            <!-- Strip de Métricas Rápidas / Financial Pulse -->
+            <div class="movements-pulse-strip" id="movements-pulse-strip">
+              <div class="pulse-card">
+                <div class="pulse-icon pulse-icon-red"><i class="fa-solid fa-arrow-trend-down"></i></div>
+                <div class="pulse-info">
+                  <span class="pulse-label">Gastos del Mes</span>
+                  <strong class="pulse-val" id="pulse-total-gastos">$0 COP</strong>
+                </div>
+              </div>
+              <div class="pulse-card">
+                <div class="pulse-icon pulse-icon-amber"><i class="fa-solid fa-utensils"></i></div>
+                <div class="pulse-info">
+                  <span class="pulse-label">Alimentación & Colanta</span>
+                  <strong class="pulse-val" id="pulse-total-alimentacion">$0 COP</strong>
+                </div>
+              </div>
+              <div class="pulse-card">
+                <div class="pulse-icon pulse-icon-blue"><i class="fa-solid fa-motorcycle"></i></div>
+                <div class="pulse-info">
+                  <span class="pulse-label">Moto & Transporte</span>
+                  <strong class="pulse-val" id="pulse-total-moto">$0 COP</strong>
+                </div>
+              </div>
+              <div class="pulse-card">
+                <div class="pulse-icon pulse-icon-emerald"><i class="fa-solid fa-receipt"></i></div>
+                <div class="pulse-info">
+                  <span class="pulse-label">Total Transacciones</span>
+                  <strong class="pulse-val" id="pulse-total-transacciones">256 registros</strong>
+                </div>
+              </div>
+            </div>
+
+            <!-- Chips de Filtrado Rápido estilo Nubank / Revolut / Compose -->
+            <div class="quick-filter-chips-bar" id="quick-filter-chips">
+              <button class="filter-chip active" data-filter="ALL">Todos</button>
+              <button class="filter-chip" data-filter="GASTO"><i class="fa-solid fa-arrow-down" style="color:#FB7185;"></i> Gastos</button>
+              <button class="filter-chip" data-filter="INGRESO"><i class="fa-solid fa-arrow-up" style="color:#34D399;"></i> Ingresos</button>
+              <button class="filter-chip" data-filter="ANDROID"><i class="fa-brands fa-android" style="color:var(--emerald);"></i> Android Sync</button>
+              <button class="filter-chip" data-filter="ALIMENTACION"><i class="fa-solid fa-utensils" style="color:#FBBF24;"></i> Alimentación</button>
+              <button class="filter-chip" data-filter="MOTO"><i class="fa-solid fa-motorcycle" style="color:#60A5FA;"></i> Moto</button>
+              <button class="filter-chip" data-filter="COLANTA"><i class="fa-solid fa-building-wheat" style="color:#38BDF8;"></i> Colanta / AyC</button>
+              <button class="filter-chip" data-filter="NEQUI"><i class="fa-solid fa-mobile-screen" style="color:#C084FC;"></i> Nequi</button>
+            </div>
+
+            <!-- Barra de Búsqueda y Filtros -->
+            <div class="filter-actions-bar">
+              <div class="search-input-pill">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="search-movements-input" placeholder="Buscar por comercio, concepto, valor...">
+              </div>
+              <div class="select-filters-row">
+                <select id="filter-category-select" class="custom-select">
+                  <option value="ALL">Todas las Categorías</option>
+                  <option value="Alimentación">Alimentación</option>
+                  <option value="Transporte y Moto">Transporte y Moto</option>
+                  <option value="Gastos Hormiga / Dulces">Gastos Hormiga / Dulces</option>
+                  <option value="Ocio y Entretenimiento">Ocio y Entretenimiento</option>
+                  <option value="Servicios">Servicios</option>
+                  <option value="Compras">Compras</option>
+                  <option value="Otros">Otros</option>
+                </select>
+
+                <select id="filter-account-select" class="custom-select">
+                  <option value="ALL">Todas las Cuentas</option>
+                  <option value="AyC Colanta">AyC Colanta</option>
+                  <option value="Nequi">Nequi</option>
+                  <option value="Efectivo">Efectivo</option>
+                  <option value="Bancolombia">Bancolombia</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Tabla de Movimientos Ultra Estilizada -->
+            <div class="table-card-wrapper">
+              <table class="fintech-table" id="table-movements">
+                <thead>
+                  <tr>
+                    <th style="width: 80px;">ID</th>
+                    <th>Concepto & Comercio</th>
+                    <th>Categoría</th>
+                    <th>Cuenta</th>
+                    <th>Fecha & Hora</th>
+                    <th class="text-right">Monto</th>
+                    <th class="text-center" style="width: 85px;">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="movements-tbody">
+                  <!-- Renderizado dinámicamente con Avatares, badges y micro-interacciones -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- =========================================================
+             VISTA 4: GASTOS FIJOS (FIXED COMMITMENTS)
+             ========================================================= -->
+        <div class="view-panel" id="view-fixed">
+          <div class="view-header-title-row">
+            <div>
+              <span class="section-badge-tiny"><i class="fa-solid fa-calendar-check"></i> OBLIGACIONES DEL MES</span>
+              <h2 class="view-title">Gastos Fijos y Compromisos Quincenales</h2>
+              <p class="view-subtitle">Distribución quincenal de arriendo, servicios públicos (EPM, Tigo) y cuotas fijas</p>
+            </div>
+          </div>
+
+          <div class="interactive-tables-container">
+            <div class="fixed-overview-banner">
+              <div class="q-banner-card">
+                <span class="q-title"><i class="fa-solid fa-calendar-day" style="color:#60A5FA;"></i> Quincena 1 (Día 1 a 15)</span>
+                <h4 class="q-amount" id="q1-fixed-amount">$1.332.000 COP</h4>
+                <span class="q-note" id="q1-fixed-note">Pendiente de $1.386.000 programados</span>
+              </div>
+              <div class="q-banner-card">
+                <span class="q-title"><i class="fa-solid fa-calendar-day" style="color:#C084FC;"></i> Quincena 2 (Día 16 a 31)</span>
+                <h4 class="q-amount" id="q2-fixed-amount">$1.225.000 COP</h4>
+                <span class="q-note" id="q2-fixed-note">Arriendo Casa ($900k), Google, Parqueadero</span>
+              </div>
+              <div class="q-banner-card" style="border-color:rgba(16,185,129,0.3); background:rgba(16,185,129,0.04);">
+                <span class="q-title"><i class="fa-solid fa-receipt" style="color:#34D399;"></i> Total Obligaciones del Mes</span>
+                <h4 class="q-amount" style="color:#34D399;" id="fixed-total-month-amount">$2.611.000 COP</h4>
+                <span class="q-note" id="fixed-total-month-note">15 compromisos mensuales ($54.000 abonados)</span>
+              </div>
+              <div class="q-banner-card" style="border-color:rgba(251,191,36,0.3); background:rgba(251,191,36,0.04);">
+                <span class="q-title"><i class="fa-solid fa-clock-rotate-left" style="color:#FBBF24;"></i> Saldo Pendiente por Pagar</span>
+                <h4 class="q-amount" style="color:#FBBF24;" id="fixed-pending-month-amount">$2.557.000 COP</h4>
+                <span class="q-note" id="fixed-pending-month-note">14 obligaciones pendientes • 1 pagada</span>
+              </div>
+            </div>
+
+            <div class="table-card-wrapper">
+              <table class="fintech-table" id="table-fixed">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Servicio / Obligación</th>
+                    <th>Día</th>
+                    <th class="text-right">Cuota Base</th>
+                    <th class="text-right">Abonado</th>
+                    <th class="text-right">Saldo</th>
+                    <th>Estado</th>
+                    <th class="text-center" style="width: 110px;">Acción</th>
+                  </tr>
+                </thead>
+                <tbody id="fixed-tbody">
+                  <!-- Renderizado dinámicamente con Logos Oficiales y Estados -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- =========================================================
+             VISTA 5: FONDOS COLANTA (SAVINGS)
+             ========================================================= -->
+        <div class="view-panel" id="view-savings">
+          <div class="view-header-title-row">
+            <div>
+              <span class="section-badge-tiny"><i class="fa-solid fa-piggy-bank"></i> AHORRO ESTRATÉGICO & PATRIMONIO</span>
+              <h2 class="view-title">Fondos Cooperativa Colanta (AyC)</h2>
+              <p class="view-subtitle">Ahorro navideño, ordinario a la vista y aportes sociales acumulados en Planta San Germán</p>
+            </div>
+          </div>
+
+          <div class="interactive-tables-container">
+            <!-- Hero Card de Patrimonio Total en Cooperativa Colanta con Barra de Progreso Navideño -->
+            <div class="colanta-savings-hero">
+              <div class="savings-hero-top">
+                <div class="savings-hero-left">
+                  <div class="colanta-emblem-badge">
+                    <svg viewBox="0 0 36 36" width="38" height="38" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <circle cx="18" cy="11.5" r="4.6" fill="#FFFFFF"/>
+                      <circle cx="12.5" cy="19" r="4.6" fill="#FFFFFF"/>
+                      <circle cx="23.5" cy="19" r="4.6" fill="#FFFFFF"/>
+                      <circle cx="18" cy="16.5" r="3.8" fill="#FFFFFF"/>
+                      <circle cx="18" cy="16.5" r="1.5" fill="#D6001C"/>
+                      <path d="M18 18C17.8 22.5 16 25 14 26.5" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round"/>
+                    </svg>
+                  </div>
+                  <div>
+                    <div class="hero-tag-row">
+                      <span class="hero-coop-tag">Cooperativa Colanta AyC</span>
+                      <span class="hero-verified-tag"><i class="fa-solid fa-circle-check"></i> Socio Activo • San Germán</span>
+                    </div>
+                    <h2 class="savings-total-val" id="colanta-hero-total">$4.167.420 COP</h2>
+                    <span class="savings-subline">Patrimonio acumulado en fondos protegidos y aportes de capital</span>
+                  </div>
+                </div>
+                <div class="savings-hero-right">
+                  <div class="navidad-countdown-box">
+                    <div class="cd-title"><i class="fa-solid fa-gift"></i> FONDO NAVIDEÑO 2026</div>
+                    <strong class="cd-date">1 de Diciembre 2026</strong>
+                    <span class="cd-badge" id="savings-navidad-countdown">Falta 1 quincena ($120k)</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Termómetro Visual de Meta Navideña ($2.28M / $2.40M) -->
+              <div class="navidad-progress-cockpit">
+                <div class="prog-meta-row">
+                  <span class="prog-label"><i class="fa-solid fa-bullseye text-amber"></i> Meta Fondo Navideño ($2.400.000 COP)</span>
+                  <strong class="prog-pct text-amber" id="savings-navidad-pct-lbl">95.0% Completado ($2.280.000 COP)</strong>
+                </div>
+                <div class="prog-track">
+                  <div class="prog-fill" id="savings-navidad-bar" style="width: 95%;"></div>
+                </div>
+                <div class="prog-sub-row">
+                  <span id="savings-quincenas-done"><i class="fa-solid fa-check text-emerald"></i> 19 quincenas aportadas</span>
+                  <span id="savings-quincenas-left"><i class="fa-solid fa-clock text-cyan"></i> 1 quincena restante ($120.000 c/u)</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 4 Tarjetas de Detalle de Fondos -->
+            <div class="savings-cards-grid" style="grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));">
+              <div class="savings-detail-card highlight-card">
+                <div class="card-icon-round" style="background:rgba(214,0,28,0.2); color:#F87171;"><i class="fa-solid fa-gifts"></i></div>
+                <div class="card-text">
+                  <span class="s-label">Ahorro Navideño (1 Dic 2026)</span>
+                  <h3 class="s-val" style="color:#FCA5A5;" id="savings-val-navideno">$2.280.000 COP</h3>
+                  <p class="s-desc">Deducción de $120.000 por quincena. Fondo para fin de año sin deudas.</p>
+                </div>
+              </div>
+
+              <div class="savings-detail-card">
+                <div class="card-icon-round" style="background:rgba(59,130,246,0.15); color:#60A5FA;"><i class="fa-solid fa-shield-heart"></i></div>
+                <div class="card-text">
+                  <span class="s-label">Ahorro Ordinario a la Vista</span>
+                  <h3 class="s-val" style="color:#93C5FD;" id="savings-val-ordinario">$627.000 COP</h3>
+                  <p class="s-desc">Fondo de emergencia con disponibilidad inmediata y rendimiento diario.</p>
+                </div>
+              </div>
+
+              <div class="savings-detail-card">
+                <div class="card-icon-round" style="background:rgba(16,185,129,0.15); color:#34D399;"><i class="fa-solid fa-handshake-angle"></i></div>
+                <div class="card-text">
+                  <span class="s-label">Aportes Sociales y Afiliación</span>
+                  <h3 class="s-val" style="color:#6EE7B7;" id="savings-val-aportes">$1.032.650 COP</h3>
+                  <p class="s-desc">Capitalización patrimonial como socio dueño de Cooperativa Colanta.</p>
+                </div>
+              </div>
+
+              <div class="savings-detail-card">
+                <div class="card-icon-round" style="background:rgba(245,158,11,0.15); color:#FBBF24;"><i class="fa-solid fa-chart-line"></i></div>
+                <div class="card-text">
+                  <span class="s-label">Revalorización & Otros Fondos</span>
+                  <h3 class="s-val" style="color:#FDE68A;" id="savings-val-otros">$227.770 COP</h3>
+                  <p class="s-desc">Excedentes cooperativos y rendimientos financieros acumulados.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Estructura de Retención por Nómina Quincenal -->
+            <div style="margin-top:1.5rem; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:18px; padding:1.25rem 1.5rem;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem;">
+                <h4 style="color:#FFFFFF; font-size:0.95rem; font-weight:700;"><i class="fa-solid fa-file-invoice-dollar" style="color:#FBBF24;"></i> Estructura de Ahorro por Colilla de Nómina (Colanta)</h4>
+                <span class="meta-tag tag-colanta"><i class="fa-solid fa-check"></i> Descuento automático por nómina</span>
+              </div>
+              <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:1rem;">
+                <div style="background:rgba(0,0,0,0.2); padding:0.85rem 1rem; border-radius:12px; border:1px solid rgba(255,255,255,0.04);">
+                  <span style="font-size:0.75rem; color:#94A3B8; display:block;">Fondo Navideño / Quincena</span>
+                  <strong style="font-size:1.1rem; color:#FCA5A5;" id="savings-q-navideno">$120.000 COP</strong>
+                </div>
+                <div style="background:rgba(0,0,0,0.2); padding:0.85rem 1rem; border-radius:12px; border:1px solid rgba(255,255,255,0.04);">
+                  <span style="font-size:0.75rem; color:#94A3B8; display:block;">Ahorro Ordinario / Quincena</span>
+                  <strong style="font-size:1.1rem; color:#93C5FD;" id="savings-q-ordinario">$33.000 COP</strong>
+                </div>
+                <div style="background:rgba(0,0,0,0.2); padding:0.85rem 1rem; border-radius:12px; border:1px solid rgba(255,255,255,0.04);">
+                  <span style="font-size:0.75rem; color:#94A3B8; display:block;">Aportes Sociales / Quincena</span>
+                  <strong style="font-size:1.1rem; color:#6EE7B7;" id="savings-q-aportes">$37.567 COP</strong>
+                </div>
+                <div style="background:rgba(16,185,129,0.08); padding:0.85rem 1rem; border-radius:12px; border:1px solid rgba(16,185,129,0.2);">
+                  <span style="font-size:0.75rem; color:#34D399; display:block;">Total Ahorrado / Mes</span>
+                  <strong style="font-size:1.1rem; color:#FFFFFF;" id="savings-m-total">$472.242 COP</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- =========================================================
+             VISTA 6: RADAR ANTOJOS (FUGAS)
+             ========================================================= -->
+        <div class="view-panel" id="view-fugas">
+          <div class="view-header-title-row">
+            <div>
+              <span class="section-badge-tiny"><i class="fa-solid fa-cookie-bite"></i> CONTROL DE FUGAS</span>
+              <h2 class="view-title">Radar de Gastos Hormiga & Antojos</h2>
+              <p class="view-subtitle">Monitoreo de mecato, dulces, panaderías y consumos cotidianos en Planta San Germán</p>
+            </div>
+          </div>
+
+          <div class="interactive-tables-container">
+            <!-- Cockpit de Nivel de Amenaza y Cupo de Antojos -->
+            <div class="fugas-cockpit-grid">
+              <!-- Widget 1: Total Gastado vs Límite Seguro -->
+              <div class="fugas-gauge-card">
+                <div class="f-gauge-head">
+                  <span class="f-badge-threat threat-low" id="fugas-threat-badge"><i class="fa-solid fa-shield-heart"></i> Bajo Riesgo • Controlado</span>
+                  <span class="f-period-pill" id="fugas-period-pill">Octubre 2026</span>
+                </div>
+                <div class="f-amount-block">
+                  <span class="f-sub-lbl">TOTAL ANTOJOS ACUMULADO</span>
+                  <div class="f-val-row">
+                    <h3 class="f-val" id="fugas-total-val">$86.000</h3>
+                    <span class="f-curr">COP</span>
+                  </div>
+                </div>
+                <div class="f-progress-wrapper">
+                  <div class="f-bar-track">
+                    <div class="f-bar-fill" id="fugas-bar-fill" style="width: 57.3%;"></div>
+                  </div>
+                  <div class="f-bar-footer">
+                    <span id="fugas-spent-lbl">Gastado: $86.000 (57.3%)</span>
+                    <strong class="text-emerald" id="fugas-left-lbl">Cupo Restante: $64.000 COP</strong>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Widget 2: Desglose Rápido por Antojo -->
+              <div class="fugas-breakdown-card">
+                <h4 class="f-box-title"><i class="fa-solid fa-cookie-bite text-amber"></i> Desglose de Micropagos</h4>
+                <div class="f-antojo-list" id="fugas-antojo-list">
+                  <div class="f-antojo-item">
+                    <div class="antojo-icon">🥖</div>
+                    <div class="antojo-meta">
+                      <strong>Panadería & Cafetería San Germán</strong>
+                      <span>Pan de queso, buñuelo, pastel</span>
+                    </div>
+                    <strong class="antojo-val">$35.000 COP</strong>
+                  </div>
+                  <div class="f-antojo-item">
+                    <div class="antojo-icon">🍬</div>
+                    <div class="antojo-meta">
+                      <strong>Mecato & Dulces Planta</strong>
+                      <span>Chocolatina, galletas, snacks</span>
+                    </div>
+                    <strong class="antojo-val">$41.000 COP</strong>
+                  </div>
+                  <div class="f-antojo-item">
+                    <div class="antojo-icon">☕</div>
+                    <div class="antojo-meta">
+                      <strong>Café & Tintos Cotidianos</strong>
+                      <span>Tintos de máquina y cafetería</span>
+                    </div>
+                    <strong class="antojo-val">$10.000 COP</strong>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Widget 3: Diagnóstico Inteligente Antifugas -->
+              <div class="fugas-tip-card">
+                <div class="tip-badge"><i class="fa-solid fa-lightbulb"></i> Diagnóstico Anti-Fugas</div>
+                <p class="tip-text" id="fugas-tip-text">
+                  ¡Excelente disciplina Marlon! Has consumido el <strong>57.3%</strong> de tu presupuesto mensual de antojitos ($150.000 COP). Con $64.000 COP aún disponibles, tu flujo de caja en planta se mantiene blindado contra microdesperdicios.
+                </p>
+                <div class="tip-tag-row">
+                  <span class="tip-tag"><i class="fa-solid fa-utensils"></i> Cafetería Planta Medellín</span>
+                  <span class="tip-tag"><i class="fa-solid fa-wallet"></i> Pagos en Efectivo</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tabla de Fugas -->
+            <div class="table-card-wrapper">
+              <table class="fintech-table" id="table-fugas">
+                <thead>
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Concepto / Antojo</th>
+                    <th>Valor</th>
+                    <th>Cuenta</th>
+                    <th>Clasificación</th>
+                  </tr>
+                </thead>
+                <tbody id="fugas-tbody">
+                  <!-- Renderizado dinámicamente -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- =========================================================
+             VISTA 7: EVOLUCIÓN ANUAL 2026 (ANNUAL EVOLUTION)
+             ========================================================= -->
+        <div class="view-panel" id="view-annual">
+          <!-- =========================================================
+             SECCIÓN: EVOLUCIÓN ANUAL 2026 — BALANCE MES A MES & PROCESO DEL AÑO
+             ========================================================= -->
+        <section class="dashboard-section annual-evolution-section" id="section-annual">
+          <div class="section-title-row" style="margin-bottom:1.25rem;">
+            <div>
+              <span class="section-badge-tiny"><i class="fa-solid fa-chart-line"></i> BALANCE GENERAL CONSOLIDADO</span>
+              <h2 class="section-heading">Evolución Anual 2026</h2>
+              <p class="section-subheading">Trayectoria de ingresos, gastos y ahorro acumulado de Enero a Diciembre</p>
+            </div>
+            <div class="annual-summary-pills">
+              <span class="annual-mini-badge badge-green" id="annual-pill-ingresos"><i class="fa-solid fa-arrow-trend-up"></i> $34.2M Ingresos</span>
+              <span class="annual-mini-badge badge-red" id="annual-pill-gastos"><i class="fa-solid fa-arrow-trend-down"></i> $23.4M Gastos</span>
+              <span class="annual-mini-badge badge-blue" id="annual-pill-ahorro"><i class="fa-solid fa-piggy-bank"></i> $10.8M Ahorro (31.5%)</span>
+            </div>
+          </div>
+
+          <!-- 4 KPIs del Año 2026 -->
+          <div class="annual-kpi-grid">
+            <div class="annual-kpi-card">
+              <div class="kpi-icon-bubble bubble-emerald"><i class="fa-solid fa-sack-dollar"></i></div>
+              <div class="kpi-meta-col">
+                <span class="kpi-subtitle">Ingresos Consolidados 2026</span>
+                <strong class="kpi-number" id="annual-total-ingresos">$34.152.478 COP</strong>
+                <span class="kpi-note text-emerald"><i class="fa-solid fa-check-double"></i> 10 meses registrados</span>
+              </div>
+            </div>
+
+            <div class="annual-kpi-card">
+              <div class="kpi-icon-bubble bubble-rose"><i class="fa-solid fa-money-bill-transfer"></i></div>
+              <div class="kpi-meta-col">
+                <span class="kpi-subtitle">Gastos Totales 2026</span>
+                <strong class="kpi-number" id="annual-total-gastos">$23.378.605 COP</strong>
+                <span class="kpi-note text-rose" id="annual-note-gastos"><i class="fa-solid fa-chart-pie"></i> Promedio: $2.3M / mes</span>
+              </div>
+            </div>
+
+            <div class="annual-kpi-card">
+              <div class="kpi-icon-bubble bubble-cyan"><i class="fa-solid fa-vault"></i></div>
+              <div class="kpi-meta-col">
+                <span class="kpi-subtitle">Superávit Acumulado</span>
+                <strong class="kpi-number" id="annual-total-superavit">$10.773.873 COP</strong>
+                <span class="kpi-note text-cyan" id="annual-note-superavit"><i class="fa-solid fa-shield-halved"></i> 31.5% Tasa de Ahorro</span>
+              </div>
+            </div>
+
+            <div class="annual-kpi-card">
+              <div class="kpi-icon-bubble bubble-amber"><i class="fa-solid fa-trophy"></i></div>
+              <div class="kpi-meta-col">
+                <span class="kpi-subtitle">Mes Récord</span>
+                <strong class="kpi-number" id="annual-record-month">Junio 2026</strong>
+                <span class="kpi-note text-amber"><i class="fa-solid fa-star"></i> $5.1M Ingreso (Prima Colanta)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Gráfico Anual de Barras & Línea -->
+          <div class="chart-box-panel annual-chart-panel" style="margin-top:1.25rem;">
+            <div class="panel-header">
+              <div class="panel-header-title">
+                <i class="fa-solid fa-chart-column header-icon"></i>
+                <div>
+                  <h3>Trayectoria Mensual 2026</h3>
+                  <span class="panel-subtitle">Ingresos (Verde) vs Gastos (Rojo) vs Superávit Neto (Cyan)</span>
+                </div>
+              </div>
+              <span class="period-badge-sub">Consolidado 12 Meses</span>
+            </div>
+            <div class="annual-canvas-container" style="position:relative; height: 310px; width:100%;">
+              <canvas id="annualTrajectoryChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Matriz Comparativa Mes a Mes -->
+          <div class="annual-matrix-card" style="margin-top:1.25rem;">
+            <div class="matrix-header">
+              <h4><i class="fa-solid fa-calendar-days" style="color:#60A5FA;"></i> Detalle y Comparativa Mes a Mes</h4>
+              <span class="matrix-hint">Toca un mes para consultar sus movimientos en detalle</span>
+            </div>
+            <div class="table-responsive">
+              <table class="fintech-table table-annual-matrix">
+                <thead>
+                  <tr>
+                    <th>Mes</th>
+                    <th class="text-right">Ingresos</th>
+                    <th class="text-right">Gastos</th>
+                    <th class="text-right">Ahorro / Superávit</th>
+                    <th class="text-center">Tasa Ahorro</th>
+                    <th class="text-center">Transacciones</th>
+                    <th class="text-center">Acción</th>
+                  </tr>
+                </thead>
+                <tbody id="annual-matrix-tbody">
+                  <!-- Renderizado dinámicamente -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- =========================================================
+               AUDITORÍA FINANCIERA INTELIGENTE 2026 — MOTOR IA & REPORTES
+               ========================================================= -->
+          <div class="annual-ai-audit-card" id="annual-ai-audit-card" style="margin-top:1.5rem;">
+            <div class="ai-audit-header">
+              <div class="ai-audit-title-group">
+                <div class="ai-badge-glowing">
+                  <i class="fa-solid fa-brain"></i>
+                </div>
+                <div>
+                  <div class="ai-badge-pill">MOTOR COGNITIVO FINANCIERO 2026</div>
+                  <h3 class="ai-audit-heading">Diagnóstico de Hábitos & Auditoría IA</h3>
+                  <p class="ai-audit-sub">Análisis algorítmico profundo de patrones de gasto, compras impulsivas y fugas de capital para Marlon Muñoz Pardo</p>
+                </div>
+              </div>
+              <div class="ai-audit-actions-group">
+                <button type="button" class="btn-ai-habit-scanner" id="btn-run-annual-ai-habits" title="Diagnosticar hábitos y patrones de consumo con IA">
+                  <i class="fa-solid fa-wand-magic-sparkles" id="icon-ai-habit-sparkles"></i>
+                  <span id="text-ai-habit-sparkles">Analizar Hábitos con IA</span>
+                </button>
+                <button type="button" class="btn-email-audit" id="btn-send-email-audit" title="Enviar diagnóstico detallado a marlonpardomu@gmail.com">
+                  <i class="fa-solid fa-paper-plane" id="icon-email-audit"></i>
+                  <span id="text-email-audit">Enviar Reporte al Correo</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Diagnóstico de 4 Hábitos Críticos Detectados por IA -->
+            <div class="ai-habits-insight-grid" id="ai-habits-insight-grid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 1rem; margin-top: 1.25rem;">
+              <div class="ai-habit-card habit-temu">
+                <div class="habit-header">
+                  <span class="habit-icon"><i class="fa-solid fa-bag-shopping" style="color:#F59E0B;"></i></span>
+                  <span class="habit-tag tag-warning">Compras & Plataformas</span>
+                </div>
+                <strong class="habit-amount" id="habit-temu-amount">$248.000 COP</strong>
+                <p class="habit-desc" id="habit-temu-desc">Compras detectadas en Temu y plataformas online. En compras impulsivas se observa una concentración en quincenas.</p>
+                <div class="habit-trend trend-caution" id="habit-temu-trend"><i class="fa-solid fa-triangle-exclamation"></i> Monitorear antojitos online</div>
+              </div>
+
+              <div class="ai-habit-card habit-dulces">
+                <div class="habit-header">
+                  <span class="habit-icon"><i class="fa-solid fa-cookie-bite" style="color:#EC4899;"></i></span>
+                  <span class="habit-tag tag-danger">Gastos Hormiga & Dulces</span>
+                </div>
+                <strong class="habit-amount" id="habit-dulces-amount">$186.000 COP</strong>
+                <p class="habit-desc" id="habit-dulces-desc">Endulzadas de amigo secreto, dulces y confitería en Colanta. Representan tu principal fuga silenciosa de liquidez.</p>
+                <div class="habit-trend trend-negative" id="habit-dulces-trend"><i class="fa-solid fa-arrow-trend-up"></i> Fuga hormiga recurrente</div>
+              </div>
+
+              <div class="ai-habit-card habit-moto">
+                <div class="habit-header">
+                  <span class="habit-icon"><i class="fa-solid fa-motorcycle" style="color:#38BDF8;"></i></span>
+                  <span class="habit-tag tag-info">Movilidad & Moto</span>
+                </div>
+                <strong class="habit-amount" id="habit-moto-amount">$148.000 COP</strong>
+                <p class="habit-desc" id="habit-moto-desc">Tanqueadas de gasolina ($31k-$33k) y lavadas. Patrón estable cada 5-6 días con óptima eficiencia de combustible.</p>
+                <div class="habit-trend trend-positive" id="habit-moto-trend"><i class="fa-solid fa-check"></i> Frecuencia controlada</div>
+              </div>
+
+              <div class="ai-habit-card habit-comida">
+                <div class="habit-header">
+                  <span class="habit-icon"><i class="fa-solid fa-utensils" style="color:#10B981;"></i></span>
+                  <span class="habit-tag tag-success">Alimentación & Casino</span>
+                </div>
+                <strong class="habit-amount" id="habit-comida-amount">$132.000 COP</strong>
+                <p class="habit-desc" id="habit-comida-desc">Consumos en restaurante y casino Colanta. Gasto esencial amortizado mediante la nómina quincenal.</p>
+                <div class="habit-trend trend-neutral" id="habit-comida-trend"><i class="fa-solid fa-shield-check"></i> Dentro del presupuesto</div>
+              </div>
+            </div>
+
+            <!-- KPIs Globales de Respaldo -->
+            <div class="ai-audit-grid" style="margin-top:1.25rem;">
+              <div class="ai-audit-stat-card card-peak-expense">
+                <div class="stat-top">
+                  <span class="stat-tag"><i class="fa-solid fa-arrow-trend-up"></i> Mes con Mayor Gasto</span>
+                  <span class="stat-badge-month" id="ai-peak-month">Junio 2026</span>
+                </div>
+                <strong class="stat-val text-rose" id="ai-peak-amount">$3.892.812 COP</strong>
+                <p class="stat-desc" id="ai-peak-desc">Pico máximo de egresos del año. Mayo ($2.82M) y Abril ($3.12M) también registraron alta presión de pagos fijos y compras.</p>
+              </div>
+
+              <div class="ai-audit-stat-card card-top-savings">
+                <div class="stat-top">
+                  <span class="stat-tag"><i class="fa-solid fa-trophy"></i> Mes Récord de Ahorro</span>
+                  <span class="stat-badge-month" id="ai-savings-month">Junio 2026</span>
+                </div>
+                <strong class="stat-val text-emerald" id="ai-savings-amount">$1.219.631 COP</strong>
+                <p class="stat-desc" id="ai-savings-desc">Ingreso récord de $5.11M por prima legal de servicios y nómina Colanta, impulsando la liquidez patrimonial del semestre.</p>
+              </div>
+
+              <div class="ai-audit-stat-card card-category-pressure">
+                <div class="stat-top">
+                  <span class="stat-tag"><i class="fa-solid fa-piggy-bank"></i> Fondos & Respaldo Colanta</span>
+                  <span class="stat-badge-month">Ahorros Cooperativa</span>
+                </div>
+                <strong class="stat-val text-cyan" id="ai-colanta-amount">$4.167.420 COP</strong>
+                <p class="stat-desc">Capital acumulado en Ahorro Ordinario, Navideño y Aportes Sociales que respalda tu patrimonio neto ante imprevistos.</p>
+              </div>
+            </div>
+
+            <div class="ai-audit-narrative-box">
+              <div class="narrative-badge"><i class="fa-solid fa-microchip"></i> Diagnóstico Personalizado de Hábitos & Compras (IA):</div>
+              <p class="narrative-text" id="ai-audit-narrative">
+                Marlon, analizando el transcurso de todos estos meses de 2026, he detectado patrones claros en tus gastos: has realizado varias compras en plataformas como Temu y Eneba por aproximadamente <strong>$248.000 COP</strong>; compraste bastantes dulces y antojos acumulando <strong>$186.000 COP</strong> en gastos hormiga (especialmente en endulzadas de amigo secreto y confitería); y en la moto mantienes una cadencia promedio de tanqueo de <strong>$31.000 a $33.000 COP</strong> cada 5-6 días. Tu disciplina general es sólida con <strong>32.5% de ahorro</strong> y superávit acumulado de <strong>$11.070.954 COP</strong>.
+              </p>
+              <div class="ai-audit-footer-row">
+                <span class="ai-rule-badge"><i class="fa-solid fa-clock-rotate-left"></i> Auditoría en Tiempo Real conectada con Google Sheets</span>
+                <span class="ai-email-target"><i class="fa-solid fa-at"></i> marlonpardomu@gmail.com</span>
+              </div>
+            </div>
+          </div>
+        </section>
+        </div>
+
+        <!-- =========================================================
+             VISTA 8: SUBIR COLILLA (GEMINI AI PROCESSOR)
+             ========================================================= -->
+        <div class="view-panel" id="view-colilla">
+          <div class="view-header-title-row">
+            <div>
+              <span class="section-badge-tiny"><i class="fa-solid fa-file-invoice-dollar" style="color:#FBBF24;"></i> GEMINI MULTIMODAL AI</span>
+              <h2 class="view-title">Subir Colilla de Pago Colanta</h2>
+              <p class="view-subtitle">Sube el PDF o captura de tu colilla de nómina para extraer automáticamente sueldo, horas extras y fondos</p>
+            </div>
+          </div>
+
+          <div class="sheet-modal-card" style="max-width:800px; margin:0 auto; background:linear-gradient(145deg, rgba(18,25,43,0.85) 0%, rgba(13,19,33,0.95) 100%); border:1px solid rgba(255,255,255,0.08); border-radius:20px; padding:2rem;">
+            <div class="upload-dropzone" id="view-dropzone-colilla" style="border:2px dashed rgba(251,191,36,0.4); border-radius:16px; padding:2.75rem 1.5rem; text-align:center; background:rgba(251,191,36,0.03); cursor:pointer; transition:all 0.25s ease;">
+              <i class="fa-solid fa-cloud-arrow-up" style="font-size:3rem; color:#FBBF24; margin-bottom:1rem; display:block;"></i>
+              <h3 style="font-size:1.2rem; font-weight:700; color:#fff; margin-bottom:0.5rem;">Arrastra aquí tu colilla de nómina Colanta</h3>
+              <p id="view-colilla-filename" style="font-size:0.85rem; color:#94A3B8; margin-bottom:1.5rem;">Formatos soportados: PDF, JPG, PNG de Colanta San Germán</p>
+              <input type="file" id="view-file-colilla" accept=".pdf,image/png,image/jpeg,image/webp" style="display:none;">
+              <div style="display:flex; justify-content:center; gap:0.75rem; flex-wrap:wrap;">
+                <button type="button" class="btn-sheet-submit" id="btn-view-select-colilla" style="padding:0.75rem 1.75rem; font-size:0.9rem;">
+                  <i class="fa-solid fa-folder-open"></i> Seleccionar Archivo
+                </button>
+                <button type="button" class="btn-cockpit-action" id="btn-view-open-colilla-modal" style="padding:0.75rem 1.5rem; font-size:0.88rem; background:rgba(251,191,36,0.12); border:1px solid rgba(251,191,36,0.35); color:#FBBF24;">
+                  <i class="fa-solid fa-wand-magic-sparkles"></i> Abrir Escáner Asistido
+                </button>
+              </div>
+            </div>
+
+            <div style="margin-top:1.75rem; display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:1rem;">
+              <div style="background:rgba(255,255,255,0.03); padding:1.1rem; border-radius:12px; border:1px solid rgba(255,255,255,0.06);">
+                <strong style="display:block; font-size:0.85rem; color:#F8FAFC; margin-bottom:0.25rem;"><i class="fa-solid fa-bolt text-amber"></i> Extracción Automática</strong>
+                <span style="font-size:0.76rem; color:#94A3B8;">Detecta sueldo base, horas extras, deducciones de salud/pensión y ahorros Colanta.</span>
+              </div>
+              <div style="background:rgba(255,255,255,0.03); padding:1.1rem; border-radius:12px; border:1px solid rgba(255,255,255,0.06);">
+                <strong style="display:block; font-size:0.85rem; color:#F8FAFC; margin-bottom:0.25rem;"><i class="fa-solid fa-table-cells text-emerald"></i> Inserción en Fila 5</strong>
+                <span style="font-size:0.76rem; color:#94A3B8;">Guarda el ingreso neto automáticamente en tu hoja MOVIMIENTOS y COLILLAS_COLANTA.</span>
+              </div>
+              <div style="background:rgba(255,255,255,0.03); padding:1.1rem; border-radius:12px; border:1px solid rgba(255,255,255,0.06);">
+                <strong style="display:block; font-size:0.85rem; color:#F8FAFC; margin-bottom:0.25rem;"><i class="fa-solid fa-piggy-bank text-cyan"></i> Fondos Sincronizados</strong>
+                <span style="font-size:0.76rem; color:#94A3B8;">Actualiza al instante el Fondo Navideño ($120k/Q), Ordinario ($33k/Q) y Aportes.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- =========================================================
+             VISTA 9: AJUSTES & SCRIPT (SETTINGS & CLOUD SHIELD)
+             ========================================================= -->
+        <div class="view-panel" id="view-settings">
+          <div class="view-header-title-row">
+            <div>
+              <span class="section-badge-tiny"><i class="fa-solid fa-gear" style="color:#FBBF24;"></i> CONFIGURACIÓN Y SEGURIDAD</span>
+              <h2 class="view-title">Ajustes & Conexión Google Sheets</h2>
+              <p class="view-subtitle">Estado del Webhook Apps Script, Escudo Cloud anti-spam, token de acceso y auditoría por correo</p>
+            </div>
+          </div>
+
+          <div style="max-width:850px; margin:0 auto; display:flex; flex-direction:column; gap:1.5rem;">
+            <!-- Estado Backend -->
+            <div class="settings-backend-card" id="settings-backend-status-card" style="background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.25); border-radius:18px; padding:1.5rem;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem; flex-wrap:wrap; gap:0.5rem;">
+                <h4 style="font-size:1.1rem; font-weight:800; color:#fff; display:flex; align-items:center; gap:0.5rem;">
+                  <i class="fa-solid fa-circle-check text-emerald"></i> Google Sheets Conectado (V26.9 PRO AI)
+                </h4>
+                <span style="font-size:0.72rem; font-weight:800; padding:0.25rem 0.75rem; border-radius:20px; background:#10B981; color:#022C22;">V26.9 ONLINE</span>
+              </div>
+              <p style="font-size:0.82rem; color:#94A3B8; margin:0 0 1rem 0;">Los movimientos de la app y colillas se insertan en la <strong>fila 5 de MOVIMIENTOS</strong> en tiempo real.</p>
+              <div class="field-block" style="margin-bottom:1rem;">
+                <label style="font-size:0.75rem; color:#94A3B8; font-weight:700;">URL de Apps Script Web App (/exec):</label>
+                <div style="display:flex; gap:0.5rem; margin-top:0.35rem; flex-wrap:wrap;">
+                  <input type="url" id="input-webhook-url-view" class="custom-input" placeholder="https://script.google.com/macros/s/.../exec" style="flex:1; min-width:240px; font-family:monospace; font-size:0.8rem;">
+                  <button type="button" class="btn-sheet-submit" id="btn-save-webhook-view" style="font-size:0.8rem; padding:0 1.25rem;">Guardar URL</button>
+                </div>
+              </div>
+              <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
+                <a href="https://docs.google.com/spreadsheets/d/1C9ifm7U8IYGOdY4IwAji9Z3McSlNy3B-e_2Jo-zvBFk/edit" target="_blank" rel="noopener noreferrer" class="btn-sheet-submit" style="font-size:0.8rem; padding:0.55rem 1.1rem;">
+                  <i class="fa-solid fa-arrow-up-right-from-square"></i> Abrir Google Sheets en Drive
+                </a>
+                <button type="button" class="btn-cockpit-action" id="btn-view-test-connection" style="font-size:0.8rem; padding:0.55rem 1.1rem; background:rgba(255,255,255,0.05);">
+                  <i class="fa-solid fa-network-wired"></i> Probar Conexión
+                </button>
+                <button type="button" class="btn-cockpit-action" id="btn-copy-gas-script-view" style="font-size:0.8rem; padding:0.55rem 1.1rem; background:rgba(37,99,235,0.2); border:1px solid rgba(59,130,246,0.4); color:#93C5FD;">
+                  <i class="fa-solid fa-copy"></i> Copiar Código Apps Script V26.9
+                </button>
+              </div>
+            </div>
+
+            <!-- Escudo Cloud Anti-Spam -->
+            <div style="background:rgba(18,25,43,0.7); border:1px solid rgba(255,255,255,0.07); border-radius:18px; padding:1.5rem;">
+              <h4 style="font-size:1.05rem; font-weight:800; color:#fff; margin-bottom:0.4rem; display:flex; align-items:center; gap:0.5rem;">
+                <i class="fa-solid fa-shield-halved text-emerald"></i> Escudo GitHub & Google Sheets Anti-Spam
+              </h4>
+              <p style="font-size:0.82rem; color:#94A3B8; margin-bottom:1rem;">Protege tu hoja de cálculo contra escrituras públicas no autorizadas desde GitHub Pages mediante autenticación por token seguro.</p>
+              <div class="field-block">
+                <label style="font-size:0.75rem; color:#94A3B8; font-weight:700;">Tu Token de Escritura Autorizado:</label>
+                <div style="display:flex; gap:0.5rem; margin-top:0.35rem; flex-wrap:wrap;">
+                  <input type="text" id="input-auth-token-view" class="custom-input" value="marlon_pardo_finanzas_2026_auth" style="flex:1; min-width:220px; font-family:monospace; font-size:0.82rem;">
+                  <button type="button" class="btn-sheet-submit" id="btn-save-auth-token-view" style="font-size:0.8rem; padding:0 1.25rem;">Guardar Token</button>
+                  <button type="button" class="btn-cockpit-action" id="btn-copy-private-link-view" style="font-size:0.8rem; padding:0.55rem 1.1rem; background:rgba(16,185,129,0.12); border:1px solid rgba(16,185,129,0.3); color:#34D399;">
+                    <i class="fa-solid fa-link"></i> Copiar Enlace Privado
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Auditoría por Correo -->
+            <div style="background:rgba(18,25,43,0.7); border:1px solid rgba(255,255,255,0.07); border-radius:18px; padding:1.5rem;">
+              <h4 style="font-size:1.05rem; font-weight:800; color:#fff; margin-bottom:0.4rem; display:flex; align-items:center; gap:0.5rem;">
+                <i class="fa-solid fa-envelope-circle-check text-cyan"></i> Auditoría Financiera 2026 por Correo
+              </h4>
+              <p style="font-size:0.82rem; color:#94A3B8; margin-bottom:1rem;">Genera y despacha el reporte financiero ejecutivo de los 12 meses directamente a tu bandeja de entrada en <strong>marlonpardomu@gmail.com</strong>.</p>
+              <button type="button" class="btn-sheet-submit" id="btn-send-email-audit-view" style="font-size:0.85rem; padding:0.65rem 1.5rem;">
+                <i class="fa-solid fa-paper-plane"></i> Enviar Reporte a mi Correo Ahora
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </main>
+
+
+      <!-- BARRA DE NAVEGACIÓN INFERIOR (MÓVIL / CELULAR TIPO APP NATIVA COMPOSE) -->
+      <nav class="mobile-bottom-bar" id="mobile-bottom-bar">
+        <button class="mobile-nav-btn active" data-target="overview" id="btn-m-home" title="Inicio">
+          <i class="fa-solid fa-house"></i>
+          <span>Inicio</span>
+        </button>
+        <button class="mobile-nav-btn" data-target="movements" id="btn-m-movements" title="Movimientos">
+          <i class="fa-solid fa-receipt"></i>
+          <span>Movs</span>
+        </button>
+        <button class="mobile-nav-btn-center" id="btn-m-add" title="Nuevo movimiento">
+          <div class="center-btn-bubble">
+            <i class="fa-solid fa-plus"></i>
+          </div>
+        </button>
+        <button class="mobile-nav-btn" data-target="fixed" id="btn-m-fixed" title="Gastos Fijos">
+          <i class="fa-solid fa-calendar-check"></i>
+          <span>Fijos</span>
+        </button>
+        <button class="mobile-nav-btn" id="btn-m-more" title="Más opciones">
+          <i class="fa-solid fa-ellipsis"></i>
+          <span>Más</span>
+        </button>
+      </nav>
+
+      <!-- MENÚ DESPLEGABLE / BOTTOM SHEET "MÁS" (ESTILO COMPOSE DROPDOWN & SHEET) -->
+      <div class="mobile-more-sheet" id="mobile-more-sheet" aria-hidden="true">
+        <div class="more-sheet-backdrop" id="more-sheet-backdrop"></div>
+        <div class="more-sheet-card">
+          <div class="more-sheet-header">
+            <span class="more-sheet-handle"></span>
+            <div class="more-sheet-title-row">
+              <h4><i class="fa-solid fa-layer-group text-emerald"></i> Más Opciones y Módulos</h4>
+              <button type="button" class="btn-close-more-sheet" id="btn-close-more-sheet" aria-label="Cerrar">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+          </div>
+          <div class="more-sheet-grid">
+            <button type="button" class="more-menu-item" data-target="wallet" id="btn-m-wallet">
+              <div class="more-item-icon icon-emerald">
+                <i class="fa-solid fa-wallet"></i>
+              </div>
+              <div class="more-item-text">
+                <span class="more-item-title">Billetera & Presupuestos</span>
+                <span class="more-item-sub">Saldos por cuenta y techos mensuales</span>
+              </div>
+              <i class="fa-solid fa-chevron-right more-item-arrow"></i>
+            </button>
+            <button type="button" class="more-menu-item" id="btn-m-chat">
+              <div class="more-item-icon icon-violet">
+                <i class="fa-solid fa-brain"></i>
+              </div>
+              <div class="more-item-text">
+                <span class="more-item-title">PardoFinanzas CFO AI</span>
+                <span class="more-item-sub">Asistente financiero inteligente 24/7</span>
+              </div>
+              <i class="fa-solid fa-chevron-right more-item-arrow"></i>
+            </button>
+            <button type="button" class="more-menu-item" data-target="savings" id="btn-m-savings">
+              <div class="more-item-icon icon-cyan">
+                <i class="fa-solid fa-piggy-bank"></i>
+              </div>
+              <div class="more-item-text">
+                <span class="more-item-title">Fondos Colanta & Ahorros</span>
+                <span class="more-item-sub">Fondo Navideño, Ordinario y Metas</span>
+              </div>
+              <i class="fa-solid fa-chevron-right more-item-arrow"></i>
+            </button>
+            <button type="button" class="more-menu-item" data-target="fugas" id="btn-m-fugas">
+              <div class="more-item-icon icon-amber">
+                <i class="fa-solid fa-cookie-bite"></i>
+              </div>
+              <div class="more-item-text">
+                <span class="more-item-title">Radar de Gastos Hormiga</span>
+                <span class="more-item-sub">Control de micro-gastos y antojos</span>
+              </div>
+              <i class="fa-solid fa-chevron-right more-item-arrow"></i>
+            </button>
+            <button type="button" class="more-menu-item" data-target="annual" id="btn-m-annual">
+              <div class="more-item-icon icon-blue">
+                <i class="fa-solid fa-chart-line"></i>
+              </div>
+              <div class="more-item-text">
+                <span class="more-item-title">Evolución Anual & Métricas</span>
+                <span class="more-item-sub">Análisis histórico comparativo 2026</span>
+              </div>
+              <i class="fa-solid fa-chevron-right more-item-arrow"></i>
+            </button>
+            <button type="button" class="more-menu-item" data-target="colilla" id="btn-m-colilla">
+              <div class="more-item-icon icon-amber">
+                <i class="fa-solid fa-file-invoice-dollar"></i>
+              </div>
+              <div class="more-item-text">
+                <span class="more-item-title">Subir Colilla (Gemini AI)</span>
+                <span class="more-item-sub">Escanear deducciones y nómina Colanta</span>
+              </div>
+              <i class="fa-solid fa-chevron-right more-item-arrow"></i>
+            </button>
+            <button type="button" class="more-menu-item" data-target="settings" id="btn-m-settings">
+              <div class="more-item-icon icon-slate">
+                <i class="fa-solid fa-sliders"></i>
+              </div>
+              <div class="more-item-text">
+                <span class="more-item-title">Ajustes & Conexión Cloud</span>
+                <span class="more-item-sub">Estado Webhook, Token y Seguridad</span>
+              </div>
+              <i class="fa-solid fa-chevron-right more-item-arrow"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- WIDGET DE CHAT INTELIGENTE: PARDOFINANZAS CFO AI -->
+  <div class="chat-cfo-drawer" id="chat-cfo-drawer">
+    <div class="drawer-header">
+      <div class="drawer-header-left">
+        <div class="cfo-avatar-glow">
+          <i class="fa-solid fa-brain"></i>
+          <span class="status-orb-online"></span>
+        </div>
+        <div>
+          <h4 class="cfo-title">PardoFinanzas CFO AI</h4>
+          <span class="cfo-sub">🟢 En línea • Asistente Financiero</span>
+        </div>
+      </div>
+      <div class="drawer-header-right">
+        <button class="icon-btn-round" id="btn-cfo-clear" title="Limpiar"><i class="fa-solid fa-trash-can"></i></button>
+        <button class="icon-btn-round" id="btn-cfo-close" title="Cerrar"><i class="fa-solid fa-chevron-down"></i></button>
+      </div>
+    </div>
+
+    <!-- Contenedor de Mensajes -->
+    <div class="drawer-messages" id="chat-messages-container">
+      <div class="cfo-bubble bot-bubble">
+        <div class="b-avatar"><i class="fa-solid fa-robot"></i></div>
+        <div class="b-text">
+          <p>¡Hola Marlon! 👋 Soy tu <strong>Director Financiero (CFO AI)</strong>.</p>
+          <p>Escribe o presiona el micrófono 🎙️ para registrar un gasto o consultar tus cuentas al instante:</p>
+          <div class="quick-chips-grid">
+            <button class="chat-chip" data-text="Pagué 35 mil gasolina moto con Nequi">⛽ 35 mil gasolina moto</button>
+            <button class="chat-chip" data-text="Pagué 18 mil almuerzo Nequi">🍽️ 18 mil almuerzo</button>
+            <button class="chat-chip" data-text="Pagué EPM 177 mil este mes">💡 Pagué EPM 177 mil</button>
+            <button class="chat-chip" data-text="¿Cuánto me queda disponible?">💵 ¿Cuánto me queda?</button>
+            <button class="chat-chip" data-text="¿Cuáles son mis gastos hormiga?">🐜 Ver gastos hormiga</button>
+            <button type="button" class="chat-chip" id="chip-chat-colilla" style="border-color:rgba(251,191,36,0.6); color:#FBBF24; font-weight:700;"><i class="fa-solid fa-file-invoice-dollar"></i> 📄 Subir Colilla Colanta</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Input Bar con Micrófono y Botón de Subir Colilla -->
+    <form class="drawer-input-form" id="chat-input-form">
+      <button type="button" class="btn-voice-round" id="btn-chat-upload-colilla" title="Subir Colilla de Pago Colanta (Gemini AI)">
+        <i class="fa-solid fa-file-invoice-dollar" style="color:#FBBF24;"></i>
+      </button>
+      <button type="button" class="btn-voice-round" id="btn-voice-input" title="Dictar por voz">
+        <i class="fa-solid fa-microphone" id="mic-icon"></i>
+      </button>
+      <input type="text" id="chat-text-input" placeholder="Escribe un gasto o pregunta... (ej. '35 mil moto Nequi')" autocomplete="off">
+      <button type="submit" class="btn-send-round" id="btn-chat-send" title="Enviar">
+        <i class="fa-solid fa-arrow-up"></i>
+      </button>
+    </form>
+  </div>
+
+  <!-- BOTÓN FLOTANTE CFO AI (Para PC / Tablets) -->
+  <button class="floating-cfo-btn" id="btn-floating-cfo" title="Abrir Asistente CFO AI">
+    <div class="floating-btn-glow"></div>
+    <div class="floating-btn-inner">
+      <i class="fa-solid fa-robot"></i>
+      <span>CFO AI</span>
+      <span class="online-dot-mini"></span>
+    </div>
+  </button>
+
+  <!-- MODAL: REGISTRAR NUEVO MOVIMIENTO -->
+  <div class="modal-overlay" id="modal-add-movement">
+    <div class="modal-sheet">
+      <div class="modal-sheet-header">
+        <div class="sheet-handle-bar"></div>
+        <div class="sheet-title-row">
+          <h3><i class="fa-solid fa-receipt"></i> Nuevo Movimiento</h3>
+          <button class="btn-close-sheet" id="btn-close-modal-add">&times;</button>
+        </div>
+      </div>
+
+      <form id="form-add-movement" class="sheet-form">
+        <div class="type-selector-pill">
+          <label class="type-opt">
+            <input type="radio" name="mov-tipo" value="Gasto" checked id="radio-gasto">
+            <span class="type-label type-expense"><i class="fa-solid fa-arrow-down"></i> Gasto</span>
+          </label>
+          <label class="type-opt">
+            <input type="radio" name="mov-tipo" value="Ingreso" id="radio-ingreso">
+            <span class="type-label type-income"><i class="fa-solid fa-arrow-up"></i> Ingreso</span>
+          </label>
+        </div>
+
+        <button type="button" id="btn-modal-goto-colilla" style="width:100%; margin-bottom:1.1rem; background:rgba(251,191,36,0.12); border:1px dashed rgba(251,191,36,0.4); color:#FBBF24; padding:0.6rem; border-radius:10px; font-weight:700; font-size:0.85rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:0.5rem;">
+          <i class="fa-solid fa-file-invoice-dollar"></i> ¿Es una Colilla de Pago? Auditar con Gemini AI
+        </button>
+
+        <div class="field-block">
+          <label for="input-mov-valor">Monto en Pesos ($ COP) *</label>
+          <div class="money-input-box">
+            <span class="money-sign">$</span>
+            <input type="number" id="input-mov-valor" placeholder="25000" min="100" required>
+          </div>
+        </div>
+
+        <div class="field-block">
+          <label for="input-mov-desc">Descripción / Comercio *</label>
+          <input type="text" id="input-mov-desc" class="custom-input" placeholder="Ej: Gasolina Moto, Almuerzo, Greenfit..." required>
+        </div>
+
+        <div class="field-row-2">
+          <div class="field-block">
+            <label for="select-mov-cat">Categoría</label>
+            <select id="select-mov-cat" class="custom-input">
+              <option value="Transporte y Moto">Transporte y Moto</option>
+              <option value="Alimentación">Alimentación</option>
+              <option value="Servicios">Servicios</option>
+              <option value="Gastos Hormiga / Dulces">Gastos Hormiga / Dulces</option>
+              <option value="Compras">Compras</option>
+              <option value="Vivienda">Vivienda</option>
+              <option value="Ocio y Entretenimiento">Ocio y Entretenimiento</option>
+              <option value="Salud">Salud</option>
+              <option value="Otros">Otros</option>
+            </select>
+          </div>
+
+          <div class="field-block">
+            <label for="select-mov-cuenta">Cuenta Origen</label>
+            <select id="select-mov-cuenta" class="custom-input">
+              <option value="Nequi">Nequi</option>
+              <option value="AyC Colanta">AyC Colanta</option>
+              <option value="Efectivo">Efectivo</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="sheet-actions">
+          <button type="button" class="btn-sheet-cancel" id="btn-cancel-modal-add">Cancelar</button>
+          <button type="submit" class="btn-sheet-submit" id="btn-submit-movement">
+            <i class="fa-solid fa-cloud-arrow-up"></i>
+            <span>Guardar en Sheets</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: SUBIR COLILLA DE PAGO COLANTA (GEMINI AI MULTIMODAL) -->
+  <div class="modal-overlay" id="modal-upload-colilla">
+    <div class="modal-sheet">
+      <div class="modal-sheet-header">
+        <div class="sheet-handle-bar"></div>
+        <div class="sheet-title-row">
+          <h3><i class="fa-solid fa-file-invoice-dollar" style="color:#FBBF24;"></i> Auditar Colilla Colanta</h3>
+          <button class="btn-close-sheet" id="btn-close-modal-colilla">&times;</button>
+        </div>
+      </div>
+
+      <div class="sheet-form">
+        <p class="field-hint" style="margin-bottom: 1.1rem; line-height: 1.5;">
+          Sube tu colilla en <strong>PDF o foto clara</strong>. Gemini AI extraerá automáticamente el devengado, descuentos (salud, pensión, fondo AyC), ahorros y registrará el neto en <strong>AyC Colanta</strong>.
+        </p>
+
+        <!-- Dropzone de archivo -->
+        <div class="file-dropzone" id="colilla-dropzone">
+          <input type="file" id="input-colilla-file" accept=".pdf,image/png,image/jpeg,image/webp" style="display:none;">
+          <div class="dropzone-inner" id="dropzone-click-area">
+            <i class="fa-solid fa-cloud-arrow-up dropzone-icon"></i>
+            <span class="dropzone-title">Toca para seleccionar archivo (PDF o Foto)</span>
+            <span class="dropzone-sub" id="dropzone-file-name">Formatos soportados: PDF, JPG, PNG</span>
+          </div>
+        </div>
+
+        <!-- Estado de análisis con Gemini -->
+        <div class="gemini-loading-box" id="colilla-loading-box" style="display: none;">
+          <div class="gemini-spinner"></div>
+          <div>
+            <strong>Gemini AI auditando colilla de pago...</strong>
+            <p>Calculando neto, devengados y retenciones Colanta</p>
+          </div>
+        </div>
+
+        <!-- Vista previa de resultados extraídos -->
+        <div class="colilla-preview-card" id="colilla-preview-card" style="display: none;">
+          <div class="preview-header">
+            <span class="badge-audit"><i class="fa-solid fa-shield-check"></i> Auditoría Gemini OK</span>
+            <span id="preview-colilla-id" class="preview-id">CP-0019</span>
+          </div>
+          <div class="preview-grid">
+            <div class="pg-item">
+              <span class="pg-label">Período</span>
+              <strong id="prev-periodo">-</strong>
+            </div>
+            <div class="pg-item">
+              <span class="pg-label">Devengado</span>
+              <strong id="prev-devengado" style="color:#60A5FA;">$0</strong>
+            </div>
+            <div class="pg-item">
+              <span class="pg-label">Fondo AyC</span>
+              <strong id="prev-fondo" style="color:#FBBF24;">$0</strong>
+            </div>
+            <div class="pg-item">
+              <span class="pg-label">Neto a Consignar</span>
+              <strong id="prev-neto" style="color:#34D399;">$0</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="sheet-actions">
+          <button type="button" class="btn-sheet-cancel" id="btn-cancel-modal-colilla">Cancelar</button>
+          <button type="button" class="btn-sheet-submit" id="btn-submit-colilla" disabled>
+            <i class="fa-solid fa-wand-magic-sparkles"></i>
+            <span id="btn-colilla-label">Analizar con Gemini AI</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: CONFIGURACIÓN RÁPIDA -->
+  <div class="modal-overlay" id="modal-settings">
+    <div class="modal-sheet modal-sheet-sm">
+      <div class="modal-sheet-header">
+        <div class="sheet-title-row">
+          <h3><i class="fa-solid fa-sliders"></i> Ajustes de Conexión</h3>
+          <button class="btn-close-sheet" id="btn-close-modal-settings">&times;</button>
+        </div>
+      </div>
+      <div class="sheet-form">
+        <!-- Estado de Conexión del Backend -->
+        <div class="backend-status-card" id="settings-backend-status" style="background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 12px; padding: 0.85rem; margin-bottom: 1rem;">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 0.4rem;">
+            <strong style="font-size:0.85rem; color:#34D399;" id="settings-status-title"><i class="fa-solid fa-circle-check"></i> Google Sheets Conectado</strong>
+            <span class="badge-audit" id="settings-status-badge" style="background:#10B981; color:#022C22; font-size:0.65rem;">V26.9 ONLINE</span>
+          </div>
+          <p style="font-size:0.75rem; color:#CBD5E1; margin:0; line-height: 1.4;" id="settings-status-desc">
+            Los movimientos de la app y colillas se insertan en la <strong>fila 5 de MOVIMIENTOS</strong> en tiempo real.
+          </p>
+          <div style="margin-top: 0.75rem;">
+            <button type="button" class="btn-copy-script" id="btn-copy-gas-script" style="width:100%; background:linear-gradient(135deg, #2563EB, #1D4ED8); color:#fff; border:none; padding:0.6rem 0.8rem; border-radius:8px; font-weight:700; font-size:0.8rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:0.5rem;">
+              <i class="fa-solid fa-copy"></i>
+              <span>Copiar Código Apps Script V26.9</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="field-block">
+          <label for="input-webhook-url">URL de Apps Script Web App (/exec)</label>
+          <input type="url" id="input-webhook-url" class="custom-input" placeholder="https://script.google.com/macros/s/.../exec">
+          <small class="field-hint">URL de tu Webhook desplegado en Google Apps Script.</small>
+        </div>
+        <div class="field-block">
+          <label>ID de Google Sheet</label>
+          <input type="text" class="custom-input" value="1C9ifm7U8IYGOdY4IwAji9Z3McSlNy3B-e_2Jo-zvBFk" readonly>
+        </div>
+
+        <!-- Ajustes de Seguridad: Escudo Anti-Spam GitHub -->
+        <div class="field-block" style="margin-top: 1rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 1rem;">
+          <label style="display:flex; justify-content:space-between; align-items:center;">
+            <span><i class="fa-solid fa-shield-halved" style="color:#10B981;"></i> Blindaje GitHub & Google Sheets</span>
+            <span class="badge-tag-auth" id="label-auth-status" style="font-size:0.7rem; background:rgba(16,185,129,0.15); color:#34D399; padding:2px 8px; border-radius:4px; font-weight:700;">
+              🛡️ Protección Activa
+            </span>
+          </label>
+          <div style="display:flex; gap:0.5rem; margin-top:0.4rem;">
+            <input type="text" id="input-auth-token" class="custom-input" placeholder="Token de Autorización" value="marlon_pardo_finanzas_2026_auth" style="font-family:monospace; font-size:0.8rem;">
+            <button type="button" class="btn-sheet-submit" id="btn-save-auth-token" style="white-space:nowrap; padding:0 0.8rem; font-size:0.8rem;">
+              Actualizar Token
+            </button>
+          </div>
+          <p style="font-size:0.75rem; color:#94A3B8; margin-top:0.4rem; line-height:1.4;">
+            Cualquier visitante en GitHub verá el dashboard en <strong>Modo Solo Lectura</strong>. Solo quien ingrese con tu enlace privado podrá escribir o modificar datos en tu Google Sheet.
+          </p>
+          <div style="margin-top:0.6rem;">
+            <button type="button" class="btn-sheet-cancel" id="btn-copy-private-link" style="width:100%; font-size:0.78rem; text-align:center; justify-content:center; gap:0.4rem;">
+              <i class="fa-solid fa-link"></i> Copiar mi Enlace de Acceso Privado
+            </button>
+          </div>
+        </div>
+
+        <div class="sheet-actions">
+          <button type="button" class="btn-sheet-cancel" id="btn-test-connection">Probar Conexión</button>
+          <button type="button" class="btn-sheet-submit" id="btn-save-settings">Guardar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: INSTALAR APP EN CELULAR (PWA) -->
+  <div class="modal-overlay" id="modal-install-app">
+    <div class="modal-sheet">
+      <div class="modal-sheet-header">
+        <div class="sheet-title-row">
+          <h3><i class="fa-solid fa-mobile-screen-button"></i> Instalar en tu Celular</h3>
+          <button class="btn-close-sheet" id="btn-close-modal-install">&times;</button>
+        </div>
+      </div>
+      <div class="sheet-form">
+        <div class="install-card-preview">
+          <img src="assets/icon-192.png" alt="PardoFinanzas App Icon" class="install-preview-icon">
+          <div>
+            <h4>PardoFinanzas PRO</h4>
+            <p>App financiera nativa • Pantalla completa sin barra de navegación</p>
+          </div>
+        </div>
+
+        <div class="install-instructions">
+          <div class="inst-step">
+            <span class="step-num">📱</span>
+            <div>
+              <strong>En Android (Google Chrome):</strong>
+              <p>Toca el botón <em>"Instalar Ahora"</em> abajo o en los 3 puntos de Chrome elige <em>"Instalar aplicación"</em>.</p>
+            </div>
+          </div>
+          <div class="inst-step">
+            <span class="step-num">🍏</span>
+            <div>
+              <strong>En iPhone (Safari):</strong>
+              <p>Toca el botón <em>Compartir</em> (ícono del cuadrado con flecha arriba) y selecciona <em>"Agregar a pantalla de inicio"</em>.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="sheet-actions">
+          <button type="button" class="btn-sheet-cancel" id="btn-cancel-modal-install">Cerrar</button>
+          <button type="button" class="btn-sheet-submit" id="btn-trigger-pwa-install">
+            <i class="fa-solid fa-download"></i>
+            <span>Instalar Ahora</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: RECIBO DIGITAL Y EDICIÓN DE MOVIMIENTO (ESTILO APPLE CARD / REVOLUT) -->
+  <div class="modal-overlay" id="modal-transaction-detail">
+    <div class="modal-sheet receipt-sheet">
+      <div class="modal-sheet-header">
+        <div class="sheet-title-row">
+          <h3><i class="fa-solid fa-receipt" style="color:#60A5FA;"></i> Detalle de Movimiento</h3>
+          <button class="btn-close-sheet" id="btn-close-modal-detail">&times;</button>
+        </div>
+      </div>
+      <div class="sheet-form receipt-body">
+        <div class="receipt-header-hero">
+          <div class="receipt-avatar-large" id="detail-avatar">🍽️</div>
+          <h2 class="receipt-amount-hero" id="detail-amount">-$17.116 COP</h2>
+          <span class="receipt-status-pill" id="detail-status-pill"><i class="fa-solid fa-circle-check"></i> Registrado en Google Sheets</span>
+        </div>
+
+        <!-- Editor de Concepto Personalizado -->
+        <div class="field-block" style="margin-top: 1.25rem;">
+          <label for="detail-input-concept" style="display:flex; justify-content:space-between; align-items:center;">
+            <span>Concepto / Nombre del Gasto:</span>
+            <span style="font-size:0.75rem; color:#93C5FD; font-weight:600;"><i class="fa-solid fa-pen-to-square"></i> Puedes editarlo</span>
+          </label>
+          <input type="text" id="detail-input-concept" class="custom-input" placeholder="Ej: Almuerzo Restaurante Planta Medellín">
+        </div>
+
+        <!-- Grid de Metadatos Financieros -->
+        <div class="receipt-metadata-grid">
+          <div class="meta-item">
+            <span class="meta-label">ID Registro</span>
+            <strong class="meta-value" id="detail-id">M-0256</strong>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Fecha y Hora</span>
+            <strong class="meta-value" id="detail-datetime">16/10/2026 06:25 PM</strong>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Categoría</span>
+            <strong class="meta-value" id="detail-category">Alimentación</strong>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Subcategoría</span>
+            <strong class="meta-value" id="detail-subcategory">Restaurante</strong>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Cuenta de Pago</span>
+            <strong class="meta-value" id="detail-account">AyC Colanta</strong>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Método</span>
+            <strong class="meta-value" id="detail-method">Transferencia / Nómina</strong>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Origen de Registro</span>
+            <strong class="meta-value" id="detail-origin">Dashboard Web</strong>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Estado de Sincronización</span>
+            <strong class="meta-value" id="detail-sync-status">Sincronizado</strong>
+          </div>
+        </div>
+
+        <!-- Nota informativa sobre detección de pagos automáticos Android -->
+        <div class="android-detection-receipt-note" style="margin-top: 1.15rem; padding: 0.85rem 1rem; border-radius: 14px; background: rgba(16, 185, 129, 0.06); border: 1px solid rgba(16, 185, 129, 0.22); display: flex; align-items: flex-start; gap: 0.75rem;">
+          <i class="fa-brands fa-android text-emerald" style="font-size: 1.25rem; margin-top: 0.15rem; flex-shrink: 0;"></i>
+          <div style="font-size: 0.76rem; color: #94A3B8; line-height: 1.45;">
+            <strong style="color: #F8FAFC; display: block; margin-bottom: 0.2rem; font-size: 0.78rem;">Sincronización Inteligente Android</strong>
+            Los movimientos automáticos generados por notificaciones bancarias (Nequi, Google Wallet o tarjetas NFC) son capturados por la app Android con permisos autorizados y sincronizados a Google Sheets. En este panel web puedes consultar, auditar y editar el concepto o categoría.
+          </div>
+        </div>
+
+        <div class="sheet-actions" style="margin-top: 1.5rem;">
+          <button type="button" class="btn-sheet-cancel" id="btn-delete-from-detail" style="border-color:rgba(244,63,94,0.4); color:#FB7185;">
+            <i class="fa-solid fa-trash-can"></i> Eliminar
+          </button>
+          <button type="button" class="btn-sheet-submit" id="btn-save-detail-concept">
+            <i class="fa-solid fa-floppy-disk"></i> Guardar Concepto
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: SELECTOR DE MESES (TODOS LOS MESES DEL AÑO) -->
+  <div class="modal-overlay" id="modal-month-selector">
+    <div class="modal-sheet month-picker-sheet">
+      <div class="modal-sheet-header">
+        <div class="sheet-title-row">
+          <h3><i class="fa-regular fa-calendar-days" style="color:#60A5FA;"></i> Seleccionar Mes de Consulta</h3>
+          <button class="btn-close-sheet" id="btn-close-modal-month">&times;</button>
+        </div>
+      </div>
+      <div class="sheet-form">
+        <p class="field-hint" style="margin-bottom:1rem; line-height:1.4;">
+          Audita los movimientos, ingresos y gastos de cualquier mes del año 2026:
+        </p>
+        <div class="month-grid-picker" id="month-grid-picker">
+          <!-- 12 botones/tarjetas de mes generados dinámicamente -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       MODAL: ESCUDO DE SEGURIDAD GITHUB & PROTECCIÓN CLOUD
+       ========================================================= -->
+  <div class="modal-overlay" id="modal-cloud-shield">
+    <div class="modal-sheet">
+      <div class="modal-sheet-header">
+        <div class="sheet-title-row">
+          <div class="sheet-title-icon" style="background:rgba(16,185,129,0.15); color:#34D399;">
+            <i class="fa-solid fa-shield-halved"></i>
+          </div>
+          <div>
+            <h3 class="sheet-title">Escudo Anti-Spam GitHub Activo</h3>
+            <span class="sheet-subtitle">Protección de Google Sheets contra inyecciones no autorizadas</span>
+          </div>
+        </div>
+        <button type="button" class="btn-close-sheet" id="btn-close-cloud-shield">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="modal-sheet-body">
+        <div class="shield-security-card">
+          <div class="shield-icon-badge">
+            <i class="fa-solid fa-lock"></i>
+          </div>
+          <h4>Tu Base de Datos Financiera está Blindada</h4>
+          <p>
+            Cualquier persona que descubra tu código en GitHub o visite la página web pública solo tendrá <strong>Acceso de Solo Lectura</strong>. No podrán registrar movimientos falsos, eliminar registros ni alterar tus números.
+          </p>
+        </div>
+
+        <div class="shield-details-list">
+          <div class="shield-item">
+            <i class="fa-solid fa-circle-check text-emerald"></i>
+            <div>
+              <strong>Validación por Token Secreto:</strong>
+              <span>Toda petición de escritura en Google Apps Script valida tu token privado antes de tocar Google Sheets.</span>
+            </div>
+          </div>
+          <div class="shield-item">
+            <i class="fa-solid fa-circle-check text-emerald"></i>
+            <div>
+              <strong>Regla Gmail y .ZIP Inteligente:</strong>
+              <span>Tus facturas y adjuntos .ZIP se analizan automáticamente, quedan sin leer en la Bandeja de Entrada y, apenas las marques como leídas, se mueven de inmediato a su carpeta FINANZAS.</span>
+            </div>
+          </div>
+          <div class="shield-item">
+            <i class="fa-solid fa-circle-check text-emerald"></i>
+            <div>
+              <strong>Auditoría con Gemini Multimodal:</strong>
+              <span>Extracción automática de datos sin exponer tus credenciales bancarias personales.</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="field-block" style="margin-top:1.25rem;">
+          <label>Enlace de Acceso Autorizado (Para Marlon):</label>
+          <div style="display:flex; gap:0.5rem;">
+            <input type="text" id="input-shield-share-url" class="custom-input" readonly style="font-family:monospace; font-size:0.75rem;">
+            <button type="button" class="btn-sheet-submit" id="btn-copy-shield-url" style="white-space:nowrap; padding:0 1rem; font-size:0.8rem;">
+              <i class="fa-solid fa-copy"></i> Copiar
+            </button>
+          </div>
+          <small class="field-hint">Guarda este enlace en tus favoritos para ingresar con permisos completos de escritura.</small>
+        </div>
+
+        <div class="sheet-actions" style="margin-top:1.5rem;">
+          <button type="button" class="btn-sheet-submit" id="btn-shield-confirm" style="width:100%;">Entendido</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST CONTAINER -->
+  <div class="toast-hub" id="toast-container"></div>
+
+  <!-- SCRIPTS -->
+  <script src="js/api.js?v=27.0.5"></script>
+  <script src="js/nlp_parser.js?v=27.0.5"></script>
+  <script src="js/app.js?v=27.0.5"></script>
+</body>
+</html>

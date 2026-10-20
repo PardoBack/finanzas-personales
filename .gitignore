@@ -32,6 +32,7 @@ exports/*.xlsx
 **/build/
 *.apk
 *.aab
+local.properties
 android/local.properties
 android/.idea/
 android/**/.gradle/

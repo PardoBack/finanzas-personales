@@ -3828,7 +3828,128 @@ const FinanceAPI = {
     return { ok: true, data: currentData };
   },
 
+  // =========================================================
+  // 🔄 COLA OFFLINE Y SINCRONIZACIÓN AUTOMÁTICA EN LA NUBE
+  // =========================================================
+  OFFLINE_QUEUE_KEY: "PARDO_OFFLINE_SYNC_QUEUE_V2",
+
+  getOfflineQueue() {
+    try {
+      const q = localStorage.getItem(this.OFFLINE_QUEUE_KEY);
+      return q ? JSON.parse(q) : [];
+    } catch (e) {
+      return [];
+    }
+  },
+
+  saveOfflineQueue(queue) {
+    try {
+      localStorage.setItem(this.OFFLINE_QUEUE_KEY, JSON.stringify(queue));
+      this.updateOfflineUI();
+    } catch (e) {}
+  },
+
+  enqueueSync(action, payload) {
+    const queue = this.getOfflineQueue();
+    queue.push({
+      queueId: "SYNC_" + Date.now() + "_" + Math.random().toString(36).substr(2, 6),
+      action: action,
+      payload: payload,
+      createdAt: new Date().toISOString()
+    });
+    this.saveOfflineQueue(queue);
+    this.updateOfflineUI();
+  },
+
+  async flushOfflineQueue() {
+    if (!navigator.onLine) {
+      this.updateOfflineUI();
+      return { ok: false, offline: true };
+    }
+    const queue = this.getOfflineQueue();
+    if (!queue || queue.length === 0) {
+      this.updateOfflineUI();
+      return { ok: true, count: 0 };
+    }
+
+    const webhookUrl = this.getWebhookUrl();
+    let flushedCount = 0;
+    const remaining = [];
+
+    for (let i = 0; i < queue.length; i++) {
+      const item = queue[i];
+      try {
+        await fetch(webhookUrl, {
+          method: "POST",
+          mode: "no-cors",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify(item.payload)
+        });
+        flushedCount++;
+      } catch (err) {
+        remaining.push(...queue.slice(i));
+        break;
+      }
+    }
+
+    this.saveOfflineQueue(remaining);
+
+    if (flushedCount > 0 && typeof App !== "undefined" && typeof App.showToast === "function") {
+      App.showToast(`☁️ ${flushedCount} operación(es) sincronizada(s) con Google Sheets`, "success");
+    }
+    this.updateOfflineUI();
+    return { ok: true, count: flushedCount, remaining: remaining.length };
+  },
+
+  updateOfflineUI() {
+    const queue = this.getOfflineQueue();
+    const count = queue.length;
+    const statusTextEl = document.getElementById("sync-status-text");
+    const statusBadge = document.getElementById("sync-status-badge");
+    const topbarSyncIcon = document.getElementById("topbar-sync-icon");
+
+    if (count > 0) {
+      if (statusTextEl) statusTextEl.textContent = `🟡 ${count} pendiente(s)`;
+      if (statusBadge) {
+        statusBadge.title = `${count} cambios guardados localmente. Se enviarán a Google Sheets en cuanto haya conexión.`;
+        statusBadge.style.borderColor = "rgba(245, 158, 11, 0.5)";
+      }
+      if (topbarSyncIcon) topbarSyncIcon.style.color = "#F59E0B";
+    } else {
+      if (statusTextEl) statusTextEl.textContent = navigator.onLine ? "Sheets En Vivo" : "Sin Conexión (Local)";
+      if (statusBadge) {
+        statusBadge.title = navigator.onLine ? "Sincronizado con Google Sheets" : "Modo Local Offline";
+        statusBadge.style.borderColor = "";
+      }
+      if (topbarSyncIcon) topbarSyncIcon.style.color = "";
+    }
+  },
+
+  initOfflineListeners() {
+    if (this._offlineListenersAttached) return;
+    this._offlineListenersAttached = true;
+
+    window.addEventListener("online", () => {
+      console.log("🌐 Conexión reestablecida: enviando cola pendiente a Google Sheets...");
+      setTimeout(() => this.flushOfflineQueue(), 1200);
+    });
+
+    window.addEventListener("offline", () => {
+      console.log("📴 Modo sin conexión activado. Guardando operaciones localmente.");
+      this.updateOfflineUI();
+    });
+
+    setInterval(() => {
+      if (navigator.onLine && this.getOfflineQueue().length > 0) {
+        this.flushOfflineQueue();
+      }
+    }, 20000);
+
+    setTimeout(() => this.updateOfflineUI(), 500);
+  },
+
   async addMovement(movementData) {
+    this.initOfflineListeners();
     const webhookUrl = this.getWebhookUrl();
     const token = this.getAuthToken();
     const mesesNombres = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
@@ -3845,12 +3966,13 @@ const FinanceAPI = {
       timestamp: now.toISOString()
     };
 
+    // 1. Guardar de inmediato en almacenamiento local para respuesta instantánea
     try {
       const cached = localStorage.getItem(API_CONFIG.CACHE_KEY);
       if (cached) {
         const parsed = JSON.parse(cached);
         if (parsed && parsed.movimientos) {
-          const alreadyExists = movementData.id && parsed.movimientos.some(m => m.id === movementData.id);
+          const alreadyExists = movementData.id && parsed.movimientos.some(m => String(m.id).toUpperCase() === String(movementData.id).toUpperCase());
           if (!alreadyExists) {
             parsed.movimientos.unshift({
               id: movementData.id || "M-" + Math.floor(1000 + Math.random() * 9000),
@@ -3866,36 +3988,52 @@ const FinanceAPI = {
       }
     } catch (e) {}
 
+    // 2. Si estamos sin internet, encolar directamente en la cola persistente
+    if (!navigator.onLine) {
+      this.enqueueSync("addMovement", payload);
+      return { ok: true, status: "saved_offline", offline: true, timestamp: now.toLocaleTimeString("es-CO") };
+    }
+
+    // 3. Enviar a Google Apps Script con salvaguarda offline si la red falla
     try {
       fetch(webhookUrl, {
         method: "POST",
         mode: "no-cors",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify(payload)
-      }).catch(e => console.warn("Background sync info:", e));
+      }).catch(e => {
+        console.warn("Fallo de red al enviar addMovement, encolando offline:", e);
+        this.enqueueSync("addMovement", payload);
+      });
       
       return { ok: true, status: "saved", timestamp: now.toLocaleTimeString("es-CO") };
     } catch (err) {
-      return { ok: true, status: "saved_local" };
+      this.enqueueSync("addMovement", payload);
+      return { ok: true, status: "saved_offline", offline: true, timestamp: now.toLocaleTimeString("es-CO") };
     }
   },
 
-  async deleteMovement(id) {
+  async deleteMovement(id, extra = {}) {
+    this.initOfflineListeners();
     const webhookUrl = this.getWebhookUrl();
     const token = this.getAuthToken();
     const payload = {
       action: "deleteMovement",
       token: token,
       id: id,
+      descripcion: extra.descripcion || "",
+      valor: extra.valor || extra.monto || 0,
+      tipo: extra.tipo || "",
       timestamp: new Date().toISOString()
     };
 
+    // 1. Borrar inmediatamente del caché local
     try {
       const cached = localStorage.getItem(API_CONFIG.CACHE_KEY);
       if (cached) {
         const parsed = JSON.parse(cached);
         if (parsed && parsed.movimientos) {
-          const idx = parsed.movimientos.findIndex(m => m.id === id);
+          const idx = parsed.movimientos.findIndex(m => String(m.id).toUpperCase() === String(id).toUpperCase());
           if (idx !== -1) {
             parsed.movimientos.splice(idx, 1);
             localStorage.setItem(API_CONFIG.CACHE_KEY, JSON.stringify(parsed));
@@ -3904,17 +4042,28 @@ const FinanceAPI = {
       }
     } catch (e) {}
 
+    // 2. Si no hay conexión, encolar borrado para cuando regrese internet
+    if (!navigator.onLine) {
+      this.enqueueSync("deleteMovement", payload);
+      return { ok: true, status: "deleted_offline", offline: true, id: id };
+    }
+
+    // 3. Enviar a Google Apps Script con salvaguarda
     try {
       fetch(webhookUrl, {
         method: "POST",
         mode: "no-cors",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify(payload)
-      }).catch(e => console.warn("Background delete sync info:", e));
+      }).catch(e => {
+        console.warn("Fallo de red al enviar deleteMovement, encolando offline:", e);
+        this.enqueueSync("deleteMovement", payload);
+      });
 
       return { ok: true, status: "deleted", id: id };
     } catch (err) {
-      return { ok: true, status: "deleted_local", id: id };
+      this.enqueueSync("deleteMovement", payload);
+      return { ok: true, status: "deleted_offline", offline: true, id: id };
     }
   },
 
@@ -4068,7 +4217,7 @@ const FinanceAPI = {
     } catch (e) {
       console.warn("Scan Gmail API call:", e);
     }
-    return { ok: true, procesadas: 0, mensaje: "Escáner ejecutado con regla de 3 horas activa" };
+    return { ok: true, procesadas: 0, mensaje: "Escáner ejecutado: Facturas analizadas quedan sin leer y se mueven al ser leídas." };
   },
 
   async sendEmailAudit(email = null) {

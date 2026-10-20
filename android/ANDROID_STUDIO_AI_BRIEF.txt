@@ -1,0 +1,105 @@
+INSTRUCCIONES PARA LA IA DE ANDROID STUDIO
+Proyecto: Pardo Finanzas
+
+Quiero que mejores la experiencia visual y de uso de esta app Android. La interfaz debe ser nativa, hecha con Jetpack Compose. No uses HTML ni WebView para construir las pantallas.
+
+OBJETIVO
+Crear una app de finanzas personales profesional, clara, moderna y agradable de usar todos los días. Prioriza que sea fácil entender el dinero disponible y registrar un movimiento con pocos toques. Evita que se vea recargada, futurista en exceso o llena de efectos que compitan con los datos.
+
+CONTEXTO DEL PROYECTO Y CAMBIOS YA HECHOS
+- Hay dos proyectos Gradle Android en el repositorio. El proyecto nativo Compose que debes continuar es `android/`; ábrelo como proyecto independiente en Android Studio. El `app/` de la raíz es un WebView anterior.
+- Ya se ordenó el dashboard Compose: el saldo aparece antes que las acciones, las acciones rápidas ocupan toda su tarjeta, y la barra inferior tiene Inicio, Movs, Fijos, Más y un botón central para agregar. Presupuestos, Análisis, Metas e IA están en Más.
+- Archivos nativos ya modificados: `app/src/main/java/com/example/appfinanzas/ui/FinanceApp.kt`, `ui/screens/DashboardScreen.kt` y `ui/components/Glassmorphism.kt`. Inspecciona su estado actual y continúa desde ahí; no restaures la barra antigua de siete botones ni el estilo de neón/glow permanente.
+- Existe una nota complementaria para la IA de diseño web en `../ANTIGRAVITY_WEB_HANDOFF.md`. Android es nativo y la web se trabaja aparte.
+
+DIRECCIÓN VISUAL
+- Usa fondo azul muy oscuro, superficies azul pizarra, texto de alto contraste y bordes sutiles.
+- Usa verde esmeralda para acciones positivas y saldo disponible; rojo solo para gastos/alertas; violeta solo para IA.
+- Mantén tarjetas limpias, radios y espaciados consistentes. Evita neón intenso, glassmorphism excesivo, brillos multicolor y animaciones constantes.
+- Usa una jerarquía visual simple: título, dato principal, etiquetas cortas y acciones claras.
+- Asegura que textos, importes COP y botones se adapten a móviles pequeños y al tamaño de fuente del sistema.
+
+EXPERIENCIA PRINCIPAL
+- En el inicio, muestra el saldo disponible claramente, con opción de ocultarlo.
+- Mantén accesos directos simples para registrar gasto, ingreso y gasto hormiga.
+- Organiza ingresos y gastos en tarjetas comparables, sin porcentajes o tendencias inventadas.
+- Haz que cada fila de movimiento muestre concepto, categoría/fecha e importe, con buena alineación y sin cortes.
+- Mantén accesibles movimientos, gastos fijos, presupuestos, análisis, metas de ahorro y asistente IA. Las secciones menos frecuentes pueden estar bajo “Más”, pero no deben desaparecer.
+- Haz que los estados vacíos expliquen qué hacer a continuación. Diseña estados de carga, error de conexión, sincronización y éxito con el mismo cuidado visual.
+- Muestra confirmación clara antes de acciones destructivas y evita que errores de conexión borren datos locales.
+
+FUNCIÓN PRIORITARIA: DETECTAR COMPRAS DE NEQUI Y PAGOS SIN CONTACTO
+- El usuario paga con su tarjeta débito Nequi Visa agregada a Google Wallet, acercando el celular al datáfono. Quiere que el gasto aparezca automáticamente, con el comercio, el valor, la fecha/hora, la cuenta o tarjeta y una categoría razonable.
+- El proyecto ya contiene `TransactionNotificationListenerService`, `TransactionNotificationParser` y una pantalla de permisos para el detector. Inspecciona y mejora esa implementación; no la reemplaces por un flujo inventado ni dupliques detectores.
+- Fuente nativa posible: las notificaciones de compra que publiquen Nequi, Google Wallet o el banco emisor. El usuario debe habilitar explícitamente el acceso a notificaciones de Android y las notificaciones de transacción en Wallet/Nequi cuando la app correspondiente lo permita.
+- Android no entrega a una app financiera cualquiera acceso directo al contenido de una compra NFC procesada por otra billetera o por un elemento seguro. No intentes leer NFC, APDU, token de tarjeta, pantalla de otra app ni credenciales. El detector solo puede registrar automáticamente los pagos cuya notificación llegue con datos suficientes.
+- No prometas detección infalible ni digas que Android lee directamente el datáfono. Explica dentro de la app qué permiso se usa, para qué, qué campos se extraen y cómo desactivarlo. Si no llega notificación, permite registrar el pago con el botón de nuevo movimiento.
+- Comprueba que la notificación corresponda a una compra o transferencia real: importe COP válido, indicios claros de transacción, comercio/persona cuando esté disponible y fecha/hora de la notificación. Ignora alertas de saldo, promociones, OTP/códigos, tarjetas agregadas y mensajes sin importe o sin evento de pago.
+- No asumas que cada alerta es un gasto: clasifica ingreso, compra, transferencia, devolución y rechazo según el texto. Si faltan datos o la confianza es baja, manda el evento a una bandeja de “Por confirmar” en vez de guardarlo como gasto definitivo.
+- Evita duplicar el mismo pago cuando Wallet, Nequi y el banco anuncien la transacción. Usa ID de transacción si existe; si no, compara importe, comercio, tipo y hora con una ventana corta, evitando fusionar dos compras distintas del mismo valor.
+- Extrae y guarda solo los campos financieros necesarios. No guardes ni escribas en logs el texto completo de notificaciones, OTP, saldo privado, número de tarjeta o tokens. Mantén la notificación original fuera de Apps Script/Sheets.
+- Añade estados claros: detector apagado, permiso pendiente, activo, pago detectado/guardado, pendiente de confirmar y error de sincronización. Deja editar comercio/categoría/cuenta y deshacer un registro automático.
+- Valida el parser con ejemplos anonimizados de Nequi y Google Wallet: compra sin contacto, pago en comercio, transferencia enviada/recibida, devolución, compra rechazada, aviso de saldo, OTP, importe con formatos colombianos y notificaciones duplicadas. No uses datos personales reales en pruebas.
+
+BOTONES Y NAVEGACIÓN
+- Todos los controles deben ser controles Compose reales con etiquetas accesibles, estados presionado/seleccionado/deshabilitado y feedback visual discreto.
+- Objetivo táctil mínimo: 48 dp. No hagas que solo el icono de una acción sea pulsable si el texto parece parte del botón.
+- Mantén una barra inferior compacta con Inicio, Movs, Fijos, Más y un botón central claro para nuevo movimiento.
+- En “Más”, deja accesibles Presupuestos, Análisis, Metas y Asistente IA. Indica visualmente la sección actual.
+- Evita etiquetas truncadas, iconos ambiguos y botones que no hagan nada.
+
+PRESERVAR EL FUNCIONAMIENTO
+- Conserva los ViewModels, repositorios, modelos, base de datos, sincronización, Google Apps Script/Sheets, notificaciones, seguridad y flujos existentes.
+- No reemplaces datos reales por ejemplos, números quemados o contenido mock.
+- No cambies contratos de API, nombres de parámetros, formatos enviados a Apps Script ni claves de almacenamiento.
+- Antes de cambiar un flujo, rastrea su implementación y mantén la misma acción al rediseñar el control.
+- La app nativa está en este proyecto `android/`, especialmente `app/src/main/java/com/example/appfinanzas/`.
+- El detector existente se encuentra en `app/src/main/java/com/example/appfinanzas/service/TransactionNotificationListenerService.kt` y `TransactionNotificationParser.kt`.
+- Audita especialmente el clasificador existente antes de confiar en él: hoy el parser puede interpretar como gasto un aviso financiero con importe aunque no encuentre una señal clara de compra, y el deduplicado se hace por cuenta. Corrige falsos positivos y duplicados de Wallet + Nequi sin perder compras legítimas.
+- El módulo `app/` que está en la raíz del repositorio es un cliente WebView anterior; no lo uses como interfaz de la app nativa.
+
+FORMA DE TRABAJO
+- Primero inspecciona las pantallas y componentes existentes para mantener sus callbacks y datos.
+- Trabaja por pantalla y reutiliza componentes de diseño en lugar de duplicar estilos.
+- Después de cada cambio, compila `:app:compileDebugKotlin` y corrige los errores de compilación que hayas introducido.
+- Al terminar, resume qué pantallas cambiaste, qué funciones preservaste y cualquier parte que no hayas podido verificar.
+
+--- CONTEXTO DE ESTA SOLICITUD (LEER ANTES DE EDITAR) ---
+El usuario revisó las pantallas en un teléfono Samsung y señaló que la app se ve “horrible”: contenido horizontal cortado, tarjetas que se salen del ancho, encabezados invadidos por la barra del sistema, controles amontonados y tablas de escritorio ilegibles en móvil. Quiere un producto más profesional y práctico, con botones bien distribuidos y cómodos. También quiere que el pago con Nequi/Google Wallet se registre automáticamente cuando el teléfono reciba información suficiente de la transacción, incluso si pagó acercando el teléfono al datáfono.
+
+Lee este archivo completo antes de modificar. No supongas que un chat anterior o una descripción generada por otra IA es el estado actual del proyecto. Inspecciona el código actual, conserva los cambios existentes y presenta cambios concretos en la app; no respondas solo con recomendaciones ni reemplaces la aplicación por una demo.
+
+PRIORIDAD 1 — QUE LA APP MÓVIL SE VEA BIEN
+- La interfaz Android objetivo es Jetpack Compose en este proyecto `android/`; no uses HTML/WebView para construir la app nativa.
+- Revisa cada pantalla real en ancho de teléfono, especialmente Inicio, Movimientos, Gastos fijos, formulario de movimiento, Presupuestos y Más. Corrige medidas rígidas, desplazamiento horizontal accidental, textos recortados, barras/encabezados debajo de la barra de estado, botones chicos y tarjetas que no respeten el ancho disponible.
+- Usa una columna de tarjetas legibles en móvil; no comprimas tablas de escritorio en una pantalla angosta. Permite que importes COP largos y nombres extensos se ajusten o se trunquen con una alternativa accesible.
+- Verifica insets de status/navigation bars, tamaños de fuente del sistema, pantallas pequeñas y modo edge-to-edge que ya use el proyecto. No agregues padding duplicado.
+- Botones: texto e icono deben ser parte de toda el área pulsable; mínimo 48 dp; estados activo, presionado, deshabilitado y cargando; etiquetas de accesibilidad y acciones confirmadas. Conserva callbacks y navegación existentes.
+- Mantén una identidad visual sobria y coherente: fondo azul profundo, superficies pizarra, verde para acciones/saldos positivos, rojo para egresos y violeta solo para IA; evita neón intenso, glow permanente y exceso de decoración.
+- Revisa en emulador/dispositivo o captura de pantalla cada pantalla modificada cuando el entorno lo permita. Una compilación correcta no demuestra que el diseño móvil quedó bien.
+
+PRIORIDAD 2 — REGISTRO AUTOMÁTICO DE PAGOS NEQUI / GOOGLE WALLET
+El caso de uso es: el usuario paga con la tarjeta débito Nequi Visa agregada a Google Wallet y acerca el teléfono a un datáfono. Quiere encontrar después un movimiento con importe, comercio, fecha/hora, medio/cuenta y categoría para corregirlo si hace falta.
+
+La captura tiene límites técnicos: una app financiera normal no recibe acceso directo al pago NFC procesado por Google Wallet ni al datáfono. El camino permitido es recibir una notificación publicada por Nequi, Google Wallet o el banco y para ello el usuario debe conceder acceso de notificaciones a esta app y mantener activadas las notificaciones de transacción que ofrezca el emisor/Wallet. La disponibilidad y el detalle cambian por app, configuración y compra. No prometas que se detectarán todos los pagos, no intentes leer APDU, elemento seguro, token de tarjeta, pantalla de otra app ni credenciales. Si no llega una notificación compatible, ofrece registro manual y explica cómo revisar permisos.
+
+El proyecto ya incluye `TransactionNotificationListenerService`, `TransactionNotificationParser` y un flujo de permisos. Audítalos y mejóralos en vez de crear un detector duplicado. Hay un defecto conocido que debes resolver: actualmente el parser clasifica como EGRESO por defecto cualquier aviso financiero con monto, y el servicio guarda inmediatamente el movimiento. Esto puede confundir saldo, promoción, OTP, compra rechazada, devolución, ingreso o transferencia con un gasto real.
+
+Comportamiento requerido:
+1. Aceptar solo mensajes con señal inequívoca de una transacción completada y monto COP válido. Ignorar saldo disponible, promociones, claves/códigos OTP, tarjeta agregada, intentos rechazados/cancelados y avisos sin evidencia clara de movimiento.
+2. Clasificar por separado compra/egreso, ingreso/abono, transferencia enviada, transferencia recibida, devolución/reverso y rechazo. Nunca convertir un caso desconocido en gasto por defecto.
+3. Si falta comercio, importe, dirección del movimiento o la confianza es baja, no crear un gasto definitivo silenciosamente: mostrar un estado “Por confirmar” editable. Si la arquitectura actual no tiene bandeja de confirmación, implementa una solución mínima persistente y segura o deja explícito qué capa debe añadirse; no descartes silenciosamente una transacción válida.
+4. Extraer comercio/persona, valor, moneda, hora y origen solo si están presentes. Categorizar por reglas explicables y permitir editar cuenta, categoría y descripción. No inventar comercio ni categoría específica cuando solo se conoce “compra con tarjeta”.
+5. Evitar duplicados cuando Wallet y Nequi reportan la misma compra. Preferir ID de transacción estable si existe; de lo contrario comparar monto, tipo, comercio normalizado y una ventana temporal breve sin fusionar compras distintas del mismo valor. El deduplicado actual incorpora la cuenta en la clave, así que no elimina duplicados entre emisores.
+6. Tras guardar, confirmar con una notificación discreta y permitir corregir/deshacer el registro automático. Mostrar estados detector apagado, permiso pendiente, activo, detectado, por confirmar y error al sincronizar.
+7. Minimizar datos: no guardar ni imprimir texto completo de notificación, OTP, saldos privados, PAN, tokens u otros secretos. Evitar incluir texto crudo en logs, base de datos, Apps Script, Sheets o telemetría. La hora de la compra debe usar la hora de notificación/transacción si existe, no simplemente la hora en que terminó la tarea asíncrona.
+8. Mantener el movimiento local cuando falle la red; indicar sincronización pendiente y reintentar sin duplicarlo.
+
+Comprueba reglas con ejemplos sintéticos y anonimizados: compra contactless aprobada en comercio, compra sin nombre de comercio, transferencia enviada/recibida, devolución, rechazo, alerta de saldo, OTP, importe colombiano con separadores distintos y aviso duplicado de Wallet + Nequi. No uses notificaciones ni datos personales reales.
+
+ENTREGA
+- Implementa primero los problemas visibles y el caso de uso real; no te limites a cambiar colores.
+- Conserva Room/repositorios/ViewModels, contratos de Apps Script/Sheets, navegación y almacenamiento salvo que inspecciones y justifiques una migración compatible.
+- No pongas montos de ejemplo ni datos mock en producción.
+- Compila al menos `:app:compileDebugKotlin` desde `android/` y corrige errores introducidos. Si cambiaste persistencia o UI, explica qué verificación adicional quedó pendiente.
+- Al terminar informa archivos/pantallas cambiados, límites reales de detección, pasos de permisos para el usuario y cualquier tarea que requiera datos o una decisión del usuario.
