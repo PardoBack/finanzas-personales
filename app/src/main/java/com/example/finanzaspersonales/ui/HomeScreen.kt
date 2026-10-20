@@ -15,12 +15,15 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ReceiptLong
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -94,7 +97,7 @@ fun HomeScreen(viewModel: MainViewModel = viewModel()) {
                     Surface(
                         color = CardElevated,
                         shape = RoundedCornerShape(14.dp),
-                        border = BorderStroke(1.dp, CyanGlow.copy(alpha = 0.45f)),
+                        border = BorderStroke(1.dp, CyanGlow.copy(alpha = 0.5f)),
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 18.dp, vertical = 6.dp)
@@ -253,19 +256,20 @@ private fun PardoTopBar(
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
                 modifier = Modifier
-                    .size(42.dp)
+                    .size(44.dp)
                     .clip(RoundedCornerShape(14.dp))
                     .background(
                         Brush.linearGradient(
                             colors = listOf(CyanGlow, VioletAccent)
                         )
-                    ),
+                    )
+                    .shadow(elevation = 6.dp, shape = RoundedCornerShape(14.dp)),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = "MP",
                     color = Color.White,
-                    fontSize = 15.sp,
+                    fontSize = 16.sp,
                     fontWeight = FontWeight.ExtraBold
                 )
             }
@@ -301,29 +305,29 @@ private fun PardoTopBar(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Botón Escanear Gmail (.ZIP)
+            // Botón Escanear Gmail (.ZIP) Ultra-Diseñado
             Surface(
                 onClick = onScanGmail,
                 color = CardElevated,
                 shape = RoundedCornerShape(12.dp),
-                border = BorderStroke(1.dp, CyanGlow.copy(alpha = 0.4f)),
+                border = BorderStroke(1.dp, CyanGlow.copy(alpha = 0.5f)),
                 modifier = Modifier.height(38.dp)
             ) {
                 Row(
-                    modifier = Modifier.padding(horizontal = 10.dp),
+                    modifier = Modifier.padding(horizontal = 11.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
-                        imageVector = Icons.Default.MarkEmailUnread,
+                        imageVector = Icons.Default.FolderZip,
                         contentDescription = "Escanear Gmail .ZIP",
                         tint = CyanNeon,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(17.dp)
                     )
                     Spacer(modifier = Modifier.width(5.dp))
                     Text(
                         text = ".ZIP",
                         color = CyanNeon,
-                        fontSize = 11.sp,
+                        fontSize = 12.sp,
                         fontWeight = FontWeight.ExtraBold
                     )
                 }
@@ -352,8 +356,8 @@ private fun PardoTopBar(
                 modifier = Modifier
                     .size(38.dp)
                     .clip(RoundedCornerShape(12.dp))
-                    .background(VioletAccent.copy(alpha = 0.18f))
-                    .border(1.dp, VioletAccent.copy(alpha = 0.45f), RoundedCornerShape(12.dp))
+                    .background(VioletAccent.copy(alpha = 0.2f))
+                    .border(1.dp, VioletAccent.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
             ) {
                 Icon(
                     imageVector = Icons.Default.AutoAwesome,
@@ -373,15 +377,15 @@ private fun PardoBottomNav(
     onOpenNewMovement: () -> Unit
 ) {
     Surface(
-        color = Color(0xFF0B1120),
-        tonalElevation = 8.dp,
+        color = Color(0xFF090E1A),
+        tonalElevation = 10.dp,
         border = BorderStroke(1.dp, SubtleBorder),
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 8.dp),
+                .padding(horizontal = 10.dp, vertical = 6.dp),
             horizontalArrangement = Arrangement.SpaceAround,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -393,29 +397,30 @@ private fun PardoBottomNav(
             )
             BottomNavItem(
                 label = "Movs",
-                icon = Icons.Default.ReceiptLong,
+                icon = Icons.AutoMirrored.Filled.ReceiptLong,
                 selected = selectedTab == 1,
                 onClick = { onSelectTab(1) }
             )
 
-            // Botón Central + Nuevo Movimiento
+            // Botón Central + Nuevo Movimiento con Aura Gradiente
             Box(
                 modifier = Modifier
-                    .size(52.dp)
-                    .clip(RoundedCornerShape(16.dp))
+                    .size(54.dp)
+                    .clip(CircleShape)
                     .background(
                         Brush.linearGradient(
                             colors = listOf(CyanGlow, EmeraldGreen)
                         )
                     )
-                    .clickable { onOpenNewMovement() },
+                    .clickable { onOpenNewMovement() }
+                    .shadow(elevation = 12.dp, shape = CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
                     contentDescription = "Nuevo Movimiento",
                     tint = DeepObsidian,
-                    modifier = Modifier.size(28.dp)
+                    modifier = Modifier.size(30.dp)
                 )
             }
 
@@ -447,7 +452,7 @@ private fun BottomNavItem(
         modifier = Modifier
             .clip(RoundedCornerShape(12.dp))
             .clickable { onClick() }
-            .padding(horizontal = 12.dp, vertical = 6.dp),
+            .padding(horizontal = 10.dp, vertical = 6.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Icon(
@@ -498,7 +503,7 @@ private fun InicioTabContent(
             .padding(horizontal = 18.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // 1. Selector de Meses Horizontal
+        // 1. Selector de Meses Horizontal con Glow
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -509,8 +514,8 @@ private fun InicioTabContent(
                 val active = uiState.mesActivo.equals(key, ignoreCase = true)
                 Surface(
                     onClick = { onSelectMonth(key) },
-                    color = if (active) CyanGlow.copy(alpha = 0.22f) else CardBackground,
-                    shape = RoundedCornerShape(12.dp),
+                    color = if (active) CyanGlow.copy(alpha = 0.25f) else CardBackground,
+                    shape = RoundedCornerShape(14.dp),
                     border = BorderStroke(
                         1.dp,
                         if (active) CyanNeon else SubtleBorder
@@ -521,17 +526,17 @@ private fun InicioTabContent(
                         color = if (active) CyanNeon else TextSecondary,
                         fontSize = 12.sp,
                         fontWeight = if (active) FontWeight.ExtraBold else FontWeight.Medium,
-                        modifier = Modifier.padding(horizontal = 13.dp, vertical = 8.dp)
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 9.dp)
                     )
                 }
             }
         }
 
-        // 2. Hero Card de Disponible Real
+        // 2. Hero Card de Disponible Real con Botones "Muy Chimba"
         Surface(
-            shape = RoundedCornerShape(22.dp),
+            shape = RoundedCornerShape(24.dp),
             color = CardBackground,
-            border = BorderStroke(1.dp, CyanGlow.copy(alpha = 0.35f)),
+            border = BorderStroke(1.dp, CyanGlow.copy(alpha = 0.4f)),
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(
@@ -539,12 +544,12 @@ private fun InicioTabContent(
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
-                                Color(0xFF13203D),
-                                Color(0xFF0C1324)
+                                Color(0xFF132347),
+                                Color(0xFF0A1224)
                             )
                         )
                     )
-                    .padding(18.dp)
+                    .padding(20.dp)
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -557,7 +562,7 @@ private fun InicioTabContent(
                             color = CyanNeon,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.ExtraBold,
-                            letterSpacing = 0.6.sp
+                            letterSpacing = 0.8.sp
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Icon(
@@ -575,32 +580,32 @@ private fun InicioTabContent(
                     } else 30
                     Surface(
                         color = EmeraldGreen.copy(alpha = 0.18f),
-                        shape = RoundedCornerShape(8.dp),
-                        border = BorderStroke(1.dp, EmeraldGreen.copy(alpha = 0.4f))
+                        shape = RoundedCornerShape(10.dp),
+                        border = BorderStroke(1.dp, EmeraldGreen.copy(alpha = 0.45f))
                     ) {
                         Text(
                             text = "$tasaMes% Libre",
                             color = EmeraldBright,
                             fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                            fontWeight = FontWeight.ExtraBold,
+                            modifier = Modifier.padding(horizontal = 9.dp, vertical = 4.dp)
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
                 Text(
                     text = if (isBalanceVisible) "$ ${MainViewModel.formatearNumero(uiState.disponibleReal)}" else "$ •••••••",
                     color = TextPrimary,
-                    fontSize = 34.sp,
+                    fontSize = 35.sp,
                     fontWeight = FontWeight.Black,
-                    letterSpacing = (-0.8).sp
+                    letterSpacing = (-1).sp
                 )
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // 3 Mini KPIs del Mes (Ingresos, Gastos, Fijos Pendientes)
+                // 3 Mini KPIs del Mes
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -621,66 +626,100 @@ private fun InicioTabContent(
                         modifier = Modifier
                             .weight(1f)
                             .clickable { onVerFijos() },
-                        label = "Fijos Pend.",
+                        label = "Fijos Pendientes",
                         value = if (isBalanceVisible) "$${MainViewModel.formatearNumero(uiState.fijosPendientes)}" else "••••",
                         valueColor = AmberGold
                     )
                 }
 
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(18.dp))
 
-                // Botones principales bien diseñados (48dp+)
+                // BOTONES PRINCIPALES DE ALTO IMPACTO (52dp, con gradientes vivos y cápsulas)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Button(
-                        onClick = onOpenGasto,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = RoseRed,
-                            contentColor = Color.White
-                        ),
-                        shape = RoundedCornerShape(14.dp),
+                    // Botón - Registrar Gasto
+                    Box(
                         modifier = Modifier
                             .weight(1f)
-                            .height(48.dp)
+                            .height(52.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(
+                                Brush.horizontalGradient(
+                                    colors = listOf(Color(0xFFE11D48), Color(0xFFBE123C))
+                                )
+                            )
+                            .border(1.dp, Color(0xFFFDA4AF).copy(alpha = 0.4f), RoundedCornerShape(16.dp))
+                            .clickable { onOpenGasto() },
+                        contentAlignment = Alignment.Center
                     ) {
-                        Icon(Icons.Default.RemoveCircleOutline, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Registrar Gasto", fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, maxLines = 1)
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(26.dp)
+                                    .clip(CircleShape)
+                                    .background(Color.White.copy(alpha = 0.2f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(Icons.Default.Remove, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Registrar Gasto", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold)
+                        }
                     }
 
-                    Button(
-                        onClick = onOpenIngreso,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = EmeraldGreen,
-                            contentColor = DeepObsidian
-                        ),
-                        shape = RoundedCornerShape(14.dp),
+                    // Botón + Registrar Ingreso
+                    Box(
                         modifier = Modifier
                             .weight(1f)
-                            .height(48.dp)
+                            .height(52.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(
+                                Brush.horizontalGradient(
+                                    colors = listOf(Color(0xFF059669), Color(0xFF047857))
+                                )
+                            )
+                            .border(1.dp, Color(0xFF6EE7B7).copy(alpha = 0.45f), RoundedCornerShape(16.dp))
+                            .clickable { onOpenIngreso() },
+                        contentAlignment = Alignment.Center
                     ) {
-                        Icon(Icons.Default.AddCircleOutline, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Ingreso", fontSize = 13.sp, fontWeight = FontWeight.ExtraBold, maxLines = 1)
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(26.dp)
+                                    .clip(CircleShape)
+                                    .background(Color.White.copy(alpha = 0.22f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(Icons.Default.Add, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Registrar Ingreso", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold)
+                        }
                     }
                 }
             }
         }
 
-        // 3. Tarjeta de Escáner Gmail (.ZIP) + Regla Automática No Leído -> Carpeta
+        // 3. Tarjeta de Escáner Gmail (.ZIP) & Regla No Leído -> Carpeta
         Surface(
             onClick = onScanGmail,
             shape = RoundedCornerShape(18.dp),
             color = CardBackground,
-            border = BorderStroke(1.dp, CyanGlow.copy(alpha = 0.3f)),
+            border = BorderStroke(1.dp, CyanGlow.copy(alpha = 0.35f)),
             modifier = Modifier.fillMaxWidth()
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(15.dp),
+                    .padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
@@ -690,9 +729,10 @@ private fun InicioTabContent(
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(44.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(CyanGlow.copy(alpha = 0.16f)),
+                            .size(46.dp)
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(CyanGlow.copy(alpha = 0.18f))
+                            .border(1.dp, CyanNeon.copy(alpha = 0.4f), RoundedCornerShape(14.dp)),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
@@ -704,17 +744,15 @@ private fun InicioTabContent(
                     }
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = "Analizador Facturas Gmail & .ZIP",
-                                color = TextPrimary,
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.ExtraBold
-                            )
-                        }
+                        Text(
+                            text = "Analizador Facturas Gmail & .ZIP",
+                            color = TextPrimary,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.ExtraBold
+                        )
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
-                            text = "Analiza .ZIP/XML • Deja sin leer en bandeja • Al leer se mueve a su carpeta",
+                            text = "Descomprime .ZIP • Deja no leído • Al leer se mueve a FINANZAS",
                             color = TextSecondary,
                             fontSize = 11.sp,
                             lineHeight = 15.sp
@@ -722,22 +760,23 @@ private fun InicioTabContent(
                     }
                 }
                 Spacer(modifier = Modifier.width(8.dp))
-                Surface(
-                    color = CyanGlow.copy(alpha = 0.2f),
-                    shape = RoundedCornerShape(10.dp)
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(CyanNeon)
+                        .padding(horizontal = 12.dp, vertical = 8.dp)
                 ) {
                     Text(
                         text = if (uiState.isScanningGmail) "..." else "Escanear",
-                        color = CyanNeon,
+                        color = DeepObsidian,
                         fontSize = 12.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        modifier = Modifier.padding(horizontal = 11.dp, vertical = 7.dp)
+                        fontWeight = FontWeight.Black
                     )
                 }
             }
         }
 
-        // 4. Mis Cuentas y Fondos Colanta (Grid 2x2 perfectamente alineado)
+        // 4. Mis Cuentas y Fondos Colanta
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -806,14 +845,14 @@ private fun InicioTabContent(
             }
         }
 
-        // 5. Radar de Gastos Hormiga (Botones de 1 Toque)
+        // 5. Radar de Gastos Hormiga con Botones de 1 Toque "Muy Chimba"
         Surface(
-            shape = RoundedCornerShape(18.dp),
+            shape = RoundedCornerShape(20.dp),
             color = CardBackground,
             border = BorderStroke(1.dp, SubtleBorder),
             modifier = Modifier.fillMaxWidth()
         ) {
-            Column(modifier = Modifier.padding(16.dp)) {
+            Column(modifier = Modifier.padding(18.dp)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -823,28 +862,29 @@ private fun InicioTabContent(
                         Text(
                             text = "🐜 Registro Rápido Gasto Hormiga",
                             color = TextPrimary,
-                            fontSize = 14.sp,
+                            fontSize = 15.sp,
                             fontWeight = FontWeight.ExtraBold
                         )
                         Text(
-                            text = "Toca un botón para descontar en 1 clic de Efectivo",
+                            text = "1 toque para descontar de Efectivo en Sheets",
                             color = TextSecondary,
                             fontSize = 11.sp
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(14.dp))
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     HormigaQuickChip(
                         modifier = Modifier.weight(1f),
                         emoji = "☕",
                         label = "Café",
                         amountText = "$5.000",
+                        accentColor = AmberGold,
                         onClick = { onQuickHormiga("Café / Tinto", 5000L) }
                     )
                     HormigaQuickChip(
@@ -852,21 +892,23 @@ private fun InicioTabContent(
                         emoji = "🍫",
                         label = "Snack / Dulce",
                         amountText = "$8.000",
+                        accentColor = RoseSoft,
                         onClick = { onQuickHormiga("Snack / Dulce", 8000L) }
                     )
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     HormigaQuickChip(
                         modifier = Modifier.weight(1f),
                         emoji = "🚕",
                         label = "Transporte",
                         amountText = "$15.000",
+                        accentColor = CyanNeon,
                         onClick = { onQuickHormiga("Transporte rápido", 15000L) }
                     )
                     HormigaQuickChip(
@@ -874,6 +916,7 @@ private fun InicioTabContent(
                         emoji = "🥤",
                         label = "Bebida",
                         amountText = "$4.000",
+                        accentColor = EmeraldBright,
                         onClick = { onQuickHormiga("Gaseosa / Bebida", 4000L) }
                     )
                 }
@@ -923,11 +966,11 @@ private fun MiniKpiPill(
 ) {
     Surface(
         modifier = modifier,
-        color = DeepObsidian.copy(alpha = 0.65f),
-        shape = RoundedCornerShape(12.dp),
+        color = DeepObsidian.copy(alpha = 0.7f),
+        shape = RoundedCornerShape(14.dp),
         border = BorderStroke(1.dp, SubtleBorder)
     ) {
-        Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)) {
+        Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 9.dp)) {
             Text(
                 text = label,
                 color = TextSecondary,
@@ -936,7 +979,7 @@ private fun MiniKpiPill(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
-            Spacer(modifier = Modifier.height(2.dp))
+            Spacer(modifier = Modifier.height(3.dp))
             Text(
                 text = value,
                 color = valueColor,
@@ -961,7 +1004,7 @@ private fun AccountCard(
     Surface(
         modifier = modifier,
         color = CardBackground,
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(18.dp),
         border = BorderStroke(1.dp, SubtleBorder)
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
@@ -972,28 +1015,28 @@ private fun AccountCard(
             ) {
                 Box(
                     modifier = Modifier
-                        .size(8.dp)
+                        .size(9.dp)
                         .clip(CircleShape)
                         .background(accentColor)
                 )
                 Surface(
-                    color = accentColor.copy(alpha = 0.14f),
-                    shape = RoundedCornerShape(6.dp)
+                    color = accentColor.copy(alpha = 0.16f),
+                    shape = RoundedCornerShape(8.dp)
                 ) {
                     Text(
                         text = badge,
                         color = accentColor,
                         fontSize = 9.sp,
                         fontWeight = FontWeight.ExtraBold,
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
                     )
                 }
             }
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(9.dp))
             Text(
                 text = title,
                 color = TextPrimary,
-                fontSize = 13.sp,
+                fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
@@ -1005,7 +1048,7 @@ private fun AccountCard(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(7.dp))
             Text(
                 text = amount,
                 color = accentColor,
@@ -1024,14 +1067,15 @@ private fun HormigaQuickChip(
     emoji: String,
     label: String,
     amountText: String,
+    accentColor: Color,
     onClick: () -> Unit
 ) {
     Surface(
         onClick = onClick,
-        modifier = modifier.height(46.dp),
+        modifier = modifier.height(50.dp),
         color = CardElevated,
-        shape = RoundedCornerShape(12.dp),
-        border = BorderStroke(1.dp, SubtleBorder)
+        shape = RoundedCornerShape(14.dp),
+        border = BorderStroke(1.dp, accentColor.copy(alpha = 0.35f))
     ) {
         Row(
             modifier = Modifier
@@ -1041,20 +1085,28 @@ private fun HormigaQuickChip(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(text = emoji, fontSize = 16.sp)
-                Spacer(modifier = Modifier.width(6.dp))
+                Box(
+                    modifier = Modifier
+                        .size(30.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(accentColor.copy(alpha = 0.15f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(text = emoji, fontSize = 15.sp)
+                }
+                Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = label,
                     color = TextPrimary,
                     fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = FontWeight.Bold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
             }
             Text(
                 text = amountText,
-                color = AmberGold,
+                color = accentColor,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.ExtraBold
             )
@@ -1110,15 +1162,13 @@ private fun MovimientoCard(
                         overflow = TextOverflow.Ellipsis
                     )
                     Spacer(modifier = Modifier.height(3.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = "${mov.id} • ${mov.categoria} • ${mov.cuenta}",
-                            color = TextSecondary,
-                            fontSize = 11.sp,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
+                    Text(
+                        text = "${mov.id} • ${mov.categoria} • ${mov.cuenta}",
+                        color = TextSecondary,
+                        fontSize = 11.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
             }
             Spacer(modifier = Modifier.width(10.dp))
@@ -1198,13 +1248,14 @@ private fun MovimientosTabContent(
                     fontSize = 12.sp
                 )
             }
-            Button(
-                onClick = onNuevoMovimiento,
-                colors = ButtonDefaults.buttonColors(containerColor = CyanGlow, contentColor = DeepObsidian),
-                shape = RoundedCornerShape(12.dp),
-                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(CyanGlow)
+                    .clickable { onNuevoMovimiento() }
+                    .padding(horizontal = 14.dp, vertical = 9.dp)
             ) {
-                Text("+ Nuevo", fontWeight = FontWeight.ExtraBold, fontSize = 12.sp)
+                Text("+ Nuevo", color = DeepObsidian, fontWeight = FontWeight.ExtraBold, fontSize = 12.sp)
             }
         }
 
@@ -1283,7 +1334,8 @@ private fun MovimientosTabContent(
 }
 
 /* =========================================================
-   TAB 2: COMPROMISOS FIJOS (QUINCENA 1 Y QUINCENA 2)
+   TAB 2: GASTOS FIJOS — QUINCENA 1 (DÍA 15) Y FIN DE MES (DÍA 30)
+   Sincronizado 1:1 con CONTROL FIJOS en Google Sheets
    ========================================================= */
 
 @Composable
@@ -1292,28 +1344,27 @@ private fun FijosTabContent(
     onPagarFijo: (GastoFijoItem) -> Unit,
     onOpenNuevoFijo: () -> Unit
 ) {
-    var filtroQuincena by remember { mutableIntStateOf(0) } // 0: Todos, 1: Q1 (Día 1-15), 2: Q2 (Día 16-30), 3: Pendientes
+    var filtroSeleccionado by remember { mutableIntStateOf(0) } // 0: Todos, 1: Q1 (Día 15), 2: Q2 (Día 30), 3: Solo Pendientes
 
-    val fijosFiltrados = remember(uiState.fijos, filtroQuincena) {
-        when (filtroQuincena) {
-            1 -> uiState.fijos.filter { it.quincena == 1 }
-            2 -> uiState.fijos.filter { it.quincena == 2 }
-            3 -> uiState.fijos.filter { !it.estaPagado }
-            else -> uiState.fijos
-        }
-    }
+    val fijosQ1 = remember(uiState.fijos) { uiState.fijos.filter { it.quincena == 1 } }
+    val fijosQ2 = remember(uiState.fijos) { uiState.fijos.filter { it.quincena == 2 } }
 
-    val totalCuotas = uiState.fijos.sumOf { it.cuota }
-    val totalPagado = uiState.fijos.sumOf { it.abonado }
-    val totalPendiente = uiState.fijos.filter { !it.estaPagado }.sumOf { (it.cuota - it.abonado).coerceAtLeast(0L) }
+    val q1TotalCuotas = fijosQ1.sumOf { it.cuota }
+    val q1TotalAbonado = fijosQ1.sumOf { it.abonado }
+    val q1Pendientes = fijosQ1.filter { !it.estaPagado }.sumOf { (it.cuota - it.abonado).coerceAtLeast(0L) }
+
+    val q2TotalCuotas = fijosQ2.sumOf { it.cuota }
+    val q2TotalAbonado = fijosQ2.sumOf { it.abonado }
+    val q2Pendientes = fijosQ2.filter { !it.estaPagado }.sumOf { (it.cuota - it.abonado).coerceAtLeast(0L) }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 18.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        // Título del Módulo + Botón "+ Nuevo Fijo"
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -1327,47 +1378,100 @@ private fun FijosTabContent(
                     fontWeight = FontWeight.ExtraBold
                 )
                 Text(
-                    text = "Organizados por Quincena 1 (Día 15) y Quincena 2 (Día 30)",
+                    text = "Sincronizado 1:1 con CONTROL FIJOS de Google Sheets",
                     color = TextSecondary,
                     fontSize = 12.sp
                 )
             }
-            Button(
-                onClick = onOpenNuevoFijo,
-                colors = ButtonDefaults.buttonColors(containerColor = EmeraldGreen, contentColor = DeepObsidian),
-                shape = RoundedCornerShape(12.dp),
-                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(EmeraldGreen)
+                    .clickable { onOpenNuevoFijo() }
+                    .padding(horizontal = 14.dp, vertical = 9.dp)
             ) {
-                Text("+ Fijo", fontWeight = FontWeight.ExtraBold, fontSize = 12.sp)
+                Text("+ Nuevo Fijo", color = DeepObsidian, fontWeight = FontWeight.ExtraBold, fontSize = 12.sp)
             }
         }
 
-        // Resumen de Fijos
+        // 4 KPIs Idénticos a las filas 4-5 de la hoja CONTROL FIJOS
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             MiniKpiPill(
                 modifier = Modifier.weight(1f),
-                label = "Total Fijos Mes",
-                value = "$${MainViewModel.formatearNumero(totalCuotas)}",
+                label = "TOTAL CUOTAS",
+                value = "$${MainViewModel.formatearNumero(uiState.totalCuotasFijos)}",
                 valueColor = CyanNeon
             )
             MiniKpiPill(
                 modifier = Modifier.weight(1f),
-                label = "Ya Pagado",
-                value = "$${MainViewModel.formatearNumero(totalPagado)}",
+                label = "TOTAL ABONADO",
+                value = "$${MainViewModel.formatearNumero(uiState.totalAbonadoFijos)}",
                 valueColor = EmeraldBright
             )
             MiniKpiPill(
                 modifier = Modifier.weight(1f),
-                label = "Por Pagar",
-                value = "$${MainViewModel.formatearNumero(totalPendiente)}",
-                valueColor = AmberGold
+                label = "SALDO PENDIENTE",
+                value = "$${MainViewModel.formatearNumero(uiState.fijosPendientes)}",
+                valueColor = RoseSoft
             )
         }
 
-        // Filtros de Quincena
+        // Fila de resumen de Quincena 1 vs Quincena 2
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Surface(
+                modifier = Modifier.weight(1f),
+                color = CardBackground,
+                shape = RoundedCornerShape(16.dp),
+                border = BorderStroke(1.dp, CyanGlow.copy(alpha = 0.4f))
+            ) {
+                Column(modifier = Modifier.padding(12.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(CyanNeon))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Q1 (Día 15)", color = CyanNeon, fontSize = 11.sp, fontWeight = FontWeight.ExtraBold)
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Pendiente: $${MainViewModel.formatearNumero(q1Pendientes)}",
+                        color = if (q1Pendientes > 0) AmberGold else EmeraldBright,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Black
+                    )
+                    Text("Total: $${MainViewModel.formatearNumero(q1TotalCuotas)}", color = TextSecondary, fontSize = 10.sp)
+                }
+            }
+
+            Surface(
+                modifier = Modifier.weight(1f),
+                color = CardBackground,
+                shape = RoundedCornerShape(16.dp),
+                border = BorderStroke(1.dp, VioletAccent.copy(alpha = 0.4f))
+            ) {
+                Column(modifier = Modifier.padding(12.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(VioletAccent))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Q2 (Día 30)", color = Color(0xFFC4B5FD), fontSize = 11.sp, fontWeight = FontWeight.ExtraBold)
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Pendiente: $${MainViewModel.formatearNumero(q2Pendientes)}",
+                        color = if (q2Pendientes > 0) AmberGold else EmeraldBright,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Black
+                    )
+                    Text("Total: $${MainViewModel.formatearNumero(q2TotalCuotas)}", color = TextSecondary, fontSize = 10.sp)
+                }
+            }
+        }
+
+        // Filtros Rápidos
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -1376,119 +1480,253 @@ private fun FijosTabContent(
         ) {
             val chips = listOf(
                 0 to "Todos (${uiState.fijos.size})",
-                1 to "Quincena 1 (Día 15)",
-                2 to "Quincena 2 (Día 30)",
-                3 to "Pendientes"
+                1 to "🗓️ Quincena 1 (Día 15)",
+                2 to "🗓️ Fin de Mes (Día 30)",
+                3 to "⚠️ Solo Pendientes"
             )
             chips.forEach { (id, label) ->
-                val active = filtroQuincena == id
+                val active = filtroSeleccionado == id
                 Surface(
-                    onClick = { filtroQuincena = id },
-                    color = if (active) CyanGlow.copy(alpha = 0.22f) else CardBackground,
-                    shape = RoundedCornerShape(10.dp),
+                    onClick = { filtroSeleccionado = id },
+                    color = if (active) CyanGlow.copy(alpha = 0.25f) else CardBackground,
+                    shape = RoundedCornerShape(12.dp),
                     border = BorderStroke(1.dp, if (active) CyanNeon else SubtleBorder)
                 ) {
                     Text(
                         text = label,
                         color = if (active) CyanNeon else TextSecondary,
                         fontSize = 12.sp,
-                        fontWeight = if (active) FontWeight.Bold else FontWeight.Medium,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp)
+                        fontWeight = if (active) FontWeight.ExtraBold else FontWeight.Medium,
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
                     )
                 }
             }
         }
 
-        fijosFiltrados.forEach { fijo ->
+        // =========================================================
+        // SECCIÓN 1: QUINCENA 1 — DÍA 15 DE CADA MES
+        // =========================================================
+        if (filtroSeleccionado == 0 || filtroSeleccionado == 1 || (filtroSeleccionado == 3 && fijosQ1.any { !it.estaPagado })) {
+            val itemsQ1 = if (filtroSeleccionado == 3) fijosQ1.filter { !it.estaPagado } else fijosQ1
+            QuincenaSectionCard(
+                title = "🗓️ Quincena 1 — Día 15 de cada mes",
+                tag = "Día 15 • Q1",
+                tagColor = CyanNeon,
+                subtotalText = "Subtotal: $${MainViewModel.formatearNumero(q1TotalCuotas)} | Abonado: $${MainViewModel.formatearNumero(q1TotalAbonado)}",
+                pendienteText = if (q1Pendientes > 0) "Pendiente: $${MainViewModel.formatearNumero(q1Pendientes)} COP" else "¡Quincena 1 100% Pagada!",
+                fijosList = itemsQ1,
+                onPagarFijo = onPagarFijo
+            )
+        }
+
+        // =========================================================
+        // SECCIÓN 2: QUINCENA 2 / FIN DE MES — DÍA 30 DE CADA MES
+        // =========================================================
+        if (filtroSeleccionado == 0 || filtroSeleccionado == 2 || (filtroSeleccionado == 3 && fijosQ2.any { !it.estaPagado })) {
+            val itemsQ2 = if (filtroSeleccionado == 3) fijosQ2.filter { !it.estaPagado } else fijosQ2
+            QuincenaSectionCard(
+                title = "🗓️ Fin de Mes — Día 30 de cada mes",
+                tag = "Día 30 • Q2",
+                tagColor = Color(0xFFC4B5FD),
+                subtotalText = "Subtotal: $${MainViewModel.formatearNumero(q2TotalCuotas)} | Abonado: $${MainViewModel.formatearNumero(q2TotalAbonado)}",
+                pendienteText = if (q2Pendientes > 0) "Pendiente: $${MainViewModel.formatearNumero(q2Pendientes)} COP" else "¡Fin de Mes 100% Pagado!",
+                fijosList = itemsQ2,
+                onPagarFijo = onPagarFijo
+            )
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+    }
+}
+
+@Composable
+private fun QuincenaSectionCard(
+    title: String,
+    tag: String,
+    tagColor: Color,
+    subtotalText: String,
+    pendienteText: String,
+    fijosList: List<GastoFijoItem>,
+    onPagarFijo: (GastoFijoItem) -> Unit
+) {
+    Surface(
+        color = CardBackground,
+        shape = RoundedCornerShape(20.dp),
+        border = BorderStroke(1.dp, tagColor.copy(alpha = 0.35f)),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // Header de la Quincena
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = title,
+                        color = TextPrimary,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.ExtraBold
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = subtotalText,
+                        color = TextSecondary,
+                        fontSize = 11.sp
+                    )
+                }
+                Surface(
+                    color = tagColor.copy(alpha = 0.18f),
+                    shape = RoundedCornerShape(8.dp),
+                    border = BorderStroke(1.dp, tagColor.copy(alpha = 0.4f))
+                ) {
+                    Text(
+                        text = tag,
+                        color = tagColor,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                    )
+                }
+            }
+
             Surface(
-                color = CardBackground,
-                shape = RoundedCornerShape(16.dp),
-                border = BorderStroke(
-                    1.dp,
-                    if (fijo.estaPagado) EmeraldGreen.copy(alpha = 0.35f) else SubtleBorder
-                ),
+                color = DeepObsidian.copy(alpha = 0.6f),
+                shape = RoundedCornerShape(10.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Column(modifier = Modifier.padding(15.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    text = fijo.concepto,
-                                    color = TextPrimary,
-                                    fontSize = 15.sp,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Surface(
-                                    color = CardElevated,
-                                    shape = RoundedCornerShape(6.dp)
-                                ) {
-                                    Text(
-                                        text = "Día ${fijo.dia} (Q${fijo.quincena})",
-                                        color = CyanNeon,
-                                        fontSize = 10.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                    )
-                                }
-                            }
-                            Spacer(modifier = Modifier.height(3.dp))
-                            Text(
-                                text = "${fijo.id} • ${fijo.categoria} • Cuota: $${MainViewModel.formatearNumero(fijo.cuota)}",
-                                color = TextSecondary,
-                                fontSize = 11.sp
-                            )
-                        }
+                Text(
+                    text = pendienteText,
+                    color = if (pendienteText.contains("¡")) EmeraldBright else AmberGold,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                )
+            }
 
-                        Surface(
-                            color = if (fijo.estaPagado) EmeraldGreen.copy(alpha = 0.16f) else RoseRed.copy(alpha = 0.16f),
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
+            // Lista de Compromisos de la Quincena
+            fijosList.forEach { fijo ->
+                GastoFijoItemRow(fijo = fijo, onPagar = { onPagarFijo(fijo) })
+            }
+        }
+    }
+}
+
+@Composable
+private fun GastoFijoItemRow(
+    fijo: GastoFijoItem,
+    onPagar: () -> Unit
+) {
+    Surface(
+        color = CardElevated,
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(
+            1.dp,
+            if (fijo.estaPagado) EmeraldGreen.copy(alpha = 0.35f) else SubtleBorder
+        ),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.padding(14.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = fijo.concepto,
+                            color = TextPrimary,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(3.dp))
+                    Text(
+                        text = "${fijo.id} • ${fijo.categoria} • ${fijo.medioPago}",
+                        color = TextSecondary,
+                        fontSize = 11.sp
+                    )
+                }
+
+                Surface(
+                    color = if (fijo.estaPagado) EmeraldGreen.copy(alpha = 0.18f) else RoseRed.copy(alpha = 0.18f),
+                    shape = RoundedCornerShape(8.dp),
+                    border = BorderStroke(1.dp, if (fijo.estaPagado) EmeraldGreen.copy(alpha = 0.4f) else RoseRed.copy(alpha = 0.4f))
+                ) {
+                    Text(
+                        text = if (fijo.estaPagado) "🟢 Pagado" else "🔴 Pendiente",
+                        color = if (fijo.estaPagado) EmeraldBright else RoseSoft,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = "Cuota: $${MainViewModel.formatearNumero(fijo.cuota)} COP",
+                        color = TextPrimary,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    if (fijo.fechaPago.isNotBlank()) {
+                        Text(
+                            text = "Pagado el ${fijo.fechaPago}",
+                            color = EmeraldBright,
+                            fontSize = 11.sp
+                        )
+                    }
+                }
+
+                if (!fijo.estaPagado) {
+                    val montoAPagar = if (fijo.saldo > 0) fijo.saldo else fijo.cuota
+                    // Botón de Pago con Rayo y Alto Impacto
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(
+                                Brush.horizontalGradient(
+                                    colors = listOf(CyanGlow, EmeraldGreen)
+                                )
+                            )
+                            .clickable { onPagar() }
+                            .padding(horizontal = 14.dp, vertical = 10.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Bolt, contentDescription = null, tint = DeepObsidian, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = if (fijo.estaPagado) "🟢 Pagado" else "🔴 Pendiente",
-                                color = if (fijo.estaPagado) EmeraldBright else RoseSoft,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                text = "Pagar $${MainViewModel.formatearNumero(montoAPagar)}",
+                                color = DeepObsidian,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Black
                             )
                         }
                     }
-
-                    if (!fijo.estaPagado) {
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Button(
-                            onClick = { onPagarFijo(fijo) },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = CyanGlow,
-                                contentColor = DeepObsidian
-                            ),
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(44.dp)
-                        ) {
-                            Icon(Icons.Default.CheckCircleOutline, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            val montoPend = if (fijo.saldo > 0) fijo.saldo else fijo.cuota
-                            Text(
-                                text = "Registrar Pago ($${MainViewModel.formatearNumero(montoPend)} COP)",
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.ExtraBold
-                            )
-                        }
+                } else {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.CheckCircle, contentDescription = null, tint = EmeraldBright, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Al día", color = EmeraldBright, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }
         }
-
-        Spacer(modifier = Modifier.height(20.dp))
     }
 }
 
@@ -1526,8 +1764,8 @@ private fun MasTabContent(
                 Surface(
                     onClick = { onSelectSubTab(idx) },
                     modifier = Modifier.weight(1f),
-                    color = if (active) CyanGlow.copy(alpha = 0.22f) else CardBackground,
-                    shape = RoundedCornerShape(12.dp),
+                    color = if (active) CyanGlow.copy(alpha = 0.25f) else CardBackground,
+                    shape = RoundedCornerShape(14.dp),
                     border = BorderStroke(1.dp, if (active) CyanNeon else SubtleBorder)
                 ) {
                     Text(
@@ -1536,7 +1774,7 @@ private fun MasTabContent(
                         fontSize = 12.sp,
                         fontWeight = if (active) FontWeight.ExtraBold else FontWeight.Medium,
                         textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(vertical = 10.dp)
+                        modifier = Modifier.padding(vertical = 11.dp)
                     )
                 }
             }
@@ -1663,18 +1901,20 @@ private fun CfoIaSection(
                 ),
                 modifier = Modifier.weight(1f)
             )
-            Button(
-                onClick = {
-                    if (inputTexto.isNotBlank()) {
-                        onSendPrompt(inputTexto)
-                        inputTexto = ""
-                    }
-                },
-                colors = ButtonDefaults.buttonColors(containerColor = CyanGlow, contentColor = DeepObsidian),
-                shape = RoundedCornerShape(14.dp),
-                modifier = Modifier.height(52.dp)
+            Box(
+                modifier = Modifier
+                    .size(52.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(CyanGlow)
+                    .clickable {
+                        if (inputTexto.isNotBlank()) {
+                            onSendPrompt(inputTexto)
+                            inputTexto = ""
+                        }
+                    },
+                contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.Send, contentDescription = "Enviar")
+                Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Enviar", tint = DeepObsidian)
             }
         }
     }
@@ -1691,11 +1931,11 @@ private fun ColantaYAnualSection(uiState: DashboardUiState) {
         // Patrimonio en Fondos Cooperativa Colanta
         Surface(
             color = CardBackground,
-            shape = RoundedCornerShape(18.dp),
-            border = BorderStroke(1.dp, AmberGold.copy(alpha = 0.4f)),
+            shape = RoundedCornerShape(20.dp),
+            border = BorderStroke(1.dp, AmberGold.copy(alpha = 0.45f)),
             modifier = Modifier.fillMaxWidth()
         ) {
-            Column(modifier = Modifier.padding(16.dp)) {
+            Column(modifier = Modifier.padding(18.dp)) {
                 Text(
                     text = "PATRIMONIO RESERVADO EN COOPERATIVA COLANTA",
                     color = AmberGold,
@@ -1709,7 +1949,7 @@ private fun ColantaYAnualSection(uiState: DashboardUiState) {
                     fontSize = 26.sp,
                     fontWeight = FontWeight.Black
                 )
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(14.dp))
                 FondoRow("🎄 Ahorro Navideño (Se entrega 1 Dic)", uiState.ahorroNavideno, AmberGold)
                 FondoRow("🤝 Aportes Sociales Cooperativos", uiState.aportesCooperativos, CyanNeon)
                 FondoRow("📈 Ahorro Ordinario Acumulado", uiState.ahorroOrdinario, EmeraldBright)
@@ -1720,18 +1960,18 @@ private fun ColantaYAnualSection(uiState: DashboardUiState) {
         // Evolución Anual 2026
         Surface(
             color = CardBackground,
-            shape = RoundedCornerShape(18.dp),
+            shape = RoundedCornerShape(20.dp),
             border = BorderStroke(1.dp, SubtleBorder),
             modifier = Modifier.fillMaxWidth()
         ) {
-            Column(modifier = Modifier.padding(16.dp)) {
+            Column(modifier = Modifier.padding(18.dp)) {
                 Text(
                     text = "TRAYECTORIA ANUAL 2026 (CONSOLIDADO)",
                     color = CyanNeon,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.ExtraBold
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(10.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -1794,7 +2034,7 @@ private fun FondoRow(label: String, valor: Long, color: Color) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 5.dp),
+            .padding(vertical = 6.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -1822,7 +2062,7 @@ private fun ReglaGmailZipSection(
     ) {
         Surface(
             color = CardBackground,
-            shape = RoundedCornerShape(18.dp),
+            shape = RoundedCornerShape(20.dp),
             border = BorderStroke(1.dp, CyanGlow.copy(alpha = 0.4f)),
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -1848,32 +2088,40 @@ private fun ReglaGmailZipSection(
                     lineHeight = 19.sp
                 )
 
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
-                Button(
-                    onClick = onScanGmail,
-                    colors = ButtonDefaults.buttonColors(containerColor = CyanGlow, contentColor = DeepObsidian),
-                    shape = RoundedCornerShape(14.dp),
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(50.dp)
+                        .height(52.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(
+                            Brush.horizontalGradient(
+                                colors = listOf(CyanGlow, EmeraldGreen)
+                            )
+                        )
+                        .clickable { onScanGmail() },
+                    contentAlignment = Alignment.Center
                 ) {
-                    Icon(Icons.Default.FolderZip, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = if (isScanning) "Analizando Bandeja y .ZIP..." else "Ejecutar Analizador Gmail (.ZIP) Ahora",
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = 14.sp
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.FolderZip, contentDescription = null, tint = DeepObsidian)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = if (isScanning) "Analizando Bandeja y .ZIP..." else "Ejecutar Analizador Gmail (.ZIP) Ahora",
+                            color = DeepObsidian,
+                            fontWeight = FontWeight.Black,
+                            fontSize = 14.sp
+                        )
+                    }
                 }
 
                 OutlinedButton(
                     onClick = onSendEmailAudit,
                     border = BorderStroke(1.dp, EmeraldGreen.copy(alpha = 0.5f)),
-                    shape = RoundedCornerShape(14.dp),
+                    shape = RoundedCornerShape(16.dp),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(48.dp)
+                        .height(50.dp)
                 ) {
                     Icon(Icons.Default.Email, contentDescription = null, tint = EmeraldBright)
                     Spacer(modifier = Modifier.width(8.dp))
@@ -1929,44 +2177,42 @@ private fun NuevoMovimientoModal(
                 fontWeight = FontWeight.ExtraBold
             )
 
-            // Selector Gasto / Ingreso
+            // Selector Gasto / Ingreso con Botones Mejorados
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 val esGasto = tipo == "Gasto"
-                Button(
-                    onClick = {
-                        tipo = "Gasto"
-                        categoria = "Alimentación"
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (esGasto) RoseRed else CardElevated,
-                        contentColor = if (esGasto) Color.White else TextSecondary
-                    ),
-                    shape = RoundedCornerShape(12.dp),
+                Box(
                     modifier = Modifier
                         .weight(1f)
-                        .height(46.dp)
+                        .height(48.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(if (esGasto) RoseRed else CardElevated)
+                        .border(1.dp, if (esGasto) Color(0xFFFDA4AF) else SubtleBorder, RoundedCornerShape(14.dp))
+                        .clickable {
+                            tipo = "Gasto"
+                            categoria = "Alimentación"
+                        },
+                    contentAlignment = Alignment.Center
                 ) {
-                    Text("- Gasto", fontWeight = FontWeight.ExtraBold)
+                    Text("- Gasto", color = if (esGasto) Color.White else TextSecondary, fontWeight = FontWeight.ExtraBold)
                 }
 
-                Button(
-                    onClick = {
-                        tipo = "Ingreso"
-                        categoria = "Salario"
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (!esGasto) EmeraldGreen else CardElevated,
-                        contentColor = if (!esGasto) DeepObsidian else TextSecondary
-                    ),
-                    shape = RoundedCornerShape(12.dp),
+                Box(
                     modifier = Modifier
                         .weight(1f)
-                        .height(46.dp)
+                        .height(48.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(if (!esGasto) EmeraldGreen else CardElevated)
+                        .border(1.dp, if (!esGasto) EmeraldBright else SubtleBorder, RoundedCornerShape(14.dp))
+                        .clickable {
+                            tipo = "Ingreso"
+                            categoria = "Salario"
+                        },
+                    contentAlignment = Alignment.Center
                 ) {
-                    Text("+ Ingreso", fontWeight = FontWeight.ExtraBold)
+                    Text("+ Ingreso", color = if (!esGasto) DeepObsidian else TextSecondary, fontWeight = FontWeight.ExtraBold)
                 }
             }
 
@@ -1992,7 +2238,7 @@ private fun NuevoMovimientoModal(
                             montoTexto = (actual + inc).toString()
                         },
                         color = CardElevated,
-                        shape = RoundedCornerShape(10.dp),
+                        shape = RoundedCornerShape(12.dp),
                         border = BorderStroke(1.dp, SubtleBorder),
                         modifier = Modifier.weight(1f)
                     ) {
@@ -2002,7 +2248,7 @@ private fun NuevoMovimientoModal(
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
                             textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(vertical = 8.dp)
+                            modifier = Modifier.padding(vertical = 9.dp)
                         )
                     }
                 }
@@ -2029,8 +2275,8 @@ private fun NuevoMovimientoModal(
                     val sel = categoria == c
                     Surface(
                         onClick = { categoria = c },
-                        color = if (sel) CyanGlow.copy(alpha = 0.22f) else CardElevated,
-                        shape = RoundedCornerShape(10.dp),
+                        color = if (sel) CyanGlow.copy(alpha = 0.25f) else CardElevated,
+                        shape = RoundedCornerShape(12.dp),
                         border = BorderStroke(1.dp, if (sel) CyanNeon else SubtleBorder)
                     ) {
                         Text(
@@ -2055,8 +2301,8 @@ private fun NuevoMovimientoModal(
                     val sel = cuenta == cta
                     Surface(
                         onClick = { cuenta = cta },
-                        color = if (sel) EmeraldGreen.copy(alpha = 0.22f) else CardElevated,
-                        shape = RoundedCornerShape(10.dp),
+                        color = if (sel) EmeraldGreen.copy(alpha = 0.25f) else CardElevated,
+                        shape = RoundedCornerShape(12.dp),
                         border = BorderStroke(1.dp, if (sel) EmeraldBright else SubtleBorder)
                     ) {
                         Text(
@@ -2070,26 +2316,31 @@ private fun NuevoMovimientoModal(
                 }
             }
 
-            Button(
-                onClick = {
-                    val valorNum = montoTexto.toLongOrNull() ?: 0L
-                    if (valorNum > 0L) {
-                        onSave(
-                            tipo,
-                            descripcion.ifBlank { "$tipo - $categoria" },
-                            categoria,
-                            valorNum,
-                            cuenta
-                        )
-                    }
-                },
-                colors = ButtonDefaults.buttonColors(containerColor = CyanGlow, contentColor = DeepObsidian),
-                shape = RoundedCornerShape(14.dp),
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(
+                        Brush.horizontalGradient(
+                            colors = listOf(CyanGlow, EmeraldGreen)
+                        )
+                    )
+                    .clickable {
+                        val valorNum = montoTexto.toLongOrNull() ?: 0L
+                        if (valorNum > 0L) {
+                            onSave(
+                                tipo,
+                                descripcion.ifBlank { "$tipo - $categoria" },
+                                categoria,
+                                valorNum,
+                                cuenta
+                            )
+                        }
+                    },
+                contentAlignment = Alignment.Center
             ) {
-                Text("Guardar en Fila 5 de Google Sheets", fontWeight = FontWeight.ExtraBold, fontSize = 14.sp)
+                Text("Guardar en Fila 5 de Google Sheets", color = DeepObsidian, fontWeight = FontWeight.Black, fontSize = 14.sp)
             }
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -2147,7 +2398,7 @@ private fun NuevoGastoFijoModal(
                         ),
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text("Quincena 2 (Día 30)", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        Text("Fin de Mes (Día 30)", fontSize = 11.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -2217,13 +2468,13 @@ private fun iconoPorCategoria(cat: String): String {
     return when {
         c.contains("alimenta") || c.contains("comida") || c.contains("rest") -> "🍽️"
         c.contains("moto") || c.contains("gasolina") -> "🏍️"
-        c.contains("servicio") || c.contains("epm") -> "⚡"
+        c.contains("servicio") || c.contains("epm") || c.contains("agua") -> "⚡"
         c.contains("vivienda") || c.contains("arriendo") -> "🏠"
         c.contains("compra") || c.contains("ropa") -> "🛍️"
-        c.contains("transporte") || c.contains("taxi") -> "🚕"
+        c.contains("transporte") || c.contains("taxi") || c.contains("parqueadero") -> "🚗"
         c.contains("antojo") || c.contains("hormiga") || c.contains("dulce") -> "🍫"
         c.contains("salud") -> "💊"
-        c.contains("entretenimiento") || c.contains("suscrip") -> "🎮"
+        c.contains("entretenimiento") || c.contains("suscrip") || c.contains("spotify") -> "🎮"
         c.contains("salario") || c.contains("nomina") || c.contains("nómina") -> "💰"
         else -> "💳"
     }

@@ -1583,12 +1583,29 @@ function obtenerDatosCompletosDashboard_(mesFiltro, anioFiltro) {
     });
   }
 
-  // Si hay compromisos fijos leídos, calcular fijosPendientes exactos
+  let fijosTotalCuotas = 0;
+  let fijosTotalAbonado = 0;
+  let fijosQ1Pendiente = 0;
+  let fijosQ2Pendiente = 0;
+
+  // Si hay compromisos fijos leídos, calcular fijosPendientes exactos respetando Quincena 1 (Día 15) y Quincena 2 (Día 30)
   if (fijosArray.length > 0) {
-    fijosPendientes = fijosArray.reduce((acc, f) => {
-      if (String(f.estado).includes("Pagado")) return acc;
-      return acc + Math.max(0, Number(f.cuota || 0) - Number(f.abonado || 0));
-    }, 0);
+    fijosArray.forEach(f => {
+      const cuota = Number(f.cuota || 0);
+      const abonado = Number(f.abonado || 0);
+      const esPagado = String(f.estado).includes("Pagado") || (cuota > 0 && abonado >= cuota);
+      const pend = esPagado ? 0 : Math.max(0, cuota - abonado);
+
+      fijosTotalCuotas += cuota;
+      fijosTotalAbonado += abonado;
+
+      if (Number(f.dia || 15) <= 15) {
+        fijosQ1Pendiente += pend;
+      } else {
+        fijosQ2Pendiente += pend;
+      }
+    });
+    fijosPendientes = fijosQ1Pendiente + fijosQ2Pendiente;
   }
 
   if (shPanel) {
@@ -1798,6 +1815,13 @@ function obtenerDatosCompletosDashboard_(mesFiltro, anioFiltro) {
       aportesAcumulado: aportesAcum,
       otrosAcumulado: otrosAcum,
       totalAcumulado: totalFondos
+    },
+    resumenFijos: {
+      totalCuotas: fijosTotalCuotas,
+      totalAbonado: fijosTotalAbonado,
+      saldoPendiente: fijosPendientes,
+      q1Pendiente: fijosQ1Pendiente,
+      q2Pendiente: fijosQ2Pendiente
     },
     fijos: fijosArray,
     gastosPorCategoria: gastosPorCategoria,

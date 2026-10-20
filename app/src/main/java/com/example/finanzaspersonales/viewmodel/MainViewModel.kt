@@ -55,7 +55,7 @@ data class GastoFijoItem(
     val medioPago: String
 ) {
     val estaPagado: Boolean
-        get() = estado.contains("Pagado", ignoreCase = true) || (cuota > 0 && abonado >= cuota)
+        get() = estado.contains("Pagado", ignoreCase = true) || (cuota > 0 && abonado >= cuota) || (saldo <= 0 && fechaPago.isNotBlank())
     val quincena: Int
         get() = if (dia <= 15) 1 else 2
 }
@@ -73,7 +73,7 @@ data class MesAnualItem(
 
 data class CfoMensaje(
     val id: String = System.currentTimeMillis().toString(),
-    val autor: String, // "user" o "ai"
+    val autor: String,
     val texto: String,
     val hora: String = SimpleDateFormat("hh:mm a", Locale("es", "CO")).format(Date())
 )
@@ -87,7 +87,11 @@ data class DashboardUiState(
     val ingresosMes: Long = 1700605L,
     val gastosMes: Long = 1285239L,
     val disponibleReal: Long = 1065366L,
-    val fijosPendientes: Long = 773900L,
+    val totalCuotasFijos: Long = 2381000L,
+    val totalAbonadoFijos: Long = 2021000L,
+    val fijosPendientes: Long = 240000L,
+    val q1Pendiente: Long = 135000L,
+    val q2Pendiente: Long = 105000L,
     val aycColanta: Long = 993566L,
     val efectivo: Long = 71800L,
     val nequi: Long = 0L,
@@ -106,7 +110,7 @@ data class DashboardUiState(
     val mensajesCfo: List<CfoMensaje> = listOf(
         CfoMensaje(
             autor = "ai",
-            texto = "Hola Marlon 👋 Soy tu CFO IA V26.9 conectado en vivo con tu Google Sheets y el analizador de facturas Gmail (.ZIP). Puedes preguntarme por tu liquidez, tus fondos Colanta o escribir comandos como: «gasté 15000 en almuerzo» o «escanear correos»."
+            texto = "Hola Marlon 👋 Soy tu CFO IA V26.9 conectado en vivo con tu Google Sheets y el analizador de facturas Gmail (.ZIP). Tus gastos fijos están organizados por Quincena 1 (Día 15) y Quincena 2 (Día 30)."
         )
     )
 )
@@ -221,6 +225,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val cuentas = json.optObject("cuentas")
             val ahorros = json.optObject("ahorrosColanta")
             val kpis = json.optObject("kpisAnuales")
+            val resFijos = json.optObject("resumenFijos")
 
             val movsList = mutableListOf<MovimientoItem>()
             val movsArray = json.getAsJsonArray("movimientos")
@@ -253,6 +258,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     val f = fijosArray[i].asJsonObject
                     val cuota = f.optLong("cuota", 0L)
                     val abonado = f.optLong("abonado", 0L)
+                    val estadoStr = f.optString("estado", "")
+                    val fechaPagoStr = f.optString("fechaPago", "")
+                    val esPagado = estadoStr.contains("Pagado", ignoreCase = true) || (cuota > 0 && abonado >= cuota) || (fechaPagoStr.isNotBlank() && cuota > 0 && abonado == 0L && estadoStr.isBlank())
+                    val saldoCalc = if (esPagado) 0L else f.optLong("saldo", (cuota - abonado).coerceAtLeast(0L))
+
                     fijosList.add(
                         GastoFijoItem(
                             id = f.optString("id", "F-010$i"),
@@ -260,10 +270,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                             categoria = f.optString("categoria", "Servicios"),
                             dia = f.optInt("dia", 15),
                             cuota = cuota,
-                            abonado = abonado,
-                            estado = f.optString("estado", if (abonado >= cuota && cuota > 0) "🟢 Pagado" else "🔴 Pendiente"),
-                            fechaPago = f.optString("fechaPago", ""),
-                            saldo = f.optLong("saldo", (cuota - abonado).coerceAtLeast(0L)),
+                            abonado = if (esPagado && abonado == 0L) cuota else abonado,
+                            estado = if (esPagado) "🟢 Pagado" else "🔴 Pendiente",
+                            fechaPago = fechaPagoStr,
+                            saldo = saldoCalc,
                             prioridad = f.optString("prioridad", "Media"),
                             medioPago = f.optString("medioPago", "Transferencia")
                         )
@@ -291,7 +301,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
             _uiState.update { prev ->
                 val nuevosFijos = if (fijosList.isNotEmpty()) fijosList else prev.fijos
-                val fijosPendCalculados = nuevosFijos.filter { !it.estaPagado }.sumOf { (it.cuota - it.abonado).coerceAtLeast(0L) }
+                val q1Pend = nuevosFijos.filter { it.quincena == 1 && !it.estaPagado }.sumOf { (it.cuota - it.abonado).coerceAtLeast(0L) }
+                val q2Pend = nuevosFijos.filter { it.quincena == 2 && !it.estaPagado }.sumOf { (it.cuota - it.abonado).coerceAtLeast(0L) }
+                val totalPendientes = q1Pend + q2Pend
+                val totCuotas = resFijos?.optLong("totalCuotas", prev.totalCuotasFijos) ?: nuevosFijos.sumOf { it.cuota }
+                val totAbonado = resFijos?.optLong("totalAbonado", prev.totalAbonadoFijos) ?: nuevosFijos.sumOf { it.abonado }
 
                 prev.copy(
                     isLoading = false,
@@ -300,7 +314,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     ingresosMes = resumen?.optLong("ingresos", prev.ingresosMes)?.takeIf { it > 0 } ?: prev.ingresosMes,
                     gastosMes = resumen?.optLong("gastos", prev.gastosMes)?.takeIf { it > 0 } ?: prev.gastosMes,
                     disponibleReal = resumen?.optLong("disponible", prev.disponibleReal)?.takeIf { it > 0 } ?: prev.disponibleReal,
-                    fijosPendientes = if (fijosPendCalculados > 0) fijosPendCalculados else (resumen?.optLong("fijos_pendientes", prev.fijosPendientes) ?: prev.fijosPendientes),
+                    totalCuotasFijos = totCuotas,
+                    totalAbonadoFijos = totAbonado,
+                    fijosPendientes = totalPendientes,
+                    q1Pendiente = q1Pend,
+                    q2Pendiente = q2Pend,
                     aycColanta = cuentas?.optLong("aycColanta", prev.aycColanta) ?: prev.aycColanta,
                     efectivo = cuentas?.optLong("efectivo", prev.efectivo) ?: prev.efectivo,
                     nequi = cuentas?.optLong("nequi", prev.nequi) ?: prev.nequi,
@@ -386,20 +404,24 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
             } else prev.fijos
 
-            val nuevosPendientes = nuevosFijos.filter { !it.estaPagado }.sumOf { (it.cuota - it.abonado).coerceAtLeast(0L) }
+            val q1Pend = nuevosFijos.filter { it.quincena == 1 && !it.estaPagado }.sumOf { (it.cuota - it.abonado).coerceAtLeast(0L) }
+            val q2Pend = nuevosFijos.filter { it.quincena == 2 && !it.estaPagado }.sumOf { (it.cuota - it.abonado).coerceAtLeast(0L) }
+            val totalPendientes = q1Pend + q2Pend
 
             prev.copy(
                 ingresosMes = nuevosIng,
                 gastosMes = nuevosGas,
                 disponibleReal = nuevoDisp,
-                fijosPendientes = nuevosPendientes,
+                fijosPendientes = totalPendientes,
+                q1Pendiente = q1Pend,
+                q2Pendiente = q2Pend,
+                totalAbonadoFijos = if (idFijo != null && esGasto) prev.totalAbonadoFijos + valor else prev.totalAbonadoFijos,
                 movimientos = listOf(nuevoMov) + prev.movimientos,
                 fijos = nuevosFijos,
                 statusBanner = "✅ Registrado $nuevoId: ${nuevoMov.descripcion}"
             )
         }
 
-        // Guardar también en base de datos local Room y sincronizar con Google Sheets Fila 5
         viewModelScope.launch {
             try {
                 repository.insertTransaction(
@@ -450,13 +472,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun pagarGastoFijo(fijo: GastoFijoItem) {
         val montoAPagar = if (fijo.saldo > 0) fijo.saldo else fijo.cuota
         if (montoAPagar <= 0L) return
+        val cta = when {
+            fijo.medioPago.contains("Efectivo", ignoreCase = true) -> "Efectivo"
+            fijo.medioPago.contains("Nequi", ignoreCase = true) -> "Nequi"
+            else -> "AyC Colanta"
+        }
         registrarMovimiento(
             tipo = "Gasto",
             descripcion = "Pago Fijo: ${fijo.concepto}",
             categoria = fijo.categoria,
             subcategoria = "Pago fijo",
             valor = montoAPagar,
-            cuenta = "AyC Colanta",
+            cuenta = cta,
             idFijo = fijo.id
         )
     }
@@ -485,10 +512,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
         _uiState.update { prev ->
             val nuevaLista = (prev.fijos + nuevoItem).sortedWith(compareBy({ it.quincena }, { it.dia }, { it.id }))
-            val pendientes = nuevaLista.filter { !it.estaPagado }.sumOf { (it.cuota - it.abonado).coerceAtLeast(0L) }
+            val q1Pend = nuevaLista.filter { it.quincena == 1 && !it.estaPagado }.sumOf { (it.cuota - it.abonado).coerceAtLeast(0L) }
+            val q2Pend = nuevaLista.filter { it.quincena == 2 && !it.estaPagado }.sumOf { (it.cuota - it.abonado).coerceAtLeast(0L) }
             prev.copy(
                 fijos = nuevaLista,
-                fijosPendientes = pendientes,
+                totalCuotasFijos = prev.totalCuotasFijos + cuota,
+                fijosPendientes = q1Pend + q2Pend,
+                q1Pendiente = q1Pend,
+                q2Pendiente = q2Pend,
                 statusBanner = "✅ Compromiso fijo $nuevoId ($concepto) creado"
             )
         }
@@ -615,7 +646,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val pLower = pregunta.lowercase(Locale.ROOT)
         val st = _uiState.value
 
-        // 1. Detectar si es comando de escanear correos / facturas .zip
         if (pLower.contains("escanear") || pLower.contains("correo") || pLower.contains("gmail") || pLower.contains("zip")) {
             escanearFacturasGmail()
             val respuesta = CfoMensaje(
@@ -626,7 +656,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             return
         }
 
-        // 2. Detectar si es comando de registrar gasto rápido (ej. "gasté 15000 en almuerzo")
         val regexGasto = Regex("""(?:gaste|gasté|pague|pagué|compre|compré)\s+\$?\s*(\d[\d.,]*)\s*(?:mil|k)?\s*(?:en|de|por)?\s*(.*)""", RegexOption.IGNORE_CASE)
         val matchGasto = regexGasto.find(pregunta)
         if (matchGasto != null) {
@@ -653,7 +682,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
 
-        // 3. Respuesta analítica inteligente basada en las cifras reales de Marlon
         val textoRespuesta = when {
             pLower.contains("disponible") || pLower.contains("liquidez") || pLower.contains("cuanto tengo") || pLower.contains("cuánto tengo") ->
                 "💰 Tu **Disponible Real** en ${st.mesActivo.replaceFirstChar { it.uppercase() }} es de **$${formatearNumero(st.disponibleReal)} COP**, distribuido así:\n• **AyC Colanta:** $${formatearNumero(st.aycColanta)} COP\n• **Efectivo en Mano:** $${formatearNumero(st.efectivo)} COP\n• **Nequi:** $${formatearNumero(st.nequi)} COP"
@@ -662,13 +690,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 "🏦 En **Fondos Cooperativa Colanta** acumulas **$${formatearNumero(st.totalFondosColanta)} COP**:\n• 🎄 **Ahorro Navideño (1 Dic):** $${formatearNumero(st.ahorroNavideno)} COP\n• 🤝 **Aportes Cooperativos:** $${formatearNumero(st.aportesCooperativos)} COP\n• 📈 **Ahorro Ordinario:** $${formatearNumero(st.ahorroOrdinario)} COP\n• 🛡️ **Otros Fondos:** $${formatearNumero(st.otrosAhorros)} COP"
 
             pLower.contains("fijo") || pLower.contains("pendiente") || pLower.contains("quincena") -> {
-                val pend = st.fijos.filter { !it.estaPagado }
-                val resumenPend = pend.take(5).joinToString("\n") { "• **${it.concepto}** (Día ${it.dia}): $${formatearNumero(it.saldo)} COP" }
-                "📅 Tienes **${pend.size} compromisos fijos pendientes** por **$${formatearNumero(st.fijosPendientes)} COP**:\n$resumenPend\n\nPuedes pagarlos con 1 toque en la pestaña **Fijos**."
+                val q1 = st.fijos.filter { it.quincena == 1 && !it.estaPagado }
+                val q2 = st.fijos.filter { it.quincena == 2 && !it.estaPagado }
+                "📅 **Gastos Fijos Pendientes (${st.mesActivo.replaceFirstChar { it.uppercase() }}):**\n" +
+                    "• **Quincena 1 (Día 15):** $${formatearNumero(st.q1Pendiente)} COP (${q1.size} pendientes)\n" +
+                    q1.joinToString("\n") { "  - ${it.concepto}: $${formatearNumero(it.saldo)} COP" } + "\n" +
+                    "• **Fin de Mes (Día 30):** $${formatearNumero(st.q2Pendiente)} COP (${q2.size} pendientes)\n" +
+                    q2.joinToString("\n") { "  - ${it.concepto}: $${formatearNumero(it.saldo)} COP" } + "\n" +
+                    "Total Saldo Pendiente: **$${formatearNumero(st.fijosPendientes)} COP**"
             }
 
             else ->
-                "📊 **Diagnóstico Rápido (${st.mesActivo.replaceFirstChar { it.uppercase() }} ${st.anioActivo}):**\n• **Disponible Real:** $${formatearNumero(st.disponibleReal)} COP\n• **Ingresos Mes:** $${formatearNumero(st.ingresosMes)} COP\n• **Gastos Mes:** $${formatearNumero(st.gastosMes)} COP\n• **Patrimonio Colanta:** $${formatearNumero(st.totalFondosColanta)} COP\n• **Superávit 2026:** $${formatearNumero(st.superavitAnual)} COP (${st.tasaAhorroAnual}%)"
+                "📊 **Diagnóstico Rápido (${st.mesActivo.replaceFirstChar { it.uppercase() }} ${st.anioActivo}):**\n• **Disponible Real:** $${formatearNumero(st.disponibleReal)} COP\n• **Fijos Q1 (Día 15):** $${formatearNumero(st.q1Pendiente)} COP pend.\n• **Fijos Q2 (Día 30):** $${formatearNumero(st.q2Pendiente)} COP pend.\n• **Patrimonio Colanta:** $${formatearNumero(st.totalFondosColanta)} COP\n• **Superávit 2026:** $${formatearNumero(st.superavitAnual)} COP (${st.tasaAhorroAnual}%)"
         }
 
         _uiState.update {
@@ -714,17 +747,31 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             MovimientoItem("M-0256", "2026-10-04", "03:20 PM", "Gasto", "Compras", "Ropa y Moda Paisa", "Ropa Deportiva Greenfit (Leggins, Top, Enterizo)", 121215L, "Transferencia", "Nequi", "octubre", 2026)
         )
 
+        /**
+         * Compromisos fijos oficiales de CONTROL FIJOS sincronizados 1:1 con Google Sheets:
+         * Quincena 1 (Día 15): Total $1.356.000 | Abonado $1.221.000 | Pendiente $135.000 (F-0110, F-0112, F-0113)
+         * Quincena 2 / Fin de Mes (Día 30): Total $1.025.000 | Abonado $920.000 | Pendiente $105.000 (F-0118, F-0119, F-0121)
+         * Total Cuotas Mes = $2.381.000 | Total Abonado = $2.021.000 | Saldo Pendiente = $240.000
+         */
         fun defaultFijosOctubre(): List<GastoFijoItem> = listOf(
-            GastoFijoItem("F-0107", "EPM ENERGIA", "Servicios", 15, 197000L, 197000L, "🟢 Pagado", "2026-10-17", 0L, "Alta", "PSE"),
-            GastoFijoItem("F-0108", "COMIDA", "Alimentación", 15, 650000L, 650000L, "🟢 Pagado", "2026-10-17", 0L, "Alta", "Transferencia"),
-            GastoFijoItem("F-0109", "Internet Tigo Hogar", "Servicios", 15, 95000L, 0L, "🔴 Pendiente", "", 95000L, "Alta", "PSE"),
-            GastoFijoItem("F-0110", "Parqueadero Trabajo", "Moto", 15, 34000L, 0L, "🔴 Pendiente", "", 34000L, "Media", "Efectivo"),
-            GastoFijoItem("F-0112", "Parqueadero Moto Casa", "Moto", 15, 70000L, 0L, "🔴 Pendiente", "", 70000L, "Alta", "Efectivo"),
-            GastoFijoItem("F-0113", "Gasolina Moto Mes", "Moto", 15, 130000L, 32000L, "🟡 Abono Parcial", "2026-10-16", 98000L, "Alta", "Efectivo"),
-            GastoFijoItem("F-0122", "Agua", "Servicios", 15, 60000L, 0L, "🔴 Pendiente", "", 60000L, "Media", "Transferencia"),
-            GastoFijoItem("F-0114", "Spotify Premium", "Suscripciones", 30, 18900L, 0L, "🔴 Pendiente", "", 18900L, "Baja", "Nequi"),
-            GastoFijoItem("F-0115", "Plan Datos Celular", "Servicios", 30, 48000L, 0L, "🔴 Pendiente", "", 48000L, "Media", "PSE"),
-            GastoFijoItem("F-0116", "Arriendo Hogar", "Vivienda", 30, 350000L, 0L, "🔴 Pendiente", "", 350000L, "Alta", "Transferencia")
+            // QUINCENA 1 (DÍA 15 DE CADA MES)
+            GastoFijoItem("F-0107", "EPM ENERGIA", "Servicios", 15, 197000L, 197000L, "🟢 Pagado", "2026-10-17", 0L, "Media", "Transferencia"),
+            GastoFijoItem("F-0108", "COMIDA", "Alimentación", 15, 650000L, 650000L, "🟢 Pagado", "2026-10-17", 0L, "Media", "Efectivo"),
+            GastoFijoItem("F-0109", "Internet Tigo", "Servicios", 15, 200000L, 200000L, "🟢 Pagado", "2026-10-17", 0L, "Media", "Transferencia"),
+            GastoFijoItem("F-0110", "Parqueadero Trabajo Semanal", "Transporte", 15, 40000L, 0L, "🔴 Pendiente", "", 40000L, "Media", "Transferencia"),
+            GastoFijoItem("F-0111", "Cuota Audífonos Samsung", "Otros", 15, 60000L, 60000L, "🟢 Pagado", "2026-10-17", 0L, "Media", "Transferencia"),
+            GastoFijoItem("F-0112", "PARQUEADERO MOTO", "Moto", 15, 60000L, 0L, "🔴 Pendiente", "", 60000L, "Media", "Efectivo"),
+            GastoFijoItem("F-0113", "Gasolina Moto", "Moto", 15, 35000L, 0L, "🔴 Pendiente", "", 35000L, "Media", "Transferencia"),
+            GastoFijoItem("F-0114", "Spotify", "Entretenimiento", 15, 10100L, 10100L, "🟢 Pagado", "2026-10-15", 0L, "Media", "Tarjeta Nequi"),
+            GastoFijoItem("F-0115", "CUOTA DATOS CELULAR", "Servicios", 15, 43900L, 43900L, "🟢 Pagado", "2026-09-30", 0L, "Media", "Efectivo"),
+            GastoFijoItem("F-0122", "Agua", "Servicios", 15, 60000L, 60000L, "🟢 Pagado", "2026-10-17", 0L, "Media", "Transferencia"),
+
+            // QUINCENA 2 / FIN DE MES (DÍA 30 DE CADA MES)
+            GastoFijoItem("F-0116", "ARRIENDO CASA", "Vivienda", 30, 900000L, 900000L, "🟢 Pagado", "2026-09-30", 0L, "Media", "Efectivo"),
+            GastoFijoItem("F-0117", "Google One", "Servicios", 30, 20000L, 20000L, "🟢 Pagado", "2026-09-20", 0L, "Media", "Efectivo"),
+            GastoFijoItem("F-0118", "Gasolina Moto", "Moto", 30, 25000L, 0L, "🔴 Pendiente", "", 25000L, "Media", "Efectivo"),
+            GastoFijoItem("F-0119", "Parqueadero Trabajo Semanal", "Transporte", 30, 40000L, 0L, "🔴 Pendiente", "", 40000L, "Media", "Efectivo"),
+            GastoFijoItem("F-0121", "PARQUEADERO MOTO", "Moto", 30, 40000L, 0L, "🔴 Pendiente", "", 40000L, "Media", "Efectivo")
         )
 
         fun defaultResumenAnual(): List<MesAnualItem> = listOf(
