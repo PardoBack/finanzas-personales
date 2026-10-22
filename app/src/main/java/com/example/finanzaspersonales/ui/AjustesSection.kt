@@ -252,34 +252,14 @@ fun AjustesSection(
                         )
                     }
 
-                    // Botón para simular detección real de pago en gasolinera
+                    // Botón para simular detección visual de notificación de pago
                     Button(
                         onClick = {
                             val comercio = "Gasolinera Primax Las Palmas"
                             val monto = 50000L
                             val cuenta = "Google Wallet (Nequi Visa)"
                             NotificationHelper.notifyPagoDetectado(context, comercio, monto, cuenta)
-                            notifStatusMessage = "⛽ Pago en Gasolinera detectado ($ 50.000 COP) y clasificado como Moto / Combustible."
-
-                            // Sincronizar en segundo plano con Sheets
-                            CoroutineScope(Dispatchers.IO).launch {
-                                try {
-                                    val payload = mapOf(
-                                        "action" to "addMovement",
-                                        "token" to RetrofitClient.AUTH_TOKEN,
-                                        "id" to "M-AUTO-${System.currentTimeMillis() % 10000}",
-                                        "tipo" to "Gasto",
-                                        "valor" to monto,
-                                        "descripcion" to comercio,
-                                        "categoria" to "Moto",
-                                        "subcategoria" to "Combustible",
-                                        "cuenta" to "Google Wallet",
-                                        "metodo" to "Tarjeta Virtual / Google Wallet",
-                                        "origen" to "Detector Billetera Android"
-                                    )
-                                    RetrofitClient.api.executePostAction(payload)
-                                } catch (_: Exception) {}
-                            }
+                            notifStatusMessage = "🔔 Notificación de prueba enviada (Solo visual en Android, no afecta Sheets)."
                         },
                         modifier = Modifier
                             .fillMaxWidth()

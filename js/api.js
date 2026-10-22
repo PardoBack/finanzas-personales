@@ -16,9 +16,9 @@ const DEMO_DATA = {
   "ok": true,
   "resumen": {
     "ingresos": 1700605.0,
-    "gastos": 1498443.0,
+    "gastos": 1448443.0,
     "ahorros": 236121.0,
-    "disponible": 202162.0,
+    "disponible": 252162.0,
     "fijos_pendientes": 1125000,
     "mes": "octubre",
     "anio": 2026
@@ -31,10 +31,10 @@ const DEMO_DATA = {
     "Entretenimiento": 24123.0
   },
   "cuentas": {
-    "aycColanta": 130362.0,
+    "aycColanta": 180362.0,
     "nequi": 0,
     "efectivo": 71800,
-    "total": 202162.0
+    "total": 252162.0
   },
   "ahorrosColanta": {
     "ordinarioAcumulado": 627000,
@@ -120,8 +120,8 @@ const DEMO_DATA = {
       "mes": "octubre",
       "nombre": "Octubre",
       "ingresos": 1700605.0,
-      "gastos": 1498443.0,
-      "ahorro": 202162.0,
+      "gastos": 1448443.0,
+      "ahorro": 252162.0,
       "transacciones": 14
     },
     {
@@ -4331,4 +4331,5 @@ const FinanceAPI = {
     }
   }
 };
+
 

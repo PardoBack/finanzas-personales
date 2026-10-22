@@ -86,14 +86,14 @@ data class DashboardUiState(
     val mesActivo: String = "octubre",
     val anioActivo: Int = 2026,
     val ingresosMes: Long = 1700605L,
-    val gastosMes: Long = 1498443L,
-    val disponibleReal: Long = 202162L,
+    val gastosMes: Long = 1448443L,
+    val disponibleReal: Long = 252162L,
     val totalCuotasFijos: Long = 2381000L,
     val totalAbonadoFijos: Long = 1256000L,
     val fijosPendientes: Long = 1125000L,
     val q1Pendiente: Long = 100000L,
     val q2Pendiente: Long = 1025000L,
-    val aycColanta: Long = 130362L,
+    val aycColanta: Long = 180362L,
     val efectivo: Long = 71800L,
     val nequi: Long = 0L,
     val ahorroNavideno: Long = 2280000L,
@@ -102,9 +102,9 @@ data class DashboardUiState(
     val otrosAhorros: Long = 227770L,
     val totalFondosColanta: Long = 4167420L,
     val totalIngresosAnual: Long = 35911394L,
-    val totalGastosAnual: Long = 24221809L,
-    val superavitAnual: Long = 11689585L,
-    val tasaAhorroAnual: Double = 32.6,
+    val totalGastosAnual: Long = 24171809L,
+    val superavitAnual: Long = 11739585L,
+    val tasaAhorroAnual: Double = 32.7,
     val movimientos: List<MovimientoItem> = MainViewModel.defaultMovimientosOctubre(),
     val fijos: List<GastoFijoItem> = MainViewModel.defaultFijosOctubre(),
     val resumenAnual: List<MesAnualItem> = MainViewModel.defaultResumenAnual(),
@@ -158,10 +158,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 it.copy(
                     mesActivo = "octubre",
                     ingresosMes = 1700605L,
-                    gastosMes = 1498443L,
-                    disponibleReal = 202162L,
+                    gastosMes = 1448443L,
+                    disponibleReal = 252162L,
                     fijosPendientes = 1125000L,
-                    aycColanta = 130362L,
+                    aycColanta = 180362L,
                     efectivo = 71800L,
                     nequi = 0L
                 )
@@ -932,7 +932,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             MesAnualItem("julio", "Julio", 3172191L, 2546900L, 625291L),
             MesAnualItem("agosto", "Agosto", 3735393L, 1668936L, 2066457L),
             MesAnualItem("septiembre", "Septiembre", 3343005L, 2186444L, 1156561L),
-            MesAnualItem("octubre", "Octubre", 1700605L, 1498443L, 202162L)
+            MesAnualItem("octubre", "Octubre", 1700605L, 1448443L, 252162L)
         )
     }
 }
