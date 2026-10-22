@@ -1150,7 +1150,7 @@ private fun InicioTabContent(
                     subtitle = "Cuenta Nómina",
                     amount = if (isBalanceVisible) "$${MainViewModel.formatearNumero(uiState.aycColanta)}" else "$ •••••",
                     accentColor = EmeraldBright,
-                    badge = "94% Caja"
+                    badge = if (uiState.disponibleReal > 0) "${((uiState.aycColanta.toDouble() / uiState.disponibleReal.toDouble()) * 100).toInt()}% Caja" else "Nómina"
                 )
                 AccountCard(
                     modifier = Modifier.weight(1f),
@@ -1158,7 +1158,7 @@ private fun InicioTabContent(
                     subtitle = "Billetes y Monedas",
                     amount = if (isBalanceVisible) "$${MainViewModel.formatearNumero(uiState.efectivo)}" else "$ •••••",
                     accentColor = CyanNeon,
-                    badge = "Disponible"
+                    badge = if (uiState.disponibleReal > 0) "${((uiState.efectivo.toDouble() / uiState.disponibleReal.toDouble()) * 100).toInt()}% Caja" else "Efectivo"
                 )
             }
 

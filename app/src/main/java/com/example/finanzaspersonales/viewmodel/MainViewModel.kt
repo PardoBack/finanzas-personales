@@ -86,14 +86,14 @@ data class DashboardUiState(
     val mesActivo: String = "octubre",
     val anioActivo: Int = 2026,
     val ingresosMes: Long = 1700605L,
-    val gastosMes: Long = 1285239L,
-    val disponibleReal: Long = 1065366L,
+    val gastosMes: Long = 1498443L,
+    val disponibleReal: Long = 202162L,
     val totalCuotasFijos: Long = 2381000L,
-    val totalAbonadoFijos: Long = 2021000L,
-    val fijosPendientes: Long = 240000L,
-    val q1Pendiente: Long = 135000L,
-    val q2Pendiente: Long = 105000L,
-    val aycColanta: Long = 993566L,
+    val totalAbonadoFijos: Long = 1256000L,
+    val fijosPendientes: Long = 1125000L,
+    val q1Pendiente: Long = 100000L,
+    val q2Pendiente: Long = 1025000L,
+    val aycColanta: Long = 130362L,
     val efectivo: Long = 71800L,
     val nequi: Long = 0L,
     val ahorroNavideno: Long = 2280000L,
@@ -101,10 +101,10 @@ data class DashboardUiState(
     val ahorroOrdinario: Long = 627000L,
     val otrosAhorros: Long = 227770L,
     val totalFondosColanta: Long = 4167420L,
-    val totalIngresosAnual: Long = 34152478L,
-    val totalGastosAnual: Long = 23785728L,
-    val superavitAnual: Long = 10366750L,
-    val tasaAhorroAnual: Double = 30.4,
+    val totalIngresosAnual: Long = 35911394L,
+    val totalGastosAnual: Long = 24221809L,
+    val superavitAnual: Long = 11689585L,
+    val tasaAhorroAnual: Double = 32.6,
     val movimientos: List<MovimientoItem> = MainViewModel.defaultMovimientosOctubre(),
     val fijos: List<GastoFijoItem> = MainViewModel.defaultFijosOctubre(),
     val resumenAnual: List<MesAnualItem> = MainViewModel.defaultResumenAnual(),
@@ -158,8 +158,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 it.copy(
                     mesActivo = "octubre",
                     ingresosMes = 1700605L,
-                    gastosMes = 1285239L,
-                    disponibleReal = 415366L
+                    gastosMes = 1498443L,
+                    disponibleReal = 202162L,
+                    fijosPendientes = 1125000L,
+                    aycColanta = 130362L,
+                    efectivo = 71800L,
+                    nequi = 0L
                 )
             }
         } else if (datosMesAnual != null) {
@@ -919,16 +923,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         )
 
         fun defaultResumenAnual(): List<MesAnualItem> = listOf(
-            MesAnualItem("enero", "Enero", 4120000L, 1636906L, 2483094L),
-            MesAnualItem("febrero", "Febrero", 3450000L, 2180000L, 1270000L),
-            MesAnualItem("marzo", "Marzo", 3520000L, 2390000L, 1130000L),
-            MesAnualItem("abril", "Abril", 3480000L, 2410000L, 1070000L),
-            MesAnualItem("mayo", "Mayo", 3610000L, 2590000L, 1020000L),
-            MesAnualItem("junio", "Junio", 4350000L, 3892812L, 457188L),
-            MesAnualItem("julio", "Julio", 3490000L, 2420000L, 1070000L),
-            MesAnualItem("agosto", "Agosto", 3280000L, 2510000L, 770000L),
-            MesAnualItem("septiembre", "Septiembre", 3151873L, 2470771L, 681102L),
-            MesAnualItem("octubre", "Octubre", 1700605L, 1285239L, 415366L)
+            MesAnualItem("enero", "Enero", 3842222L, 1359128L, 2483094L),
+            MesAnualItem("febrero", "Febrero", 2733672L, 2296000L, 437672L),
+            MesAnualItem("marzo", "Marzo", 5268327L, 2814000L, 2454327L),
+            MesAnualItem("abril", "Abril", 3494112L, 3129946L, 364166L),
+            MesAnualItem("mayo", "Mayo", 3163753L, 2829200L, 334553L),
+            MesAnualItem("junio", "Junio", 5458114L, 3892812L, 1565302L),
+            MesAnualItem("julio", "Julio", 3172191L, 2546900L, 625291L),
+            MesAnualItem("agosto", "Agosto", 3735393L, 1668936L, 2066457L),
+            MesAnualItem("septiembre", "Septiembre", 3343005L, 2186444L, 1156561L),
+            MesAnualItem("octubre", "Octubre", 1700605L, 1498443L, 202162L)
         )
     }
 }
