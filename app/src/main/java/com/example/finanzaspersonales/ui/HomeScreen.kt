@@ -256,29 +256,29 @@ private fun PardoTopBar(
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
                 modifier = Modifier
-                    .size(44.dp)
-                    .clip(RoundedCornerShape(14.dp))
+                    .size(42.dp)
+                    .clip(CircleShape)
                     .background(
                         Brush.linearGradient(
-                            colors = listOf(CyanGlow, VioletAccent)
+                            colors = listOf(CyanNeon, VioletAccent)
                         )
                     )
-                    .shadow(elevation = 6.dp, shape = RoundedCornerShape(14.dp)),
+                    .border(1.5.dp, CardSurfaceLight, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = "MP",
                     color = Color.White,
-                    fontSize = 16.sp,
+                    fontSize = 15.sp,
                     fontWeight = FontWeight.ExtraBold
                 )
             }
             Spacer(modifier = Modifier.width(12.dp))
             Column {
                 Text(
-                    text = "Marlon Muñoz Pardo",
+                    text = "Hola, Marlon 👋",
                     color = TextPrimary,
-                    fontSize = 15.sp,
+                    fontSize = 16.sp,
                     fontWeight = FontWeight.ExtraBold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -292,7 +292,7 @@ private fun PardoTopBar(
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "PardoFinanzas V26.9 • En vivo",
+                        text = "Finanzas • En vivo",
                         color = TextSecondary,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Medium
@@ -305,14 +305,14 @@ private fun PardoTopBar(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Botón Sincronizar
+            // Botón Sincronizar (Appetite UI circular icon plate)
             IconButton(
                 onClick = onSyncSheets,
                 modifier = Modifier
-                    .size(38.dp)
-                    .clip(RoundedCornerShape(12.dp))
+                    .size(40.dp)
+                    .clip(CircleShape)
                     .background(CardBackground)
-                    .border(1.dp, SubtleBorder, RoundedCornerShape(12.dp))
+                    .border(1.dp, SubtleBorder, CircleShape)
             ) {
                 Icon(
                     imageVector = Icons.Default.Sync,
@@ -322,19 +322,19 @@ private fun PardoTopBar(
                 )
             }
 
-            // Botón CFO IA
+            // Botón Asistente CFO IA (Appetite UI circular icon plate)
             IconButton(
                 onClick = onOpenCfo,
                 modifier = Modifier
-                    .size(38.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(VioletAccent.copy(alpha = 0.2f))
-                    .border(1.dp, VioletAccent.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(CardBackground)
+                    .border(1.dp, SubtleBorder, CircleShape)
             ) {
                 Icon(
                     imageVector = Icons.Default.AutoAwesome,
-                    contentDescription = "CFO IA",
-                    tint = Color(0xFFC4B5FD),
+                    contentDescription = "Asistente CFO IA",
+                    tint = VioletAccent,
                     modifier = Modifier.size(18.dp)
                 )
             }
@@ -475,11 +475,11 @@ private fun InicioTabContent(
             .padding(horizontal = 18.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // 2. Hero Card de Disponible Real con Botones "Muy Chimba"
+                // 1. Hero Card de Disponible Real (Appetite UI Dark Mode)
         Surface(
             shape = RoundedCornerShape(24.dp),
             color = CardBackground,
-            border = BorderStroke(1.dp, CyanGlow.copy(alpha = 0.4f)),
+            border = BorderStroke(1.dp, SubtleBorder),
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(
@@ -487,8 +487,8 @@ private fun InicioTabContent(
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
-                                Color(0xFF132347),
-                                Color(0xFF0A1224)
+                                Color(0xFF131B2A),
+                                Color(0xFF0C101A)
                             )
                         )
                     )
@@ -501,11 +501,11 @@ private fun InicioTabContent(
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            text = "DISPONIBLE REAL (${uiState.mesActivo.uppercase()})",
-                            color = CyanNeon,
+                            text = "DISPONIBLE TOTAL",
+                            color = TextSecondary,
                             fontSize = 11.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            letterSpacing = 0.8.sp
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.sp
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Icon(
@@ -513,24 +513,24 @@ private fun InicioTabContent(
                             contentDescription = "Privacidad",
                             tint = TextSecondary,
                             modifier = Modifier
-                                .size(18.dp)
+                                .size(17.dp)
                                 .clickable { onToggleBalance() }
                         )
                     }
 
                     val tasaMes = if (uiState.ingresosMes > 0) {
                         (((uiState.ingresosMes - uiState.gastosMes).toDouble() / uiState.ingresosMes.toDouble()) * 100).toInt().coerceIn(0, 100)
-                    } else 30
+                    } else 14
                     Surface(
-                        color = EmeraldGreen.copy(alpha = 0.18f),
+                        color = EmeraldGreen.copy(alpha = 0.14f),
                         shape = RoundedCornerShape(10.dp),
-                        border = BorderStroke(1.dp, EmeraldGreen.copy(alpha = 0.45f))
+                        border = BorderStroke(1.dp, EmeraldGreen.copy(alpha = 0.35f))
                     ) {
                         Text(
-                            text = "$tasaMes% Libre",
+                            text = "+$tasaMes% este mes",
                             color = EmeraldBright,
                             fontSize = 11.sp,
-                            fontWeight = FontWeight.ExtraBold,
+                            fontWeight = FontWeight.SemiBold,
                             modifier = Modifier.padding(horizontal = 9.dp, vertical = 4.dp)
                         )
                     }
@@ -541,14 +541,14 @@ private fun InicioTabContent(
                 Text(
                     text = if (isBalanceVisible) "$ ${MainViewModel.formatearNumero(uiState.disponibleReal)}" else "$ •••••••",
                     color = TextPrimary,
-                    fontSize = 35.sp,
+                    fontSize = 36.sp,
                     fontWeight = FontWeight.Black,
-                    letterSpacing = (-1).sp
+                    letterSpacing = (-0.5).sp
                 )
 
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-                // 3 Mini KPIs del Mes
+                // 3 Mini KPIs de Resumen
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -556,111 +556,65 @@ private fun InicioTabContent(
                     MiniKpiPill(
                         modifier = Modifier.weight(1f),
                         label = "Ingresos Mes",
-                        value = if (isBalanceVisible) "$${MainViewModel.formatearNumero(uiState.ingresosMes)}" else "••••",
+                        value = if (isBalanceVisible) "+$${MainViewModel.formatearNumero(uiState.ingresosMes)}" else "•••••",
                         valueColor = EmeraldBright
                     )
                     MiniKpiPill(
                         modifier = Modifier.weight(1f),
                         label = "Gastos Mes",
-                        value = if (isBalanceVisible) "$${MainViewModel.formatearNumero(uiState.gastosMes)}" else "••••",
+                        value = if (isBalanceVisible) "-$${MainViewModel.formatearNumero(uiState.gastosMes)}" else "•••••",
                         valueColor = RoseSoft
                     )
                     MiniKpiPill(
                         modifier = Modifier
                             .weight(1f)
                             .clickable { onVerFijos() },
-                        label = "Fijos Pendientes",
-                        value = if (isBalanceVisible) "$${MainViewModel.formatearNumero(uiState.fijosPendientes)}" else "••••",
+                        label = "Fijos Pend.",
+                        value = if (isBalanceVisible) "$${MainViewModel.formatearNumero(uiState.fijosPendientes)}" else "•••••",
                         valueColor = AmberGold
                     )
                 }
-
-                Spacer(modifier = Modifier.height(18.dp))
-
-                // BOTONES DE ACCIÓN RÁPIDA (Estilo Fintech Premium y Sofisticado)
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    // Botón Registrar Gasto
-                    Surface(
-                        onClick = onOpenGasto,
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(46.dp),
-                        shape = RoundedCornerShape(14.dp),
-                        color = Color(0xFF1E171B),
-                        border = BorderStroke(1.dp, Color(0xFFF43F5E).copy(alpha = 0.45f))
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxSize(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(24.dp)
-                                    .clip(CircleShape)
-                                    .background(Color(0xFFF43F5E).copy(alpha = 0.16f)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Remove,
-                                    contentDescription = null,
-                                    tint = Color(0xFFFB7185),
-                                    modifier = Modifier.size(15.dp)
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "Registrar Gasto",
-                                color = Color(0xFFFFF1F2),
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
-
-                    // Botón Registrar Ingreso
-                    Surface(
-                        onClick = onOpenIngreso,
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(46.dp),
-                        shape = RoundedCornerShape(14.dp),
-                        color = Color(0xFF10211B),
-                        border = BorderStroke(1.dp, Color(0xFF10B981).copy(alpha = 0.45f))
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxSize(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(24.dp)
-                                    .clip(CircleShape)
-                                    .background(Color(0xFF10B981).copy(alpha = 0.16f)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Add,
-                                    contentDescription = null,
-                                    tint = Color(0xFF34D399),
-                                    modifier = Modifier.size(15.dp)
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "Registrar Ingreso",
-                                color = Color(0xFFECFDF5),
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
-                }
             }
+        }
+
+        // 2. Fila de Acciones Rápidas Appetite UI (Icon Plates: Gasto, Ingreso, Facturas .ZIP, Fijos)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            AppetiteActionPlate(
+                label = "Gasto",
+                icon = Icons.Default.Remove,
+                iconColor = RoseSoft,
+                plateColor = Color(0xFF22161B),
+                borderColor = Color(0xFFE11D48).copy(alpha = 0.35f),
+                onClick = onOpenGasto
+            )
+            AppetiteActionPlate(
+                label = "Ingreso",
+                icon = Icons.Default.Add,
+                iconColor = EmeraldBright,
+                plateColor = Color(0xFF13221C),
+                borderColor = Color(0xFF10B981).copy(alpha = 0.35f),
+                onClick = onOpenIngreso
+            )
+            AppetiteActionPlate(
+                label = "Facturas .ZIP",
+                icon = Icons.Default.FolderZip,
+                iconColor = CyanNeon,
+                plateColor = Color(0xFF132034),
+                borderColor = CyanNeon.copy(alpha = 0.35f),
+                onClick = onScanGmail
+            )
+            AppetiteActionPlate(
+                label = "Gastos Fijos",
+                icon = Icons.Default.Bolt,
+                iconColor = AmberGold,
+                plateColor = Color(0xFF251E14),
+                borderColor = AmberGold.copy(alpha = 0.35f),
+                onClick = onVerFijos
+            )
         }
 
         // 3. Tarjeta de Escáner Gmail (.ZIP) & Regla No Leído -> Carpeta
@@ -909,6 +863,48 @@ private fun InicioTabContent(
         }
 
         Spacer(modifier = Modifier.height(20.dp))
+    }
+}
+
+
+@Composable
+private fun AppetiteActionPlate(
+    label: String,
+    icon: ImageVector,
+    iconColor: Color,
+    plateColor: Color,
+    borderColor: Color,
+    onClick: () -> Unit
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .clickable { onClick() }
+            .padding(horizontal = 4.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(56.dp)
+                .clip(RoundedCornerShape(18.dp))
+                .background(plateColor)
+                .border(1.dp, borderColor, RoundedCornerShape(18.dp)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                tint = iconColor,
+                modifier = Modifier.size(22.dp)
+            )
+        }
+        Spacer(modifier = Modifier.height(7.dp))
+        Text(
+            text = label,
+            color = TextSecondary,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Medium,
+            textAlign = TextAlign.Center
+        )
     }
 }
 
