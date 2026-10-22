@@ -17,6 +17,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -181,6 +182,7 @@ fun HomeScreen(viewModel: MainViewModel = viewModel()) {
                 2 -> FijosTabContent(
                     uiState = uiState,
                     onPagarFijo = { viewModel.pagarGastoFijo(it) },
+                    onRevertirFijo = { viewModel.revertirGastoFijo(it) },
                     onOpenNuevoFijo = { showNewFijoDialog = true }
                 )
 
@@ -1293,9 +1295,11 @@ private fun MovimientosTabContent(
 private fun FijosTabContent(
     uiState: DashboardUiState,
     onPagarFijo: (GastoFijoItem) -> Unit,
+    onRevertirFijo: (GastoFijoItem) -> Unit,
     onOpenNuevoFijo: () -> Unit
 ) {
     var filtroSeleccionado by remember { mutableIntStateOf(0) } // 0: Todos, 1: Q1 (Día 15), 2: Q2 (Día 30), 3: Solo Pendientes
+    var fijoParaRevertir by remember { mutableStateOf<GastoFijoItem?>(null) }
 
     val fijosQ1 = remember(uiState.fijos) { uiState.fijos.filter { it.quincena == 1 } }
     val fijosQ2 = remember(uiState.fijos) { uiState.fijos.filter { it.quincena == 2 } }
@@ -1473,7 +1477,8 @@ private fun FijosTabContent(
                 subtotalText = "Subtotal: $${MainViewModel.formatearNumero(q1TotalCuotas)} | Abonado: $${MainViewModel.formatearNumero(q1TotalAbonado)}",
                 pendienteText = if (q1Pendientes > 0) "Pendiente: $${MainViewModel.formatearNumero(q1Pendientes)} COP" else "¡Quincena 1 100% Pagada!",
                 fijosList = itemsQ1,
-                onPagarFijo = onPagarFijo
+                onPagarFijo = onPagarFijo,
+                onRevertirFijo = { fijoParaRevertir = it }
             )
         }
 
@@ -1489,7 +1494,107 @@ private fun FijosTabContent(
                 subtotalText = "Subtotal: $${MainViewModel.formatearNumero(q2TotalCuotas)} | Abonado: $${MainViewModel.formatearNumero(q2TotalAbonado)}",
                 pendienteText = if (q2Pendientes > 0) "Pendiente: $${MainViewModel.formatearNumero(q2Pendientes)} COP" else "¡Fin de Mes 100% Pagado!",
                 fijosList = itemsQ2,
-                onPagarFijo = onPagarFijo
+                onPagarFijo = onPagarFijo,
+                onRevertirFijo = { fijoParaRevertir = it }
+            )
+        }
+
+        if (fijoParaRevertir != null) {
+            val target = fijoParaRevertir!!
+            AlertDialog(
+                onDismissRequest = { fijoParaRevertir = null },
+                containerColor = CardBackground,
+                titleContentColor = TextPrimary,
+                textContentColor = TextSecondary,
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.WarningAmber,
+                            contentDescription = null,
+                            tint = AmberGold,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "¿Revertir Pago Fijo?",
+                            color = TextPrimary,
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 18.sp
+                        )
+                    }
+                },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text(
+                            text = "¿Estás seguro de que deseas anular el pago de este compromiso?",
+                            color = TextSecondary,
+                            fontSize = 14.sp
+                        )
+                        Surface(
+                            color = CardElevated,
+                            shape = RoundedCornerShape(12.dp),
+                            border = BorderStroke(1.dp, SubtleBorder),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Text(
+                                    text = target.concepto,
+                                    color = TextPrimary,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 15.sp
+                                )
+                                Text(
+                                    text = "Monto: $${MainViewModel.formatearNumero(if (target.abonado > 0) target.abonado else target.cuota)} COP",
+                                    color = CyanNeon,
+                                    fontWeight = FontWeight.SemiBold,
+                                    fontSize = 13.sp
+                                )
+                                if (target.fechaPago.isNotBlank()) {
+                                    Text(
+                                        text = "Fecha registrada: ${target.fechaPago}",
+                                        color = TextMuted,
+                                        fontSize = 11.sp
+                                    )
+                                }
+                            }
+                        }
+                        Text(
+                            text = "El gasto volverá a estado 🔴 Pendiente y se eliminará el movimiento de gasto correspondiente para restaurar tu saldo.",
+                            color = TextMuted,
+                            fontSize = 12.sp
+                        )
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            val f = target
+                            fijoParaRevertir = null
+                            onRevertirFijo(f)
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = RoseRed),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Text(
+                            text = "Confirmar",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp
+                        )
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = { fijoParaRevertir = null }
+                    ) {
+                        Text(
+                            text = "Cancelar",
+                            color = TextSecondary,
+                            fontWeight = FontWeight.Medium,
+                            fontSize = 14.sp
+                        )
+                    }
+                }
             )
         }
 
@@ -1505,7 +1610,8 @@ private fun QuincenaSectionCard(
     subtotalText: String,
     pendienteText: String,
     fijosList: List<GastoFijoItem>,
-    onPagarFijo: (GastoFijoItem) -> Unit
+    onPagarFijo: (GastoFijoItem) -> Unit,
+    onRevertirFijo: (GastoFijoItem) -> Unit
 ) {
     Surface(
         color = CardBackground,
@@ -1568,7 +1674,11 @@ private fun QuincenaSectionCard(
 
             // Lista de Compromisos de la Quincena
             fijosList.forEach { fijo ->
-                GastoFijoItemRow(fijo = fijo, onPagar = { onPagarFijo(fijo) })
+                GastoFijoItemRow(
+                    fijo = fijo,
+                    onPagar = { onPagarFijo(fijo) },
+                    onRevertir = { onRevertirFijo(fijo) }
+                )
             }
         }
     }
@@ -1577,7 +1687,8 @@ private fun QuincenaSectionCard(
 @Composable
 private fun GastoFijoItemRow(
     fijo: GastoFijoItem,
-    onPagar: () -> Unit
+    onPagar: () -> Unit,
+    onRevertir: () -> Unit
 ) {
     Surface(
         color = CardElevated,
@@ -1653,40 +1764,120 @@ private fun GastoFijoItemRow(
 
                 if (!fijo.estaPagado) {
                     val montoAPagar = if (fijo.saldo > 0) fijo.saldo else fijo.cuota
-                    // Botón de Pago Elegante Fintech
-                    Surface(
-                        onClick = onPagar,
-                        modifier = Modifier.height(34.dp),
-                        shape = RoundedCornerShape(10.dp),
-                        color = Color(0xFF132235),
-                        border = BorderStroke(1.dp, CyanNeon.copy(alpha = 0.6f))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxHeight()
-                                .padding(horizontal = 12.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                        if (fijo.abonado > 0) {
+                            Surface(
+                                onClick = onRevertir,
+                                modifier = Modifier.height(34.dp),
+                                shape = RoundedCornerShape(10.dp),
+                                color = Color(0xFF26191B),
+                                border = BorderStroke(1.dp, RoseRed.copy(alpha = 0.5f))
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxHeight()
+                                        .padding(horizontal = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.Undo,
+                                        contentDescription = "Revertir",
+                                        tint = RoseRed,
+                                        modifier = Modifier.size(13.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(3.dp))
+                                    Text(
+                                        text = "Revertir",
+                                        color = RoseRed,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                }
+                            }
+                        }
+
+                        // Botón de Pago Elegante Fintech
+                        Surface(
+                            onClick = onPagar,
+                            modifier = Modifier.height(34.dp),
+                            shape = RoundedCornerShape(10.dp),
+                            color = Color(0xFF132235),
+                            border = BorderStroke(1.dp, CyanNeon.copy(alpha = 0.6f))
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Bolt,
-                                contentDescription = null,
-                                tint = CyanNeon,
-                                modifier = Modifier.size(14.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = "Pagar $${MainViewModel.formatearNumero(montoAPagar)}",
-                                color = CyanNeon,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold
-                            )
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxHeight()
+                                    .padding(horizontal = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Bolt,
+                                    contentDescription = null,
+                                    tint = CyanNeon,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "Pagar $${MainViewModel.formatearNumero(montoAPagar)}",
+                                    color = CyanNeon,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
                         }
                     }
                 } else {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.CheckCircle, contentDescription = null, tint = EmeraldBright, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Al día", color = EmeraldBright, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Surface(
+                            color = EmeraldBright.copy(alpha = 0.15f),
+                            shape = RoundedCornerShape(8.dp),
+                            border = BorderStroke(1.dp, EmeraldBright.copy(alpha = 0.4f))
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(Icons.Default.CheckCircle, contentDescription = null, tint = EmeraldBright, modifier = Modifier.size(13.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Al día", color = EmeraldBright, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+
+                        // Botón Revertir con diálogo de Confirmación
+                        Surface(
+                            onClick = onRevertir,
+                            modifier = Modifier.height(32.dp),
+                            shape = RoundedCornerShape(8.dp),
+                            color = Color(0xFF26191B),
+                            border = BorderStroke(1.dp, RoseRed.copy(alpha = 0.5f))
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxHeight()
+                                    .padding(horizontal = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.Undo,
+                                    contentDescription = "Revertir",
+                                    tint = RoseRed,
+                                    modifier = Modifier.size(13.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "Revertir",
+                                    color = RoseRed,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                        }
                     }
                 }
             }

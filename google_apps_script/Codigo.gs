@@ -152,6 +152,21 @@ function doGet(e) {
     }
   }
 
+  if (action === "revertirPagoFijo" || action === "revertPayment") {
+    try {
+      const authKey = PropertiesService.getScriptProperties().getProperty("PARDO_AUTH_KEY") || "marlon_pardo_finanzas_2026_auth";
+      const reqToken = params.token || params.auth;
+      if (reqToken !== authKey) {
+        return ContentService.createTextOutput(JSON.stringify({ ok: false, error: "Acceso no autorizado: Token inválido." }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+      return revertirPagoFijoDirecto_(params);
+    } catch (err) {
+      return ContentService.createTextOutput(JSON.stringify({ ok: false, error: err.message }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+  }
+
   return ContentService.createTextOutput("Bot de finanzas V26.9 PRO activo y sincronizado con Dashboard Web");
 }
 
@@ -182,6 +197,8 @@ function doPost(e) {
       data.action === "crearGastoFijo" ||
       data.action === "updateFixedObligation" ||
       data.action === "actualizarGastoFijo" ||
+      data.action === "revertirPagoFijo" ||
+      data.action === "revertPayment" ||
       data.action === "sincronizarFijosOctubre" ||
       data.action === "procesarColilla" ||
       data.action === "procesarFacturas" ||
@@ -210,6 +227,10 @@ function doPost(e) {
 
     if (data.action === "updateFixedObligation" || data.action === "actualizarGastoFijo") {
       return actualizarCompromisoFijoDirecto_(data);
+    }
+
+    if (data.action === "revertirPagoFijo" || data.action === "revertPayment") {
+      return revertirPagoFijoDirecto_(data);
     }
 
     if (data.action === "sincronizarFijosOctubre") {
@@ -709,6 +730,106 @@ function actualizarCompromisoFijoDirecto_(data) {
     ok: true,
     id: idBuscado,
     mensaje: `Compromiso fijo ${idBuscado} actualizado exitosamente en Google Sheets.`
+  })).setMimeType(ContentService.MimeType.JSON);
+}
+
+/**
+ * ↺ REVERTIR PAGO DE GASTO FIJO EN GOOGLE SHEETS
+ * Restaura el gasto fijo a "🔴 Pendiente", limpia fecha de pago, reinicia abonado a 0,
+ * y elimina el movimiento de pago asociado en MOVIMIENTOS para restaurar el saldo de la cuenta.
+ */
+function revertirPagoFijoDirecto_(data) {
+  const ss = obtenerLibro_();
+  const shFijos = ss.getSheetByName("CONTROL FIJOS");
+  const shHist = ss.getSheetByName("HISTORICO FIJOS");
+  const shMov = ss.getSheetByName("MOVIMIENTOS");
+
+  const idBuscado = String(data.id || "").trim().toUpperCase();
+  if (!idBuscado) {
+    return ContentService.createTextOutput(JSON.stringify({ ok: false, error: "ID de compromiso fijo requerido." }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  const d = new Date();
+  const meses = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+  const mesActual = data.mes ? normalizarTexto(String(data.mes)) : meses[d.getMonth()];
+  const anioActual = Number(data.anio || d.getFullYear());
+
+  let cuotaFijo = 0;
+  let conceptoFijo = String(data.concepto || "");
+
+  // 1. Restaurar CONTROL FIJOS (inicia en fila 10)
+  if (shFijos && shFijos.getLastRow() >= 10) {
+    const numF = shFijos.getLastRow() - 9;
+    const fRows = shFijos.getRange(10, 1, numF, 9).getValues();
+    for (let f = 0; f < fRows.length; f++) {
+      if (String(fRows[f][0] || "").trim().toUpperCase() === idBuscado) {
+        const rIndex = f + 10;
+        if (!conceptoFijo) conceptoFijo = String(fRows[f][1] || "");
+        cuotaFijo = Number(fRows[f][4] || 0);
+
+        shFijos.getRange(rIndex, 6).setValue(0); // Abonado Mes = 0
+        shFijos.getRange(rIndex, 7).setValue("🔴 Pendiente"); // Estado
+        shFijos.getRange(rIndex, 8).setValue(""); // Fecha Pago
+        shFijos.getRange(rIndex, 9).setValue(cuotaFijo > 0 ? cuotaFijo : "-"); // Saldo Pendiente
+        break;
+      }
+    }
+  }
+
+  // 2. Restaurar HISTORICO FIJOS
+  if (shHist && shHist.getLastRow() >= 4) {
+    const numRows = shHist.getLastRow() - 3;
+    const hRows = shHist.getRange(4, 1, numRows, 15).getValues();
+    for (let h = 0; h < hRows.length; h++) {
+      const hId = String(hRows[h][0] || "").trim().toUpperCase();
+      const hMes = normalizarTexto(String(hRows[h][9] || ""));
+      const hAnio = Number(hRows[h][10] || 0);
+
+      if (hId === idBuscado && hMes === mesActual && (hAnio === anioActual || hAnio === 0)) {
+        const rIdx = h + 4;
+        if (cuotaFijo === 0) cuotaFijo = Number(hRows[h][4] || 0);
+        if (!conceptoFijo) conceptoFijo = String(hRows[h][1] || "");
+
+        shHist.getRange(rIdx, 6).setValue(0); // Abonado = 0
+        shHist.getRange(rIdx, 7).setValue(""); // Fecha Pago
+        shHist.getRange(rIdx, 8).setValue("🔴 Pendiente"); // Estado
+        shHist.getRange(rIdx, 14).setValue(cuotaFijo); // Saldo Pendiente
+        break;
+      }
+    }
+  }
+
+  // 3. Eliminar movimiento de pago en MOVIMIENTOS para restaurar saldo
+  let movimientosEliminados = 0;
+  if (shMov && shMov.getLastRow() >= 4) {
+    const lastRow = shMov.getLastRow();
+    const mRows = shMov.getRange(4, 1, lastRow - 3, 14).getValues();
+
+    for (let i = mRows.length - 1; i >= 0; i--) {
+      const rowSubcat = String(mRows[i][5] || "").toLowerCase().trim();
+      const rowDesc = String(mRows[i][6] || "").toLowerCase().trim();
+      const rowRef = String(mRows[i][13] || "").trim();
+
+      const esRefMatch = rowRef.includes(`PAGO_FIJO|${idBuscado}`) || rowRef.includes(`ABONO_FIJO|${idBuscado}`);
+      const esDescMatch = (rowSubcat === "pago fijo" || rowDesc.includes("pago fijo")) &&
+                          (rowDesc.includes(idBuscado.toLowerCase()) || (conceptoFijo && rowDesc.includes(conceptoFijo.toLowerCase())));
+
+      if (esRefMatch || esDescMatch) {
+        shMov.deleteRow(i + 4);
+        movimientosEliminados++;
+      }
+    }
+  }
+
+  SpreadsheetApp.flush();
+
+  return ContentService.createTextOutput(JSON.stringify({
+    ok: true,
+    id: idBuscado,
+    concepto: conceptoFijo,
+    movimientosEliminados: movimientosEliminados,
+    mensaje: `Pago de compromiso ${conceptoFijo || idBuscado} revertido exitosamente a Pendiente.`
   })).setMimeType(ContentService.MimeType.JSON);
 }
 
@@ -9436,27 +9557,12 @@ function borrarFilasPorTexto_(sheetName, text, colIndex, offset = 3) {
 
 
 function v21RevertPayment_(fId) {
-
-  const sh = obtenerLibro_().getSheetByName("CONTROL FIJOS");
-
-  if (!sh || sh.getLastRow() < 4) return;
-
-  const data = sh.getRange(4, 1, sh.getLastRow() - 3, 8).getValues();
-
-  for (let i = 0; i < data.length; i++) {
-
-    if (String(data[i][0]).toUpperCase() === fId) {
-
-      sh.getRange(i + 4, 6).setValue("");
-
-      sh.getRange(i + 4, 7).setValue("");
-
-      break;
-
-    }
-
+  if (!fId) return;
+  try {
+    revertirPagoFijoDirecto_({ id: fId });
+  } catch (err) {
+    console.warn("Error en v21RevertPayment_:", err);
   }
-
 }
 
 
@@ -9651,4 +9757,4 @@ function parsearMontoFlexibleV24_(texto) {
     if (!isNaN(n) && n > best) best = n;
   });
   return Math.round(best);
-}
+}

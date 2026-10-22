@@ -489,6 +489,114 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         )
     }
 
+    fun revertirGastoFijo(fijo: GastoFijoItem) {
+        val montoRevertido = if (fijo.abonado > 0) fijo.abonado else fijo.cuota
+        val estado = _uiState.value
+
+        // 1. Encontrar movimiento asociado si existe en la lista local para borrarlo
+        val movAsociado = estado.movimientos.firstOrNull { m ->
+            (m.subcategoria.contains("fijo", ignoreCase = true) || m.descripcion.contains("pago fijo", ignoreCase = true)) &&
+            (m.descripcion.contains(fijo.concepto, ignoreCase = true) || (fijo.id.isNotBlank() && m.descripcion.contains(fijo.id)))
+        }
+
+        // 2. Actualización optimista inmediata en la UI
+        _uiState.update { prev ->
+            val nuevosFijos = prev.fijos.map { f ->
+                if (f.id.equals(fijo.id, ignoreCase = true)) {
+                    f.copy(
+                        abonado = 0L,
+                        estado = "🔴 Pendiente",
+                        fechaPago = "",
+                        saldo = f.cuota
+                    )
+                } else f
+            }
+
+            val q1Pend = nuevosFijos.filter { it.quincena == 1 && !it.estaPagado }.sumOf { (it.cuota - it.abonado).coerceAtLeast(0L) }
+            val q2Pend = nuevosFijos.filter { it.quincena == 2 && !it.estaPagado }.sumOf { (it.cuota - it.abonado).coerceAtLeast(0L) }
+            val totalPend = q1Pend + q2Pend
+
+            val nuevaListaMovs = if (movAsociado != null) {
+                prev.movimientos.filterNot { it.id == movAsociado.id }
+            } else prev.movimientos
+
+            val nuevoGastoMes = (prev.gastosMes - montoRevertido).coerceAtLeast(0L)
+            val nuevoDisp = prev.disponibleReal + montoRevertido
+            val nuevoAbonadoFijos = (prev.totalAbonadoFijos - montoRevertido).coerceAtLeast(0L)
+
+            prev.copy(
+                fijos = nuevosFijos,
+                fijosPendientes = totalPend,
+                q1Pendiente = q1Pend,
+                q2Pendiente = q2Pend,
+                totalAbonadoFijos = nuevoAbonadoFijos,
+                gastosMes = nuevoGastoMes,
+                disponibleReal = nuevoDisp,
+                movimientos = nuevaListaMovs,
+                statusBanner = "↺ Pago de ${fijo.concepto} revertido a Pendiente"
+            )
+        }
+
+        // 3. Sincronización robusta con Google Sheets en segundo plano
+        viewModelScope.launch {
+            if (movAsociado != null) {
+                try {
+                    withContext(Dispatchers.IO) {
+                        RetrofitClient.api.executePostAction(
+                            mapOf(
+                                "action" to "deleteMovement",
+                                "token" to RetrofitClient.AUTH_TOKEN,
+                                "id" to movAsociado.id,
+                                "descripcion" to movAsociado.descripcion,
+                                "valor" to movAsociado.valor
+                            )
+                        )
+                    }
+                } catch (_: Exception) {}
+            }
+
+            try {
+                withContext(Dispatchers.IO) {
+                    RetrofitClient.api.executePostAction(
+                        mapOf(
+                            "action" to "revertirPagoFijo",
+                            "token" to RetrofitClient.AUTH_TOKEN,
+                            "id" to fijo.id,
+                            "concepto" to fijo.concepto,
+                            "valor" to montoRevertido,
+                            "mes" to estado.mesActivo,
+                            "anio" to estado.anioActivo
+                        )
+                    )
+                }
+            } catch (_: Exception) {}
+
+            try {
+                withContext(Dispatchers.IO) {
+                    RetrofitClient.api.executePostAction(
+                        mapOf(
+                            "action" to "updateFixedObligation",
+                            "token" to RetrofitClient.AUTH_TOKEN,
+                            "id" to fijo.id,
+                            "cuota" to fijo.cuota,
+                            "abonado" to 0L,
+                            "estado" to "🔴 Pendiente",
+                            "saldo" to fijo.cuota,
+                            "fechaPago" to "",
+                            "mes" to estado.mesActivo,
+                            "anio" to estado.anioActivo
+                        )
+                    )
+                }
+            } catch (_: Exception) {}
+
+            try {
+                kotlinx.coroutines.delay(1200)
+                sincronizarConSheets(silencioso = true)
+            } catch (_: Exception) {}
+        }
+    }
+
     fun crearGastoFijo(concepto: String, categoria: String, cuota: Long, dia: Int) {
         if (concepto.isBlank() || cuota <= 0L) return
         val estado = _uiState.value
