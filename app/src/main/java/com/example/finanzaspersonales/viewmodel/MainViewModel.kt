@@ -260,7 +260,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     val abonado = f.optLong("abonado", 0L)
                     val estadoStr = f.optString("estado", "")
                     val fechaPagoStr = f.optString("fechaPago", "")
-                    val esPagado = estadoStr.contains("Pagado", ignoreCase = true) || (cuota > 0 && abonado >= cuota) || (fechaPagoStr.isNotBlank() && cuota > 0 && abonado == 0L && estadoStr.isBlank())
+                    val esArriendo = f.optString("id", "").equals("F-0116", ignoreCase = true) || f.optString("concepto", "").contains("arriendo", ignoreCase = true)
+                    val esPagado = if (esArriendo && abonado == 0L) false else (estadoStr.contains("Pagado", ignoreCase = true) || (cuota > 0 && abonado >= cuota))
                     val saldoCalc = if (esPagado) 0L else f.optLong("saldo", (cuota - abonado).coerceAtLeast(0L))
 
                     fijosList.add(
@@ -767,7 +768,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             GastoFijoItem("F-0122", "Agua", "Servicios", 15, 60000L, 60000L, "🟢 Pagado", "2026-10-17", 0L, "Media", "Transferencia"),
 
             // QUINCENA 2 / FIN DE MES (DÍA 30 DE CADA MES)
-            GastoFijoItem("F-0116", "ARRIENDO CASA", "Vivienda", 30, 900000L, 900000L, "🟢 Pagado", "2026-09-30", 0L, "Media", "Efectivo"),
+            GastoFijoItem("F-0116", "ARRIENDO CASA", "Vivienda", 30, 900000L, 0L, "🔴 Pendiente", "", 900000L, "Media", "Efectivo"),
             GastoFijoItem("F-0117", "Google One", "Servicios", 30, 20000L, 20000L, "🟢 Pagado", "2026-09-20", 0L, "Media", "Efectivo"),
             GastoFijoItem("F-0118", "Gasolina Moto", "Moto", 30, 25000L, 0L, "🔴 Pendiente", "", 25000L, "Media", "Efectivo"),
             GastoFijoItem("F-0119", "Parqueadero Trabajo Semanal", "Transporte", 30, 40000L, 0L, "🔴 Pendiente", "", 40000L, "Media", "Efectivo"),

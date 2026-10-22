@@ -1525,7 +1525,7 @@ function obtenerDatosCompletosDashboard_(mesFiltro, anioFiltro) {
 
   // Auto-reconciliación de fijos y movimiento inmediato de correos leídos en Gmail
   try {
-    autoReconciliarFijosDesdeMovimientos_(ss, mesActivo, anioActivo);
+    // autoReconciliar desactivado: no sobreescribir celdas de CONTROL FIJOS
   } catch (eRec) {}
   try {
     archivarCorreosFinancierosViejos_();

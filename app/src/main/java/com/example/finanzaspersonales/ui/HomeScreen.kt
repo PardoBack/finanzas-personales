@@ -305,34 +305,6 @@ private fun PardoTopBar(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Botón Escanear Gmail (.ZIP) Ultra-Diseñado
-            Surface(
-                onClick = onScanGmail,
-                color = CardElevated,
-                shape = RoundedCornerShape(12.dp),
-                border = BorderStroke(1.dp, CyanGlow.copy(alpha = 0.5f)),
-                modifier = Modifier.height(38.dp)
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 11.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.FolderZip,
-                        contentDescription = "Escanear Gmail .ZIP",
-                        tint = CyanNeon,
-                        modifier = Modifier.size(17.dp)
-                    )
-                    Spacer(modifier = Modifier.width(5.dp))
-                    Text(
-                        text = ".ZIP",
-                        color = CyanNeon,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.ExtraBold
-                    )
-                }
-            }
-
             // Botón Sincronizar
             IconButton(
                 onClick = onSyncSheets,
@@ -503,35 +475,6 @@ private fun InicioTabContent(
             .padding(horizontal = 18.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // 1. Selector de Meses Horizontal con Glow
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            meses.forEach { (key, shortLabel) ->
-                val active = uiState.mesActivo.equals(key, ignoreCase = true)
-                Surface(
-                    onClick = { onSelectMonth(key) },
-                    color = if (active) CyanGlow.copy(alpha = 0.25f) else CardBackground,
-                    shape = RoundedCornerShape(14.dp),
-                    border = BorderStroke(
-                        1.dp,
-                        if (active) CyanNeon else SubtleBorder
-                    )
-                ) {
-                    Text(
-                        text = "$shortLabel 26",
-                        color = if (active) CyanNeon else TextSecondary,
-                        fontSize = 12.sp,
-                        fontWeight = if (active) FontWeight.ExtraBold else FontWeight.Medium,
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 9.dp)
-                    )
-                }
-            }
-        }
-
         // 2. Hero Card de Disponible Real con Botones "Muy Chimba"
         Surface(
             shape = RoundedCornerShape(24.dp),
@@ -634,74 +577,86 @@ private fun InicioTabContent(
 
                 Spacer(modifier = Modifier.height(18.dp))
 
-                // BOTONES PRINCIPALES DE ALTO IMPACTO (52dp, con gradientes vivos y cápsulas)
+                // BOTONES DE ACCIÓN RÁPIDA (Estilo Fintech Premium y Sofisticado)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    // Botón - Registrar Gasto
-                    Box(
+                    // Botón Registrar Gasto
+                    Surface(
+                        onClick = onOpenGasto,
                         modifier = Modifier
                             .weight(1f)
-                            .height(52.dp)
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(
-                                Brush.horizontalGradient(
-                                    colors = listOf(Color(0xFFE11D48), Color(0xFFBE123C))
-                                )
-                            )
-                            .border(1.dp, Color(0xFFFDA4AF).copy(alpha = 0.4f), RoundedCornerShape(16.dp))
-                            .clickable { onOpenGasto() },
-                        contentAlignment = Alignment.Center
+                            .height(46.dp),
+                        shape = RoundedCornerShape(14.dp),
+                        color = Color(0xFF1E171B),
+                        border = BorderStroke(1.dp, Color(0xFFF43F5E).copy(alpha = 0.45f))
                     ) {
                         Row(
+                            modifier = Modifier.fillMaxSize(),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.Center
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .size(26.dp)
+                                    .size(24.dp)
                                     .clip(CircleShape)
-                                    .background(Color.White.copy(alpha = 0.2f)),
+                                    .background(Color(0xFFF43F5E).copy(alpha = 0.16f)),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Icon(Icons.Default.Remove, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                                Icon(
+                                    imageVector = Icons.Default.Remove,
+                                    contentDescription = null,
+                                    tint = Color(0xFFFB7185),
+                                    modifier = Modifier.size(15.dp)
+                                )
                             }
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Registrar Gasto", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold)
+                            Text(
+                                text = "Registrar Gasto",
+                                color = Color(0xFFFFF1F2),
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold
+                            )
                         }
                     }
 
-                    // Botón + Registrar Ingreso
-                    Box(
+                    // Botón Registrar Ingreso
+                    Surface(
+                        onClick = onOpenIngreso,
                         modifier = Modifier
                             .weight(1f)
-                            .height(52.dp)
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(
-                                Brush.horizontalGradient(
-                                    colors = listOf(Color(0xFF059669), Color(0xFF047857))
-                                )
-                            )
-                            .border(1.dp, Color(0xFF6EE7B7).copy(alpha = 0.45f), RoundedCornerShape(16.dp))
-                            .clickable { onOpenIngreso() },
-                        contentAlignment = Alignment.Center
+                            .height(46.dp),
+                        shape = RoundedCornerShape(14.dp),
+                        color = Color(0xFF10211B),
+                        border = BorderStroke(1.dp, Color(0xFF10B981).copy(alpha = 0.45f))
                     ) {
                         Row(
+                            modifier = Modifier.fillMaxSize(),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.Center
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .size(26.dp)
+                                    .size(24.dp)
                                     .clip(CircleShape)
-                                    .background(Color.White.copy(alpha = 0.22f)),
+                                    .background(Color(0xFF10B981).copy(alpha = 0.16f)),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Icon(Icons.Default.Add, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                                Icon(
+                                    imageVector = Icons.Default.Add,
+                                    contentDescription = null,
+                                    tint = Color(0xFF34D399),
+                                    modifier = Modifier.size(15.dp)
+                                )
                             }
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Registrar Ingreso", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.ExtraBold)
+                            Text(
+                                text = "Registrar Ingreso",
+                                color = Color(0xFFECFDF5),
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold
+                            )
                         }
                     }
                 }
@@ -1383,14 +1338,21 @@ private fun FijosTabContent(
                     fontSize = 12.sp
                 )
             }
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(EmeraldGreen)
-                    .clickable { onOpenNuevoFijo() }
-                    .padding(horizontal = 14.dp, vertical = 9.dp)
+            Surface(
+                onClick = onOpenNuevoFijo,
+                modifier = Modifier.height(34.dp),
+                shape = RoundedCornerShape(10.dp),
+                color = EmeraldGreen.copy(alpha = 0.15f),
+                border = BorderStroke(1.dp, EmeraldGreen.copy(alpha = 0.5f))
             ) {
-                Text("+ Nuevo Fijo", color = DeepObsidian, fontWeight = FontWeight.ExtraBold, fontSize = 12.sp)
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .padding(horizontal = 12.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("+ Nuevo Fijo", color = EmeraldBright, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                }
             }
         }
 
@@ -1695,26 +1657,32 @@ private fun GastoFijoItemRow(
 
                 if (!fijo.estaPagado) {
                     val montoAPagar = if (fijo.saldo > 0) fijo.saldo else fijo.cuota
-                    // Botón de Pago con Rayo y Alto Impacto
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(
-                                Brush.horizontalGradient(
-                                    colors = listOf(CyanGlow, EmeraldGreen)
-                                )
-                            )
-                            .clickable { onPagar() }
-                            .padding(horizontal = 14.dp, vertical = 10.dp)
+                    // Botón de Pago Elegante Fintech
+                    Surface(
+                        onClick = onPagar,
+                        modifier = Modifier.height(34.dp),
+                        shape = RoundedCornerShape(10.dp),
+                        color = Color(0xFF132235),
+                        border = BorderStroke(1.dp, CyanNeon.copy(alpha = 0.6f))
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Bolt, contentDescription = null, tint = DeepObsidian, modifier = Modifier.size(16.dp))
+                        Row(
+                            modifier = Modifier
+                                .fillMaxHeight()
+                                .padding(horizontal = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Bolt,
+                                contentDescription = null,
+                                tint = CyanNeon,
+                                modifier = Modifier.size(14.dp)
+                            )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
                                 text = "Pagar $${MainViewModel.formatearNumero(montoAPagar)}",
-                                color = DeepObsidian,
+                                color = CyanNeon,
                                 fontSize = 12.sp,
-                                fontWeight = FontWeight.Black
+                                fontWeight = FontWeight.Bold
                             )
                         }
                     }
