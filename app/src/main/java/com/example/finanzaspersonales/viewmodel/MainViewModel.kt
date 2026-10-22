@@ -426,10 +426,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
         try {
             NotificationHelper.notifyMovimientoRegistrado(
-                getApplication(),
-                tipo,
-                nuevoMov.descripcion,
-                valor
+                context = getApplication(),
+                tipo = tipo,
+                descripcion = nuevoMov.descripcion,
+                valor = valor,
+                cuenta = cuenta
             )
         } catch (_: Exception) {}
 
@@ -714,9 +715,24 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
                 val body = response.body()
                 val procesadas = body?.optInt("procesadas", 0) ?: 0
+                val ultimoComercio = body?.optString("ultimoComercio", "Facturador Electrónico .ZIP") ?: "Facturador Electrónico .ZIP"
+                val ultimoValor = body?.optLong("ultimoValor", 0L) ?: 0L
+
                 val msg = if (procesadas > 0) {
-                    "📬 ¡$procesadas factura(s) .ZIP/XML procesadas! Quedaron sin leer en tu bandeja y se moverán al leerlas."
+                    NotificationHelper.notifyFacturaProcesada(
+                        context = getApplication(),
+                        comercio = ultimoComercio,
+                        monto = if (ultimoValor > 0L) ultimoValor else null,
+                        cantidad = procesadas
+                    )
+                    "📬 ¡$procesadas factura(s) .ZIP/XML procesadas! Notificación enviada."
                 } else {
+                    NotificationHelper.showNotification(
+                        context = getApplication(),
+                        title = "📬 Bandeja Gmail Al Día",
+                        message = "No hay facturas pendientes. Todos los correos leídos están ordenados en FINANZAS.",
+                        subText = "Facturas .ZIP"
+                    )
                     "📬 Bandeja revisada: Correos leídos movidos a su carpeta FINANZAS y sin facturas pendientes."
                 }
                 _uiState.update { it.copy(isScanningGmail = false, statusBanner = msg) }

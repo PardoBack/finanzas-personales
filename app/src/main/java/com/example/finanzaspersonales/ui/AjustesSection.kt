@@ -192,31 +192,59 @@ fun AjustesSection(
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // Botón Enviar Notificación de Prueba
-                Button(
-                    onClick = {
-                        NotificationHelper.sendTestNotification(context)
-                        notifStatusMessage = "¡Notificación de prueba enviada con éxito! Revisa la barra superior."
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .pressScale(0.96f),
-                    colors = ButtonDefaults.buttonColors(containerColor = AppTheme.colors.emerald),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.NotificationsActive,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "Enviar Notificación de Prueba",
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 13.sp
-                    )
+                // Botones de Prueba de Notificaciones
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(
+                        onClick = {
+                            val sent = NotificationHelper.sendTestFacturaNotification(context)
+                            notifStatusMessage = if (sent) "🧾 Notificación de Factura .ZIP enviada. ¡Mira tu bandeja de notificaciones!" else "⚠️ Habilita el permiso de notificaciones para recibir alertas."
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .pressScale(0.96f),
+                        colors = ButtonDefaults.buttonColors(containerColor = AppTheme.colors.cyan),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ReceiptLong,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Probar Notificación Factura .ZIP (Gmail)",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 12.sp
+                        )
+                    }
+
+                    Button(
+                        onClick = {
+                            val sent = NotificationHelper.sendTestPagoNotification(context)
+                            notifStatusMessage = if (sent) "💳 Notificación de Pago Detectado enviada. ¡Revisa tu barra superior!" else "⚠️ Habilita el permiso de notificaciones."
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .pressScale(0.96f),
+                        colors = ButtonDefaults.buttonColors(containerColor = AppTheme.colors.emerald),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CreditCard,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Probar Notificación Pago Detectado",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 12.sp
+                        )
+                    }
                 }
 
                 notifStatusMessage?.let { msg ->

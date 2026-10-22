@@ -1,6 +1,7 @@
 package com.example.finanzaspersonales.ui
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.*
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
@@ -8,6 +9,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -27,6 +30,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -415,27 +419,8 @@ private fun PardoBottomNav(
                 onClick = { onSelectTab(1) }
             )
 
-            // Botón Central + Nuevo Movimiento con Microinteracción Bounce
-            Box(
-                modifier = Modifier
-                    .size(54.dp)
-                    .clip(CircleShape)
-                    .background(
-                        Brush.linearGradient(
-                            colors = listOf(AppTheme.colors.cyan, AppTheme.colors.emeraldBright)
-                        )
-                    )
-                    .bounceClick(scaleDown = 0.88f, onClick = onOpenNewMovement)
-                    .shadow(elevation = 12.dp, shape = CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Nuevo Movimiento",
-                    tint = DeepObsidian,
-                    modifier = Modifier.size(30.dp)
-                )
-            }
+            // Botón Central + Nuevo Movimiento con Animación de Entrada y Halo Respiratorio
+            CentralFloatingActionButton(onClick = onOpenNewMovement)
 
             BottomNavItem(
                 label = "Fijos",
@@ -481,6 +466,131 @@ private fun BottomNavItem(
             fontSize = 11.sp,
             fontWeight = if (selected) FontWeight.ExtraBold else FontWeight.Medium
         )
+    }
+}
+
+@Composable
+private fun CentralFloatingActionButton(
+    onClick: () -> Unit
+) {
+    // 1. Animación de Entrada al abrir la app (Spring Pop-up)
+    val entranceScale = remember { Animatable(0f) }
+    LaunchedEffect(Unit) {
+        entranceScale.animateTo(
+            targetValue = 1f,
+            animationSpec = spring(
+                dampingRatio = Spring.DampingRatioMediumBouncy,
+                stiffness = Spring.StiffnessLow
+            )
+        )
+    }
+
+    // 2. Halo respiratorio ambiental infinito (Breathing Glow)
+    val infiniteTransition = rememberInfiniteTransition(label = "haloTransition")
+    val haloPulse by infiniteTransition.animateFloat(
+        initialValue = 52f,
+        targetValue = 64f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1600, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "haloSize"
+    )
+    val haloAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.38f,
+        targetValue = 0.12f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1600, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "haloAlpha"
+    )
+
+    // 3. Estado de presión táctil con rotación y compresión elástica
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+
+    val pressScale by animateFloatAsState(
+        targetValue = if (isPressed) 0.86f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "fabPressScale"
+    )
+
+    val iconRotation by animateFloatAsState(
+        targetValue = if (isPressed) 45f else 0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "fabIconRotation"
+    )
+
+    Box(
+        modifier = Modifier
+            .size(66.dp)
+            .graphicsLayer {
+                scaleX = entranceScale.value * pressScale
+                scaleY = entranceScale.value * pressScale
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        // Halo de luz ambiental
+        Box(
+            modifier = Modifier
+                .size(haloPulse.dp)
+                .clip(CircleShape)
+                .background(
+                    Brush.radialGradient(
+                        colors = listOf(
+                            AppTheme.colors.cyan.copy(alpha = haloAlpha),
+                            Color.Transparent
+                        )
+                    )
+                )
+        )
+
+        // Botón Principal
+        Surface(
+            onClick = onClick,
+            interactionSource = interactionSource,
+            shape = CircleShape,
+            color = Color.Transparent,
+            shadowElevation = 14.dp,
+            modifier = Modifier
+                .size(54.dp)
+                .clip(CircleShape)
+                .background(
+                    Brush.linearGradient(
+                        colors = listOf(AppTheme.colors.cyan, AppTheme.colors.emeraldBright)
+                    )
+                )
+                .border(
+                    width = 1.5.dp,
+                    brush = Brush.linearGradient(
+                        colors = listOf(Color.White.copy(alpha = 0.65f), Color.Transparent)
+                    ),
+                    shape = CircleShape
+                )
+        ) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "Nuevo Movimiento",
+                    tint = Color(0xFF090D14),
+                    modifier = Modifier
+                        .size(30.dp)
+                        .graphicsLayer {
+                            rotationZ = iconRotation
+                        }
+                )
+            }
+        }
     }
 }
 
