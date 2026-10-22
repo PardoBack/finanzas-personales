@@ -21,7 +21,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.content.Intent
+import android.provider.Settings
+import com.example.finanzaspersonales.network.RetrofitClient
 import com.example.finanzaspersonales.util.NotificationHelper
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 @Composable
 fun AjustesSection(
@@ -241,6 +247,89 @@ fun AjustesSection(
                         Text(
                             text = "Probar Notificación Pago Detectado",
                             color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 12.sp
+                        )
+                    }
+
+                    // Botón para simular detección real de pago en gasolinera
+                    Button(
+                        onClick = {
+                            val comercio = "Gasolinera Primax Las Palmas"
+                            val monto = 50000L
+                            val cuenta = "Google Wallet (Nequi Visa)"
+                            NotificationHelper.notifyPagoDetectado(context, comercio, monto, cuenta)
+                            notifStatusMessage = "⛽ Pago en Gasolinera detectado ($ 50.000 COP) y clasificado como Moto / Combustible."
+
+                            // Sincronizar en segundo plano con Sheets
+                            CoroutineScope(Dispatchers.IO).launch {
+                                try {
+                                    val payload = mapOf(
+                                        "action" to "addMovement",
+                                        "token" to RetrofitClient.AUTH_TOKEN,
+                                        "id" to "M-AUTO-${System.currentTimeMillis() % 10000}",
+                                        "tipo" to "Gasto",
+                                        "valor" to monto,
+                                        "descripcion" to comercio,
+                                        "categoria" to "Moto",
+                                        "subcategoria" to "Combustible",
+                                        "cuenta" to "Google Wallet",
+                                        "metodo" to "Tarjeta Virtual / Google Wallet",
+                                        "origen" to "Detector Billetera Android"
+                                    )
+                                    RetrofitClient.api.executePostAction(payload)
+                                } catch (_: Exception) {}
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .pressScale(0.96f),
+                        colors = ButtonDefaults.buttonColors(containerColor = AppTheme.colors.amber),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.LocalGasStation,
+                            contentDescription = null,
+                            tint = Color(0xFF090D14),
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Simular Pago Gasolinera ($ 50.000 COP)",
+                            color = Color(0xFF090D14),
+                            fontWeight = FontWeight.Black,
+                            fontSize = 12.sp
+                        )
+                    }
+
+                    // Botón para abrir configuración de escucha de notificaciones
+                    OutlinedButton(
+                        onClick = {
+                            try {
+                                val intent = Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS).apply {
+                                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                                }
+                                context.startActivity(intent)
+                            } catch (e: Exception) {
+                                notifStatusMessage = "No se pudo abrir Ajustes de Notificaciones: ${e.message}"
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .pressScale(0.96f),
+                        border = BorderStroke(1.dp, AppTheme.colors.cyan.copy(alpha = 0.5f)),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.SettingsSuggest,
+                            contentDescription = null,
+                            tint = AppTheme.colors.cyan,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Acceso a Notificaciones de Tarjeta (Android)",
+                            color = AppTheme.colors.cyan,
                             fontWeight = FontWeight.Bold,
                             fontSize = 12.sp
                         )
