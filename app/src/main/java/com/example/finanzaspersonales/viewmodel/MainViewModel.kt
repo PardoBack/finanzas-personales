@@ -111,7 +111,7 @@ data class DashboardUiState(
     val mensajesCfo: List<CfoMensaje> = listOf(
         CfoMensaje(
             autor = "ai",
-            texto = "Hola Marlon 👋 Soy tu CFO IA V26.9 conectado en vivo con tu Google Sheets y el analizador de facturas Gmail (.ZIP). Tus gastos fijos están organizados por Quincena 1 (Día 15) y Quincena 2 (Día 30)."
+            texto = "¡Hola Marlon! Soy tu asistente financiero de IA 🧠 ¿En qué te puedo ayudar hoy? ¿Qué movimiento o consulta financiera deseas realizar?"
         )
     )
 )

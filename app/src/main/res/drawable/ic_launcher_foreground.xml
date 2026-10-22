@@ -4,37 +4,51 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- PardoFinanzas Vault Shield Outline -->
+    
+    <!-- Outer Shield Vault Facet with Cyan Gradient Stroke -->
     <path
-        android:pathData="M54,24 L78,35 C78,60 54,80 54,80 C54,80 30,60 30,35 Z"
-        android:strokeWidth="3.2"
-        android:strokeColor="#06B6D4"
-        android:fillColor="#0D1E32"
+        android:pathData="M54,22 L80,36 C80,62 54,84 54,84 C54,84 28,62 28,36 Z"
+        android:strokeWidth="2.8"
+        android:strokeColor="#38BDF8"
+        android:fillColor="#121D30"
         android:strokeLineJoin="round" />
 
-    <!-- Stylized Monogram P Spine -->
+    <!-- Shield Right Shadow Facet -->
     <path
-        android:pathData="M44,40 L44,68"
-        android:strokeWidth="3.8"
-        android:strokeColor="#FFFFFF"
+        android:pathData="M54,22 L80,36 C80,62 54,84 54,84 L54,54 Z"
+        android:fillColor="#0C1422" />
+
+    <!-- Inner Glow Border -->
+    <path
+        android:pathData="M54,26 L76,38 C76,60 54,78 54,78 C54,78 32,60 32,38 Z"
+        android:strokeWidth="1.2"
+        android:strokeColor="#10B981"
+        android:strokeAlpha="0.4"
+        android:fillColor="#00000000" />
+
+    <!-- Stylized Monogram P Spine (Crisp White) -->
+    <path
+        android:pathData="M44,38 L44,70"
+        android:strokeWidth="4.5"
+        android:strokeColor="#F8FAFC"
         android:strokeLineCap="round" />
 
-    <!-- Stylized Monogram P Loop (Cyan to Emerald) -->
+    <!-- Monogram P Loop (Emerald Green to Cyan) -->
     <path
-        android:pathData="M44,40 L58,40 C64,40 68,44 68,50 C68,56 64,60 58,60 L44,60"
-        android:strokeWidth="3.8"
+        android:pathData="M44,38 L58,38 C65,38 70,43 70,50 C70,57 65,62 58,62 L44,62"
+        android:strokeWidth="4.5"
         android:strokeColor="#10B981"
         android:strokeLineCap="round"
         android:strokeLineJoin="round"
         android:fillColor="#00000000" />
 
-    <!-- Upward Growth Spark Diamond -->
+    <!-- Golden Apex Spark Diamond (Financial Growth) -->
     <path
-        android:pathData="M54,30 L56,33 L54,36 L52,33 Z"
-        android:fillColor="#FBBF24" />
+        android:pathData="M54,16 L56.5,20 L54,24 L51.5,20 Z"
+        android:fillColor="#F59E0B" />
 
-    <!-- Accent Node Dot -->
+    <!-- Electric Cyan Tech Node Dot at P Loop Vertex -->
     <path
-        android:pathData="M68,50m-1.5,0a1.5,1.5 0,1 1,3 0a1.5,1.5 0,1 1,-3 0"
-        android:fillColor="#00E5FF" />
+        android:pathData="M70,50m-2.2,0a2.2,2.2 0,1 1,4.4 0a2.2,2.2 0,1 1,-4.4 0"
+        android:fillColor="#00F2FE" />
 </vector>

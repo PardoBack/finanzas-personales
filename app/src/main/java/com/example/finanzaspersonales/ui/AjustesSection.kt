@@ -198,7 +198,9 @@ fun AjustesSection(
                         NotificationHelper.sendTestNotification(context)
                         notifStatusMessage = "¡Notificación de prueba enviada con éxito! Revisa la barra superior."
                     },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .pressScale(0.96f),
                     colors = ButtonDefaults.buttonColors(containerColor = AppTheme.colors.emerald),
                     shape = RoundedCornerShape(12.dp)
                 ) {
@@ -313,7 +315,9 @@ fun AjustesSection(
                 ) {
                     Button(
                         onClick = onScanGmail,
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier
+                            .weight(1f)
+                            .pressScale(0.95f),
                         colors = ButtonDefaults.buttonColors(containerColor = AppTheme.colors.cyan),
                         shape = RoundedCornerShape(12.dp)
                     ) {
@@ -326,7 +330,9 @@ fun AjustesSection(
                     }
                     OutlinedButton(
                         onClick = onSendEmailAudit,
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier
+                            .weight(1f)
+                            .pressScale(0.95f),
                         border = BorderStroke(1.dp, AppTheme.colors.subtleBorder),
                         shape = RoundedCornerShape(12.dp)
                     ) {
@@ -356,7 +362,9 @@ private fun ThemeOptionCard(
 ) {
     Surface(
         onClick = onClick,
-        modifier = modifier.height(95.dp),
+        modifier = modifier
+            .height(95.dp)
+            .pressScale(0.95f),
         shape = RoundedCornerShape(16.dp),
         color = if (isSelected) AppTheme.colors.cyan.copy(alpha = 0.18f) else AppTheme.colors.cardElevated,
         border = BorderStroke(

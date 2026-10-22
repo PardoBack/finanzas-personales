@@ -160,7 +160,10 @@ fun HomeScreen(viewModel: MainViewModel = viewModel()) {
                         newMovementDefaultType = "Ingreso"
                         showNewMovementSheet = true
                     },
-                    onScanGmail = { viewModel.escanearFacturasGmail() },
+                    onOpenCfo = {
+                        selectedTab = 3
+                        subTabMas = 1
+                    },
                     onQuickHormiga = { concepto, monto ->
                         viewModel.registrarGastoHormiga(concepto, monto)
                     },
@@ -260,32 +263,44 @@ private fun PardoTopBar(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
+            // Avatar de perfil premium con gradiente y badge pro
             Box(
                 modifier = Modifier
-                    .size(42.dp)
+                    .size(44.dp)
                     .clip(CircleShape)
                     .background(
                         Brush.linearGradient(
-                            colors = listOf(AppTheme.colors.cyan, AppTheme.colors.violet)
+                            colors = listOf(AppTheme.colors.cyan, AppTheme.colors.emeraldBright)
                         )
                     )
-                    .border(1.5.dp, AppTheme.colors.cardSurfaceLight, CircleShape),
+                    .padding(2.dp)
+                    .clip(CircleShape)
+                    .background(AppTheme.colors.cardElevated),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = "MP",
-                    color = Color.White,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.ExtraBold
+                Icon(
+                    imageVector = Icons.Default.Person,
+                    contentDescription = "Perfil Marlon",
+                    tint = AppTheme.colors.cyan,
+                    modifier = Modifier.size(24.dp)
+                )
+                // Badge PRO / Status en la esquina inferior derecha
+                Box(
+                    modifier = Modifier
+                        .size(10.dp)
+                        .align(Alignment.BottomEnd)
+                        .clip(CircleShape)
+                        .background(AppTheme.colors.emeraldBright)
+                        .border(1.5.dp, AppTheme.colors.cardBackground, CircleShape)
                 )
             }
             Spacer(modifier = Modifier.width(12.dp))
             Column {
                 Text(
-                    text = "Hola, Marlon 👋",
+                    text = "Marlon",
                     color = AppTheme.colors.textPrimary,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Black,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -311,7 +326,7 @@ private fun PardoTopBar(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Botón Modo Oscuro / Claro Instantáneo
+            // Botón Modo Oscuro / Claro Instantáneo con microinteracción
             IconButton(
                 onClick = onToggleTheme,
                 modifier = Modifier
@@ -319,6 +334,7 @@ private fun PardoTopBar(
                     .clip(CircleShape)
                     .background(AppTheme.colors.cardBackground)
                     .border(1.dp, AppTheme.colors.subtleBorder, CircleShape)
+                    .pressScale(0.92f)
             ) {
                 Icon(
                     imageVector = if (AppTheme.colors.isDark) Icons.Default.LightMode else Icons.Default.DarkMode,
@@ -336,6 +352,7 @@ private fun PardoTopBar(
                     .clip(CircleShape)
                     .background(AppTheme.colors.cardBackground)
                     .border(1.dp, AppTheme.colors.subtleBorder, CircleShape)
+                    .pressScale(0.92f)
             ) {
                 Icon(
                     imageVector = Icons.Default.Sync,
@@ -353,6 +370,7 @@ private fun PardoTopBar(
                     .clip(CircleShape)
                     .background(AppTheme.colors.cardBackground)
                     .border(1.dp, AppTheme.colors.subtleBorder, CircleShape)
+                    .pressScale(0.92f)
             ) {
                 Icon(
                     imageVector = Icons.Default.AutoAwesome,
@@ -372,9 +390,9 @@ private fun PardoBottomNav(
     onOpenNewMovement: () -> Unit
 ) {
     Surface(
-        color = Color(0xFF090E1A),
+        color = AppTheme.colors.cardBackground,
         tonalElevation = 10.dp,
-        border = BorderStroke(1.dp, SubtleBorder),
+        border = BorderStroke(1.dp, AppTheme.colors.subtleBorder),
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(
@@ -397,17 +415,17 @@ private fun PardoBottomNav(
                 onClick = { onSelectTab(1) }
             )
 
-            // Botón Central + Nuevo Movimiento con Aura Gradiente
+            // Botón Central + Nuevo Movimiento con Microinteracción Bounce
             Box(
                 modifier = Modifier
                     .size(54.dp)
                     .clip(CircleShape)
                     .background(
                         Brush.linearGradient(
-                            colors = listOf(CyanGlow, EmeraldGreen)
+                            colors = listOf(AppTheme.colors.cyan, AppTheme.colors.emeraldBright)
                         )
                     )
-                    .clickable { onOpenNewMovement() }
+                    .bounceClick(scaleDown = 0.88f, onClick = onOpenNewMovement)
                     .shadow(elevation = 12.dp, shape = CircleShape),
                 contentAlignment = Alignment.Center
             ) {
@@ -442,11 +460,11 @@ private fun BottomNavItem(
     selected: Boolean,
     onClick: () -> Unit
 ) {
-    val tint = if (selected) CyanNeon else TextSecondary
+    val tint = if (selected) AppTheme.colors.cyan else AppTheme.colors.textSecondary
     Column(
         modifier = Modifier
             .clip(RoundedCornerShape(12.dp))
-            .clickable { onClick() }
+            .bounceClick(scaleDown = 0.90f, onClick = onClick)
             .padding(horizontal = 10.dp, vertical = 6.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -478,7 +496,7 @@ private fun InicioTabContent(
     onSelectMonth: (String) -> Unit,
     onOpenGasto: () -> Unit,
     onOpenIngreso: () -> Unit,
-    onScanGmail: () -> Unit,
+    onOpenCfo: () -> Unit,
     onQuickHormiga: (String, Long) -> Unit,
     onClickMovimiento: (MovimientoItem) -> Unit,
     onVerTodosMovs: () -> Unit,
@@ -608,12 +626,12 @@ private fun InicioTabContent(
             }
         }
 
-        // 2. Fila de Acciones Rápidas Appetite UI (Icon Plates: Gasto, Ingreso, Facturas .ZIP, Fijos)
+        // 2. Fila de 4 Acciones Rápidas Appetite UI (Gasto, Ingreso, Fijos, CFO IA) con animación elástica
         val isDarkTheme = AppTheme.colors.isDark
         val rosePlate = if (isDarkTheme) Color(0xFF22161B) else Color(0xFFFFEEF1)
         val emeraldPlate = if (isDarkTheme) Color(0xFF13221C) else Color(0xFFE8F8F0)
-        val cyanPlate = if (isDarkTheme) Color(0xFF132034) else Color(0xFFEBF7FF)
         val amberPlate = if (isDarkTheme) Color(0xFF251E14) else Color(0xFFFFF7ED)
+        val violetPlate = if (isDarkTheme) Color(0xFF201633) else Color(0xFFF5EFFF)
 
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -637,14 +655,6 @@ private fun InicioTabContent(
                 onClick = onOpenIngreso
             )
             AppetiteActionPlate(
-                label = "Facturas .ZIP",
-                icon = Icons.Default.FolderZip,
-                iconColor = AppTheme.colors.cyan,
-                plateColor = cyanPlate,
-                borderColor = AppTheme.colors.cyan.copy(alpha = 0.35f),
-                onClick = onScanGmail
-            )
-            AppetiteActionPlate(
                 label = "Gastos Fijos",
                 icon = Icons.Default.Bolt,
                 iconColor = AppTheme.colors.amber,
@@ -652,77 +662,17 @@ private fun InicioTabContent(
                 borderColor = AppTheme.colors.amber.copy(alpha = 0.35f),
                 onClick = onVerFijos
             )
+            AppetiteActionPlate(
+                label = "CFO IA",
+                icon = Icons.Default.AutoAwesome,
+                iconColor = AppTheme.colors.violet,
+                plateColor = violetPlate,
+                borderColor = AppTheme.colors.violet.copy(alpha = 0.35f),
+                onClick = onOpenCfo
+            )
         }
 
-        // 3. Tarjeta de Escáner Gmail (.ZIP) & Regla No Leído -> Carpeta
-        Surface(
-            onClick = onScanGmail,
-            shape = RoundedCornerShape(18.dp),
-            color = CardBackground,
-            border = BorderStroke(1.dp, CyanGlow.copy(alpha = 0.35f)),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Row(
-                    modifier = Modifier.weight(1f),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(46.dp)
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(CyanGlow.copy(alpha = 0.18f))
-                            .border(1.dp, CyanNeon.copy(alpha = 0.4f), RoundedCornerShape(14.dp)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.FolderZip,
-                            contentDescription = "Analizador ZIP",
-                            tint = CyanNeon,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column {
-                        Text(
-                            text = "Analizador Facturas Gmail & .ZIP",
-                            color = TextPrimary,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.ExtraBold
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = "Descomprime .ZIP • Deja no leído • Al leer se mueve a FINANZAS",
-                            color = TextSecondary,
-                            fontSize = 11.sp,
-                            lineHeight = 15.sp
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.width(8.dp))
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(CyanNeon)
-                        .padding(horizontal = 12.dp, vertical = 8.dp)
-                ) {
-                    Text(
-                        text = if (uiState.isScanningGmail) "..." else "Escanear",
-                        color = DeepObsidian,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Black
-                    )
-                }
-            }
-        }
-
-        // 4. Mis Cuentas y Fondos Colanta
+        // 3. Mis Cuentas y Fondos Colanta
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -916,7 +866,7 @@ private fun AppetiteActionPlate(
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
-            .clickable { onClick() }
+            .bounceClick(scaleDown = 0.91f, onClick = onClick)
             .padding(horizontal = 4.dp)
     ) {
         Box(
@@ -1236,15 +1186,6 @@ private fun MovimientosTabContent(
                     fontSize = 12.sp
                 )
             }
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(CyanGlow)
-                    .clickable { onNuevoMovimiento() }
-                    .padding(horizontal = 14.dp, vertical = 9.dp)
-            ) {
-                Text("+ Nuevo", color = DeepObsidian, fontWeight = FontWeight.ExtraBold, fontSize = 12.sp)
-            }
         }
 
         OutlinedTextField(
@@ -1368,7 +1309,7 @@ private fun FijosTabContent(
                     fontWeight = FontWeight.ExtraBold
                 )
                 Text(
-                    text = "Sincronizado 1:1 con CONTROL FIJOS de Google Sheets",
+                    text = "Quincena 1 (Día 15) • Quincena 2 (Día 30)",
                     color = TextSecondary,
                     fontSize = 12.sp
                 )
@@ -1995,10 +1936,11 @@ private fun CfoIaSection(
 ) {
     var inputTexto by remember { mutableStateOf("") }
     val sugerencias = listOf(
-        "¿Cuánto tengo disponible?",
-        "Ver Fondos Colanta",
-        "¿Qué fijos faltan?",
-        "Escanear correos .ZIP"
+        Triple("¿Cuánto tengo disponible?", AppTheme.colors.cyan, Icons.Default.AccountBalanceWallet),
+        Triple("¿Qué fijos faltan por pagar?", AppTheme.colors.amber, Icons.Default.EventRepeat),
+        Triple("Ver Fondos Colanta", AppTheme.colors.emeraldBright, Icons.Default.Savings),
+        Triple("Gasté 25.000 en Almuerzo", AppTheme.colors.rose, Icons.Default.ShoppingCart),
+        Triple("Escanear correos .ZIP", AppTheme.colors.violet, Icons.Default.FolderZip)
     )
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -2008,20 +1950,32 @@ private fun CfoIaSection(
                 .horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            sugerencias.forEach { sug ->
-                Surface(
-                    onClick = { onSendPrompt(sug) },
-                    color = CardElevated,
-                    shape = RoundedCornerShape(10.dp),
-                    border = BorderStroke(1.dp, VioletAccent.copy(alpha = 0.4f))
+            sugerencias.forEach { (sug, colorAccent, icon) ->
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(colorAccent.copy(alpha = if (AppTheme.colors.isDark) 0.16f else 0.10f))
+                        .border(1.dp, colorAccent.copy(alpha = 0.45f), RoundedCornerShape(12.dp))
+                        .bounceClick(scaleDown = 0.92f) { onSendPrompt(sug) }
+                        .padding(horizontal = 12.dp, vertical = 7.dp)
                 ) {
-                    Text(
-                        text = sug,
-                        color = Color(0xFFC4B5FD),
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = null,
+                            tint = colorAccent,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Text(
+                            text = sug,
+                            color = if (AppTheme.colors.isDark) Color(0xFFF1F5F9) else AppTheme.colors.textPrimary,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
                 }
             }
         }
