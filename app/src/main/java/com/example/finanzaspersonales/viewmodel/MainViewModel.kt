@@ -12,6 +12,7 @@ import com.example.finanzaspersonales.data.Transaction
 import com.example.finanzaspersonales.data.TransactionRepository
 import com.example.finanzaspersonales.network.RetrofitClient
 import com.example.finanzaspersonales.worker.SyncWorker
+import com.example.finanzaspersonales.util.NotificationHelper
 import com.google.gson.JsonObject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -422,6 +423,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 statusBanner = "✅ Registrado $nuevoId: ${nuevoMov.descripcion}"
             )
         }
+
+        try {
+            NotificationHelper.notifyMovimientoRegistrado(
+                getApplication(),
+                tipo,
+                nuevoMov.descripcion,
+                valor
+            )
+        } catch (_: Exception) {}
 
         viewModelScope.launch {
             try {

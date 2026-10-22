@@ -68,7 +68,10 @@ fun HomeScreen(viewModel: MainViewModel = viewModel()) {
                 onSyncSheets = { viewModel.sincronizarConSheets(silencioso = false) },
                 onOpenCfo = {
                     selectedTab = 3
-                    subTabMas = 0
+                    subTabMas = 1
+                },
+                onToggleTheme = {
+                    ThemeManager.toggleDarkLight()
                 }
             )
         },
@@ -166,7 +169,7 @@ fun HomeScreen(viewModel: MainViewModel = viewModel()) {
                     onVerFijos = { selectedTab = 2 },
                     onVerFondos = {
                         selectedTab = 3
-                        subTabMas = 1
+                        subTabMas = 2
                     }
                 )
 
@@ -246,7 +249,8 @@ private fun PardoTopBar(
     uiState: DashboardUiState,
     onScanGmail: () -> Unit,
     onSyncSheets: () -> Unit,
-    onOpenCfo: () -> Unit
+    onOpenCfo: () -> Unit,
+    onToggleTheme: () -> Unit
 ) {
     Row(
         modifier = Modifier
@@ -262,10 +266,10 @@ private fun PardoTopBar(
                     .clip(CircleShape)
                     .background(
                         Brush.linearGradient(
-                            colors = listOf(CyanNeon, VioletAccent)
+                            colors = listOf(AppTheme.colors.cyan, AppTheme.colors.violet)
                         )
                     )
-                    .border(1.5.dp, CardSurfaceLight, CircleShape),
+                    .border(1.5.dp, AppTheme.colors.cardSurfaceLight, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
@@ -279,7 +283,7 @@ private fun PardoTopBar(
             Column {
                 Text(
                     text = "Hola, Marlon 👋",
-                    color = TextPrimary,
+                    color = AppTheme.colors.textPrimary,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.ExtraBold,
                     maxLines = 1,
@@ -290,12 +294,12 @@ private fun PardoTopBar(
                         modifier = Modifier
                             .size(7.dp)
                             .clip(CircleShape)
-                            .background(EmeraldBright)
+                            .background(AppTheme.colors.emeraldBright)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
                         text = "Finanzas • En vivo",
-                        color = TextSecondary,
+                        color = AppTheme.colors.textSecondary,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Medium
                     )
@@ -307,19 +311,36 @@ private fun PardoTopBar(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // Botón Modo Oscuro / Claro Instantáneo
+            IconButton(
+                onClick = onToggleTheme,
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(AppTheme.colors.cardBackground)
+                    .border(1.dp, AppTheme.colors.subtleBorder, CircleShape)
+            ) {
+                Icon(
+                    imageVector = if (AppTheme.colors.isDark) Icons.Default.LightMode else Icons.Default.DarkMode,
+                    contentDescription = "Cambiar modo visual",
+                    tint = if (AppTheme.colors.isDark) AppTheme.colors.amber else AppTheme.colors.cyan,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+
             // Botón Sincronizar (Appetite UI circular icon plate)
             IconButton(
                 onClick = onSyncSheets,
                 modifier = Modifier
                     .size(40.dp)
                     .clip(CircleShape)
-                    .background(CardBackground)
-                    .border(1.dp, SubtleBorder, CircleShape)
+                    .background(AppTheme.colors.cardBackground)
+                    .border(1.dp, AppTheme.colors.subtleBorder, CircleShape)
             ) {
                 Icon(
                     imageVector = Icons.Default.Sync,
                     contentDescription = "Sincronizar Sheets",
-                    tint = EmeraldBright,
+                    tint = AppTheme.colors.emeraldBright,
                     modifier = Modifier.size(18.dp)
                 )
             }
@@ -330,13 +351,13 @@ private fun PardoTopBar(
                 modifier = Modifier
                     .size(40.dp)
                     .clip(CircleShape)
-                    .background(CardBackground)
-                    .border(1.dp, SubtleBorder, CircleShape)
+                    .background(AppTheme.colors.cardBackground)
+                    .border(1.dp, AppTheme.colors.subtleBorder, CircleShape)
             ) {
                 Icon(
                     imageVector = Icons.Default.AutoAwesome,
                     contentDescription = "Asistente CFO IA",
-                    tint = VioletAccent,
+                    tint = AppTheme.colors.violet,
                     modifier = Modifier.size(18.dp)
                 )
             }
@@ -484,16 +505,24 @@ private fun InicioTabContent(
             border = BorderStroke(1.dp, SubtleBorder),
             modifier = Modifier.fillMaxWidth()
         ) {
+            val heroGradient = if (AppTheme.colors.isDark) {
+                Brush.verticalGradient(
+                    colors = listOf(
+                        Color(0xFF131B2A),
+                        Color(0xFF0C101A)
+                    )
+                )
+            } else {
+                Brush.verticalGradient(
+                    colors = listOf(
+                        Color(0xFFFFFFFF),
+                        Color(0xFFF1F5F9)
+                    )
+                )
+            }
             Column(
                 modifier = Modifier
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                Color(0xFF131B2A),
-                                Color(0xFF0C101A)
-                            )
-                        )
-                    )
+                    .background(heroGradient)
                     .padding(20.dp)
             ) {
                 Row(
@@ -580,6 +609,12 @@ private fun InicioTabContent(
         }
 
         // 2. Fila de Acciones Rápidas Appetite UI (Icon Plates: Gasto, Ingreso, Facturas .ZIP, Fijos)
+        val isDarkTheme = AppTheme.colors.isDark
+        val rosePlate = if (isDarkTheme) Color(0xFF22161B) else Color(0xFFFFEEF1)
+        val emeraldPlate = if (isDarkTheme) Color(0xFF13221C) else Color(0xFFE8F8F0)
+        val cyanPlate = if (isDarkTheme) Color(0xFF132034) else Color(0xFFEBF7FF)
+        val amberPlate = if (isDarkTheme) Color(0xFF251E14) else Color(0xFFFFF7ED)
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -588,33 +623,33 @@ private fun InicioTabContent(
             AppetiteActionPlate(
                 label = "Gasto",
                 icon = Icons.Default.Remove,
-                iconColor = RoseSoft,
-                plateColor = Color(0xFF22161B),
-                borderColor = Color(0xFFE11D48).copy(alpha = 0.35f),
+                iconColor = AppTheme.colors.rose,
+                plateColor = rosePlate,
+                borderColor = AppTheme.colors.rose.copy(alpha = 0.35f),
                 onClick = onOpenGasto
             )
             AppetiteActionPlate(
                 label = "Ingreso",
                 icon = Icons.Default.Add,
-                iconColor = EmeraldBright,
-                plateColor = Color(0xFF13221C),
-                borderColor = Color(0xFF10B981).copy(alpha = 0.35f),
+                iconColor = AppTheme.colors.emeraldBright,
+                plateColor = emeraldPlate,
+                borderColor = AppTheme.colors.emerald.copy(alpha = 0.35f),
                 onClick = onOpenIngreso
             )
             AppetiteActionPlate(
                 label = "Facturas .ZIP",
                 icon = Icons.Default.FolderZip,
-                iconColor = CyanNeon,
-                plateColor = Color(0xFF132034),
-                borderColor = CyanNeon.copy(alpha = 0.35f),
+                iconColor = AppTheme.colors.cyan,
+                plateColor = cyanPlate,
+                borderColor = AppTheme.colors.cyan.copy(alpha = 0.35f),
                 onClick = onScanGmail
             )
             AppetiteActionPlate(
                 label = "Gastos Fijos",
                 icon = Icons.Default.Bolt,
-                iconColor = AmberGold,
-                plateColor = Color(0xFF251E14),
-                borderColor = AmberGold.copy(alpha = 0.35f),
+                iconColor = AppTheme.colors.amber,
+                plateColor = amberPlate,
+                borderColor = AppTheme.colors.amber.copy(alpha = 0.35f),
                 onClick = onVerFijos
             )
         }
@@ -1904,44 +1939,47 @@ private fun MasTabContent(
             .padding(horizontal = 18.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // Selector de módulo secundario
+        // Selector de módulo secundario (Estadísticas, CFO IA, Fondos & Anual, Ajustes & Tema)
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             val tabs = listOf(
-                0 to "🤖 CFO IA",
-                1 to "🏦 Colanta & 2026",
-                2 to "📬 Regla .ZIP"
+                0 to "📊 Gráficos",
+                1 to "🤖 CFO IA",
+                2 to "🏦 Fondos",
+                3 to "⚙️ Ajustes"
             )
             tabs.forEach { (idx, title) ->
                 val active = subTab == idx
                 Surface(
                     onClick = { onSelectSubTab(idx) },
                     modifier = Modifier.weight(1f),
-                    color = if (active) CyanGlow.copy(alpha = 0.25f) else CardBackground,
-                    shape = RoundedCornerShape(14.dp),
-                    border = BorderStroke(1.dp, if (active) CyanNeon else SubtleBorder)
+                    color = if (active) AppTheme.colors.cyan.copy(alpha = 0.2f) else AppTheme.colors.cardBackground,
+                    shape = RoundedCornerShape(12.dp),
+                    border = BorderStroke(1.dp, if (active) AppTheme.colors.cyan else AppTheme.colors.subtleBorder)
                 ) {
                     Text(
                         text = title,
-                        color = if (active) CyanNeon else TextSecondary,
-                        fontSize = 12.sp,
+                        color = if (active) AppTheme.colors.cyan else AppTheme.colors.textSecondary,
+                        fontSize = 11.sp,
                         fontWeight = if (active) FontWeight.ExtraBold else FontWeight.Medium,
                         textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(vertical = 11.dp)
+                        maxLines = 1,
+                        modifier = Modifier.padding(vertical = 10.dp)
                     )
                 }
             }
         }
 
         when (subTab) {
-            0 -> CfoIaSection(
+            0 -> EstadisticasSection(uiState = uiState)
+            1 -> CfoIaSection(
                 mensajes = uiState.mensajesCfo,
                 onSendPrompt = onSendCfoPrompt
             )
-            1 -> ColantaYAnualSection(uiState = uiState)
-            2 -> ReglaGmailZipSection(
+            2 -> ColantaYAnualSection(uiState = uiState)
+            3 -> AjustesSection(
                 isScanning = uiState.isScanningGmail,
                 onScanGmail = onScanGmail,
                 onSendEmailAudit = onSendEmailAudit
