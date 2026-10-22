@@ -4481,5 +4481,13 @@ const FintechApp = {
 
   formatCOP(v) {
     return Math.round(Number(v) || 0).toLocaleString("es-CO");
+  },
+
+  addQuickAmount(inc) {
+    const input = document.getElementById("input-mov-valor");
+    if (!input) return;
+    this.haptic(10);
+    const curr = Number(input.value) || 0;
+    input.value = curr + inc;
   }
 };

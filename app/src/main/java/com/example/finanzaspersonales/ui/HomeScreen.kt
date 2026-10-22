@@ -579,16 +579,35 @@ private fun CentralFloatingActionButton(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Nuevo Movimiento",
-                    tint = Color(0xFF090D14),
+                androidx.compose.foundation.Canvas(
                     modifier = Modifier
-                        .size(30.dp)
+                        .size(24.dp)
                         .graphicsLayer {
                             rotationZ = iconRotation
                         }
-                )
+                ) {
+                    val strokeW = 3.6.dp.toPx()
+                    val strokeCap = androidx.compose.ui.graphics.StrokeCap.Round
+                    val darkTint = Color(0xFF090D14)
+                    val centerOffset = size.width / 2f
+                    val armLength = size.width * 0.40f
+                    // Barra horizontal con extremos suaves redondeados
+                    drawLine(
+                        color = darkTint,
+                        start = androidx.compose.ui.geometry.Offset(centerOffset - armLength, centerOffset),
+                        end = androidx.compose.ui.geometry.Offset(centerOffset + armLength, centerOffset),
+                        strokeWidth = strokeW,
+                        cap = strokeCap
+                    )
+                    // Barra vertical con extremos suaves redondeados
+                    drawLine(
+                        color = darkTint,
+                        start = androidx.compose.ui.geometry.Offset(centerOffset, centerOffset - armLength),
+                        end = androidx.compose.ui.geometry.Offset(centerOffset, centerOffset + armLength),
+                        strokeWidth = strokeW,
+                        cap = strokeCap
+                    )
+                }
             }
         }
     }
@@ -2415,26 +2434,58 @@ private fun NuevoMovimientoModal(
     val categoriasIngreso = listOf("Salario", "Bonificación", "Otros Ingresos")
     val cuentas = listOf("AyC Colanta", "Efectivo", "Nequi", "Bancolombia")
 
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
     ModalBottomSheet(
         onDismissRequest = onDismiss,
+        sheetState = sheetState,
         containerColor = CardBackground,
-        contentColor = TextPrimary
+        contentColor = TextPrimary,
+        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+        dragHandle = {
+            Box(
+                modifier = Modifier
+                    .padding(vertical = 10.dp)
+                    .width(44.dp)
+                    .height(4.dp)
+                    .clip(RoundedCornerShape(2.dp))
+                    .background(GlassBorder)
+            )
+        }
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp, vertical = 10.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+                .padding(horizontal = 20.dp)
+                .padding(bottom = 28.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text(
-                text = "Registrar Movimiento en Sheets",
-                color = TextPrimary,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.ExtraBold
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Nuevo Movimiento",
+                    color = TextPrimary,
+                    fontSize = 19.sp,
+                    fontWeight = FontWeight.ExtraBold
+                )
+                IconButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Cerrar",
+                        tint = TextSecondary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
 
-            // Selector Gasto / Ingreso con Botones Mejorados
+            // Selector Gasto / Ingreso
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -2443,7 +2494,7 @@ private fun NuevoMovimientoModal(
                 Box(
                     modifier = Modifier
                         .weight(1f)
-                        .height(48.dp)
+                        .height(46.dp)
                         .clip(RoundedCornerShape(14.dp))
                         .background(if (esGasto) RoseRed else CardElevated)
                         .border(1.dp, if (esGasto) Color(0xFFFDA4AF) else SubtleBorder, RoundedCornerShape(14.dp))
@@ -2459,7 +2510,7 @@ private fun NuevoMovimientoModal(
                 Box(
                     modifier = Modifier
                         .weight(1f)
-                        .height(48.dp)
+                        .height(46.dp)
                         .clip(RoundedCornerShape(14.dp))
                         .background(if (!esGasto) EmeraldGreen else CardElevated)
                         .border(1.dp, if (!esGasto) EmeraldBright else SubtleBorder, RoundedCornerShape(14.dp))
@@ -2473,6 +2524,7 @@ private fun NuevoMovimientoModal(
                 }
             }
 
+            // Monto Input
             OutlinedTextField(
                 value = montoTexto,
                 onValueChange = { montoTexto = it.filter { ch -> ch.isDigit() } },
@@ -2483,12 +2535,17 @@ private fun NuevoMovimientoModal(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // Chips rápidos de valor
+            // Chips rápidos de valor en pesos COP completos (sin 10K ni abreviaciones)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                listOf(5000L to "+$5k", 10000L to "+$10k", 20000L to "+$20k", 50000L to "+$50k").forEach { (inc, label) ->
+                listOf(
+                    5000L to "+$ 5.000",
+                    10000L to "+$ 10.000",
+                    20000L to "+$ 20.000",
+                    50000L to "+$ 50.000"
+                ).forEach { (inc, label) ->
                     Surface(
                         onClick = {
                             val actual = montoTexto.toLongOrNull() ?: 0L
@@ -2502,7 +2559,7 @@ private fun NuevoMovimientoModal(
                         Text(
                             text = label,
                             color = CyanNeon,
-                            fontSize = 12.sp,
+                            fontSize = 11.5.sp,
                             fontWeight = FontWeight.Bold,
                             textAlign = TextAlign.Center,
                             modifier = Modifier.padding(vertical = 9.dp)
@@ -2511,6 +2568,7 @@ private fun NuevoMovimientoModal(
                 }
             }
 
+            // Concepto
             OutlinedTextField(
                 value = descripcion,
                 onValueChange = { descripcion = it },
@@ -2520,59 +2578,105 @@ private fun NuevoMovimientoModal(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Text("Categoría", color = TextSecondary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                val cats = if (tipo == "Gasto") categoriasGasto else categoriasIngreso
-                cats.forEach { c ->
-                    val sel = categoria == c
-                    Surface(
-                        onClick = { categoria = c },
-                        color = if (sel) CyanGlow.copy(alpha = 0.25f) else CardElevated,
-                        shape = RoundedCornerShape(12.dp),
-                        border = BorderStroke(1.dp, if (sel) CyanNeon else SubtleBorder)
-                    ) {
-                        Text(
-                            text = "${iconoPorCategoria(c)} $c",
-                            color = if (sel) CyanNeon else TextSecondary,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
-                        )
+            // Distribución de Categorías en Cuadrícula de 3 Columnas
+            Text(
+                text = "Categoría",
+                color = TextSecondary,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(top = 2.dp)
+            )
+            val cats = if (tipo == "Gasto") categoriasGasto else categoriasIngreso
+            cats.chunked(3).forEach { rowCats ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    rowCats.forEach { c ->
+                        val sel = categoria == c
+                        Surface(
+                            onClick = { categoria = c },
+                            color = if (sel) {
+                                if (tipo == "Gasto") RoseRed.copy(alpha = 0.22f) else EmeraldGreen.copy(alpha = 0.22f)
+                            } else CardElevated,
+                            shape = RoundedCornerShape(12.dp),
+                            border = BorderStroke(
+                                1.dp,
+                                if (sel) {
+                                    if (tipo == "Gasto") RoseRed else EmeraldBright
+                                } else SubtleBorder
+                            ),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 9.dp, horizontal = 4.dp),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = iconoPorCategoria(c),
+                                    fontSize = 13.sp
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = c,
+                                    color = if (sel) {
+                                        if (tipo == "Gasto") Color(0xFFFDA4AF) else EmeraldBright
+                                    } else TextPrimary,
+                                    fontSize = 11.sp,
+                                    fontWeight = if (sel) FontWeight.Bold else FontWeight.Medium,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
+                    }
+                    repeat(3 - rowCats.size) {
+                        Spacer(modifier = Modifier.weight(1f))
                     }
                 }
             }
 
-            Text("Cuenta de Origen / Destino", color = TextSecondary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            // Cuenta de Origen / Destino
+            Text(
+                text = "Cuenta de Origen / Destino",
+                color = TextSecondary,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(top = 2.dp)
+            )
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState()),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 cuentas.forEach { cta ->
                     val sel = cuenta == cta
                     Surface(
                         onClick = { cuenta = cta },
-                        color = if (sel) EmeraldGreen.copy(alpha = 0.25f) else CardElevated,
+                        color = if (sel) CyanGlow.copy(alpha = 0.22f) else CardElevated,
                         shape = RoundedCornerShape(12.dp),
-                        border = BorderStroke(1.dp, if (sel) EmeraldBright else SubtleBorder)
+                        border = BorderStroke(1.dp, if (sel) CyanNeon else SubtleBorder),
+                        modifier = Modifier.weight(1f)
                     ) {
                         Text(
                             text = cta,
-                            color = if (sel) EmeraldBright else TextSecondary,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                            color = if (sel) CyanNeon else TextSecondary,
+                            fontSize = 11.sp,
+                            fontWeight = if (sel) FontWeight.Bold else FontWeight.Medium,
+                            textAlign = TextAlign.Center,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.padding(vertical = 9.dp, horizontal = 2.dp)
                         )
                     }
                 }
             }
 
+            Spacer(modifier = Modifier.height(4.dp))
+
+            // Botón Guardar
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -2597,10 +2701,13 @@ private fun NuevoMovimientoModal(
                     },
                 contentAlignment = Alignment.Center
             ) {
-                Text("Guardar en Fila 5 de Google Sheets", color = DeepObsidian, fontWeight = FontWeight.Black, fontSize = 14.sp)
+                Text(
+                    text = "Guardar en Fila 5 de Google Sheets",
+                    color = DeepObsidian,
+                    fontWeight = FontWeight.Black,
+                    fontSize = 14.sp
+                )
             }
-
-            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }
