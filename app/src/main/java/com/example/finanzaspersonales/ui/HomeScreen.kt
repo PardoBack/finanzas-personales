@@ -44,6 +44,8 @@ import com.example.finanzaspersonales.viewmodel.DashboardUiState
 import com.example.finanzaspersonales.viewmodel.GastoFijoItem
 import com.example.finanzaspersonales.viewmodel.MainViewModel
 import com.example.finanzaspersonales.viewmodel.MovimientoItem
+import androidx.compose.ui.platform.LocalContext
+import com.example.finanzaspersonales.util.NotificationHelper
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -645,7 +647,135 @@ private fun InicioTabContent(
             .padding(horizontal = 18.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-                // 1. Hero Card de Disponible Real (Appetite UI Dark Mode)
+        // 0. Selector de Períodos y Meses (Appetite UI / Dribbble)
+        val mesActualKey = uiState.mesActivo.lowercase(Locale.ROOT)
+        val esMesHistorico = mesActualKey != "octubre"
+
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .clip(CircleShape)
+                            .background(if (esMesHistorico) AppTheme.colors.amber else AppTheme.colors.cyan)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = if (esMesHistorico) "HISTÓRICO:" else "PERÍODO ACTIVO:",
+                        color = if (esMesHistorico) AppTheme.colors.amber else TextSecondary,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        letterSpacing = 1.sp
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "${uiState.mesActivo.replaceFirstChar { it.uppercase() }} 2026",
+                        color = TextPrimary,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Black
+                    )
+                }
+
+                if (esMesHistorico) {
+                    Surface(
+                        onClick = { onSelectMonth("octubre") },
+                        color = AppTheme.colors.cyan.copy(alpha = 0.16f),
+                        shape = RoundedCornerShape(8.dp),
+                        border = BorderStroke(1.dp, AppTheme.colors.cyan.copy(alpha = 0.4f)),
+                        modifier = Modifier.pressScale(0.95f)
+                    ) {
+                        Text(
+                            text = "Volver a Actual ↺",
+                            color = AppTheme.colors.cyan,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
+                } else {
+                    Text(
+                        text = "2026 Completo",
+                        color = CyanNeon,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            // Barra horizontal de los 12 meses
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                meses.forEach { (key, abrev) ->
+                    val isSelected = mesActualKey.equals(key, ignoreCase = true)
+                    Surface(
+                        onClick = { onSelectMonth(key) },
+                        color = if (isSelected) {
+                            if (key == "octubre") AppTheme.colors.cyan.copy(alpha = 0.22f)
+                            else AppTheme.colors.amber.copy(alpha = 0.22f)
+                        } else CardElevated,
+                        shape = RoundedCornerShape(10.dp),
+                        border = BorderStroke(
+                            1.dp,
+                            if (isSelected) {
+                                if (key == "octubre") AppTheme.colors.cyan
+                                else AppTheme.colors.amber
+                            } else SubtleBorder
+                        ),
+                        modifier = Modifier.pressScale(0.94f)
+                    ) {
+                        Text(
+                            text = abrev,
+                            color = if (isSelected) {
+                                if (key == "octubre") AppTheme.colors.cyan else AppTheme.colors.amber
+                            } else TextSecondary,
+                            fontSize = 12.sp,
+                            fontWeight = if (isSelected) FontWeight.Black else FontWeight.SemiBold,
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp)
+                        )
+                    }
+                }
+            }
+
+            // Banner informativo si se está viendo un mes anterior histórico
+            if (esMesHistorico) {
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = AppTheme.colors.amber.copy(alpha = 0.12f),
+                    border = BorderStroke(1.dp, AppTheme.colors.amber.copy(alpha = 0.35f)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.History,
+                            contentDescription = null,
+                            tint = AppTheme.colors.amber,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Viendo histórico de ${uiState.mesActivo.replaceFirstChar { it.uppercase() }}: Ingresos $${MainViewModel.formatearNumero(uiState.ingresosMes)} | Gastos $${MainViewModel.formatearNumero(uiState.gastosMes)}",
+                            color = AppTheme.colors.textPrimary,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+            }
+        }
+
+        // 1. Hero Card de Disponible Real (Appetite UI Dark Mode)
         Surface(
             shape = RoundedCornerShape(24.dp),
             color = CardBackground,
@@ -751,6 +881,193 @@ private fun InicioTabContent(
                         value = if (isBalanceVisible) "$${MainViewModel.formatearNumero(uiState.fijosPendientes)}" else "•••••",
                         valueColor = AmberGold
                     )
+                }
+            }
+        }
+
+        // 1.1 Tarjeta de Reporte Semanal y Ritmo de Gasto
+        val context = LocalContext.current
+        val gastosSemana = remember(uiState.movimientos) {
+            uiState.movimientos
+                .filter { !it.tipo.contains("Ingreso", ignoreCase = true) }
+                .take(6)
+                .sumOf { it.valor }
+        }
+        val promedioDiario = if (gastosSemana > 0) gastosSemana / 7 else 0L
+        val topCategoriaSemana = remember(uiState.movimientos) {
+            uiState.movimientos
+                .filter { !it.tipo.contains("Ingreso", ignoreCase = true) }
+                .groupBy { it.categoria }
+                .maxByOrNull { entry -> entry.value.sumOf { it.valor } }?.key ?: "Alimentación"
+        }
+
+        Surface(
+            shape = RoundedCornerShape(20.dp),
+            color = CardBackground,
+            border = BorderStroke(1.dp, AppTheme.colors.cyan.copy(alpha = 0.25f)),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier
+                    .background(
+                        Brush.linearGradient(
+                            colors = if (AppTheme.colors.isDark) {
+                                listOf(Color(0xFF0F1826), Color(0xFF0A0F19))
+                            } else {
+                                listOf(Color(0xFFF8FAFC), Color(0xFFF1F5F9))
+                            }
+                        )
+                    )
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(AppTheme.colors.cyan.copy(alpha = 0.15f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.DateRange,
+                                contentDescription = null,
+                                tint = AppTheme.colors.cyan,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column {
+                            Text(
+                                text = "Reporte Semanal de Gastos",
+                                color = TextPrimary,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.ExtraBold
+                            )
+                            Text(
+                                text = "Últimos 7 días • Ritmo saludable",
+                                color = TextSecondary,
+                                fontSize = 11.sp
+                            )
+                        }
+                    }
+
+                    // Botón para emitir notificación al teléfono
+                    Surface(
+                        onClick = {
+                            NotificationHelper.notifyReporteSemanal(
+                                context = context,
+                                totalSemana = gastosSemana,
+                                topCategoria = topCategoriaSemana,
+                                promedioDiario = promedioDiario
+                            )
+                        },
+                        color = AppTheme.colors.cyan.copy(alpha = 0.18f),
+                        shape = RoundedCornerShape(10.dp),
+                        border = BorderStroke(1.dp, AppTheme.colors.cyan.copy(alpha = 0.45f)),
+                        modifier = Modifier.pressScale(0.94f)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.NotificationsActive,
+                                contentDescription = null,
+                                tint = AppTheme.colors.cyan,
+                                modifier = Modifier.size(13.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "Notificar",
+                                color = AppTheme.colors.cyan,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+
+                // Bento row con métricas de la semana
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Surface(
+                        modifier = Modifier.weight(1f),
+                        color = CardElevated,
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(1.dp, SubtleBorder)
+                    ) {
+                        Column(modifier = Modifier.padding(10.dp)) {
+                            Text(
+                                text = "Gastado Semana",
+                                color = TextSecondary,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "$ ${MainViewModel.formatearNumero(gastosSemana)}",
+                                color = AppTheme.colors.rose,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Black
+                            )
+                        }
+                    }
+
+                    Surface(
+                        modifier = Modifier.weight(1f),
+                        color = CardElevated,
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(1.dp, SubtleBorder)
+                    ) {
+                        Column(modifier = Modifier.padding(10.dp)) {
+                            Text(
+                                text = "Ritmo Diario",
+                                color = TextSecondary,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "$ ${MainViewModel.formatearNumero(promedioDiario)}/d",
+                                color = AppTheme.colors.amber,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Black
+                            )
+                        }
+                    }
+
+                    Surface(
+                        modifier = Modifier.weight(1f),
+                        color = CardElevated,
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(1.dp, SubtleBorder)
+                    ) {
+                        Column(modifier = Modifier.padding(10.dp)) {
+                            Text(
+                                text = "Mayor Rubro",
+                                color = TextSecondary,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = topCategoriaSemana,
+                                color = AppTheme.colors.emeraldBright,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Black,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -1313,6 +1630,20 @@ private fun MovimientosTabContent(
                     text = "Toca cualquier registro para ver detalle o eliminar en Sheets",
                     color = TextSecondary,
                     fontSize = 12.sp
+                )
+            }
+
+            Surface(
+                color = if (uiState.mesActivo.lowercase(Locale.ROOT) == "octubre") AppTheme.colors.cyan.copy(alpha = 0.16f) else AppTheme.colors.amber.copy(alpha = 0.16f),
+                shape = RoundedCornerShape(10.dp),
+                border = BorderStroke(1.dp, if (uiState.mesActivo.lowercase(Locale.ROOT) == "octubre") AppTheme.colors.cyan.copy(alpha = 0.4f) else AppTheme.colors.amber.copy(alpha = 0.4f))
+            ) {
+                Text(
+                    text = "${uiState.mesActivo.replaceFirstChar { it.uppercase() }} 2026",
+                    color = if (uiState.mesActivo.lowercase(Locale.ROOT) == "octubre") AppTheme.colors.cyan else AppTheme.colors.amber,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp)
                 )
             }
         }

@@ -231,6 +231,36 @@ object NotificationHelper {
     }
 
     /**
+     * Notificación de reporte semanal de gastos y ritmo financiero
+     */
+    fun notifyReporteSemanal(
+        context: Context,
+        totalSemana: Long,
+        topCategoria: String,
+        promedioDiario: Long
+    ): Boolean {
+        val totalFmt = formatCop(totalSemana)
+        val promFmt = formatCop(promedioDiario)
+        val title = "📊 Reporte Semanal: $$totalFmt COP gastados"
+        val message = "Esta semana gastaste $$totalFmt COP. Mayor gasto en $topCategoria (~$$promFmt COP/día)."
+        val bigText = """
+            📊 Resumen Semanal de Finanzas
+            • Total Gastado: $$totalFmt COP
+            • Ritmo Diario: ~$$promFmt COP / día
+            • Categoría Principal: $topCategoria
+            • Estado: Tu balance en vivo y fijos están sincronizados.
+        """.trimIndent()
+        return showNotification(
+            context = context,
+            title = title,
+            message = message,
+            subText = "Reporte Semanal",
+            bigText = bigText,
+            notificationId = 5003
+        )
+    }
+
+    /**
      * Notificación de gasto fijo revertido
      */
     fun notifyGastoFijoRevertido(context: Context, concepto: String, valor: Long) {
