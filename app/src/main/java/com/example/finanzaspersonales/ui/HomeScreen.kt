@@ -59,6 +59,7 @@ fun HomeScreen(viewModel: MainViewModel = viewModel()) {
     var newMovementDefaultType by remember { mutableStateOf("Gasto") }
     var showNewFijoDialog by remember { mutableStateOf(false) }
     var selectedMovimientoDetalle by remember { mutableStateOf<MovimientoItem?>(null) }
+    var selectedCategoriaDetalle by remember { mutableStateOf<String?>(null) }
     var subTabMas by remember { mutableIntStateOf(0) } // 0: CFO IA, 1: Colanta & Anual, 2: Gmail .ZIP
 
     Scaffold(
@@ -158,6 +159,7 @@ fun HomeScreen(viewModel: MainViewModel = viewModel()) {
                     isBalanceVisible = isBalanceVisible,
                     onToggleBalance = { isBalanceVisible = !isBalanceVisible },
                     onSelectMonth = { viewModel.seleccionarMes(it) },
+                    onSelectCategory = { selectedCategoriaDetalle = it },
                     onOpenGasto = {
                         newMovementDefaultType = "Gasto"
                         showNewMovementSheet = true
@@ -204,7 +206,9 @@ fun HomeScreen(viewModel: MainViewModel = viewModel()) {
                     onSelectSubTab = { subTabMas = it },
                     onSendCfoPrompt = { viewModel.enviarPreguntaCfo(it) },
                     onScanGmail = { viewModel.escanearFacturasGmail() },
-                    onSendEmailAudit = { viewModel.enviarAuditoriaEmail() }
+                    onSendEmailAudit = { viewModel.enviarAuditoriaEmail() },
+                    onSelectMonth = { viewModel.seleccionarMes(it) },
+                    onSelectCategoria = { selectedCategoriaDetalle = it }
                 )
             }
         }
@@ -244,6 +248,18 @@ fun HomeScreen(viewModel: MainViewModel = viewModel()) {
             onDelete = {
                 viewModel.eliminarMovimiento(mov)
                 selectedMovimientoDetalle = null
+            }
+        )
+    }
+
+    selectedCategoriaDetalle?.let { cat ->
+        DetalleCategoriaModal(
+            categoria = cat,
+            uiState = uiState,
+            onDismiss = { selectedCategoriaDetalle = null },
+            onClickMovimiento = { mov ->
+                selectedCategoriaDetalle = null
+                selectedMovimientoDetalle = mov
             }
         )
     }
@@ -625,6 +641,7 @@ private fun InicioTabContent(
     isBalanceVisible: Boolean,
     onToggleBalance: () -> Unit,
     onSelectMonth: (String) -> Unit,
+    onSelectCategory: (String) -> Unit,
     onOpenGasto: () -> Unit,
     onOpenIngreso: () -> Unit,
     onOpenCfo: () -> Unit,
@@ -634,12 +651,6 @@ private fun InicioTabContent(
     onVerFijos: () -> Unit,
     onVerFondos: () -> Unit
 ) {
-    val meses = listOf(
-        "enero" to "Ene", "febrero" to "Feb", "marzo" to "Mar", "abril" to "Abr",
-        "mayo" to "May", "junio" to "Jun", "julio" to "Jul", "agosto" to "Ago",
-        "septiembre" to "Sep", "octubre" to "Oct", "noviembre" to "Nov", "diciembre" to "Dic"
-    )
-
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -647,133 +658,11 @@ private fun InicioTabContent(
             .padding(horizontal = 18.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // 0. Selector de Períodos y Meses (Appetite UI / Dribbble)
-        val mesActualKey = uiState.mesActivo.lowercase(Locale.ROOT)
-        val esMesHistorico = mesActualKey != "octubre"
-
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(8.dp)
-                            .clip(CircleShape)
-                            .background(if (esMesHistorico) AppTheme.colors.amber else AppTheme.colors.cyan)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = if (esMesHistorico) "HISTÓRICO:" else "PERÍODO ACTIVO:",
-                        color = if (esMesHistorico) AppTheme.colors.amber else TextSecondary,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        letterSpacing = 1.sp
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = "${uiState.mesActivo.replaceFirstChar { it.uppercase() }} 2026",
-                        color = TextPrimary,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Black
-                    )
-                }
-
-                if (esMesHistorico) {
-                    Surface(
-                        onClick = { onSelectMonth("octubre") },
-                        color = AppTheme.colors.cyan.copy(alpha = 0.16f),
-                        shape = RoundedCornerShape(8.dp),
-                        border = BorderStroke(1.dp, AppTheme.colors.cyan.copy(alpha = 0.4f)),
-                        modifier = Modifier.pressScale(0.95f)
-                    ) {
-                        Text(
-                            text = "Volver a Actual ↺",
-                            color = AppTheme.colors.cyan,
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                        )
-                    }
-                } else {
-                    Text(
-                        text = "2026 Completo",
-                        color = CyanNeon,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-
-            // Barra horizontal de los 12 meses
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                meses.forEach { (key, abrev) ->
-                    val isSelected = mesActualKey.equals(key, ignoreCase = true)
-                    Surface(
-                        onClick = { onSelectMonth(key) },
-                        color = if (isSelected) {
-                            if (key == "octubre") AppTheme.colors.cyan.copy(alpha = 0.22f)
-                            else AppTheme.colors.amber.copy(alpha = 0.22f)
-                        } else CardElevated,
-                        shape = RoundedCornerShape(10.dp),
-                        border = BorderStroke(
-                            1.dp,
-                            if (isSelected) {
-                                if (key == "octubre") AppTheme.colors.cyan
-                                else AppTheme.colors.amber
-                            } else SubtleBorder
-                        ),
-                        modifier = Modifier.pressScale(0.94f)
-                    ) {
-                        Text(
-                            text = abrev,
-                            color = if (isSelected) {
-                                if (key == "octubre") AppTheme.colors.cyan else AppTheme.colors.amber
-                            } else TextSecondary,
-                            fontSize = 12.sp,
-                            fontWeight = if (isSelected) FontWeight.Black else FontWeight.SemiBold,
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp)
-                        )
-                    }
-                }
-            }
-
-            // Banner informativo si se está viendo un mes anterior histórico
-            if (esMesHistorico) {
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = AppTheme.colors.amber.copy(alpha = 0.12f),
-                    border = BorderStroke(1.dp, AppTheme.colors.amber.copy(alpha = 0.35f)),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.History,
-                            contentDescription = null,
-                            tint = AppTheme.colors.amber,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Viendo histórico de ${uiState.mesActivo.replaceFirstChar { it.uppercase() }}: Ingresos $${MainViewModel.formatearNumero(uiState.ingresosMes)} | Gastos $${MainViewModel.formatearNumero(uiState.gastosMes)}",
-                            color = AppTheme.colors.textPrimary,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                }
-            }
-        }
+        // 0. Selector de Períodos y Meses Premium (Appetite UI / Dribbble)
+        PremiumMonthSelector(
+            uiState = uiState,
+            onSelectMonth = onSelectMonth
+        )
 
         // 1. Hero Card de Disponible Real (Appetite UI Dark Mode)
         Surface(
@@ -902,9 +791,9 @@ private fun InicioTabContent(
         }
 
         Surface(
-            shape = RoundedCornerShape(20.dp),
+            shape = RoundedCornerShape(22.dp),
             color = CardBackground,
-            border = BorderStroke(1.dp, AppTheme.colors.cyan.copy(alpha = 0.25f)),
+            border = BorderStroke(1.dp, AppTheme.colors.cyan.copy(alpha = 0.35f)),
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(
@@ -918,8 +807,8 @@ private fun InicioTabContent(
                             }
                         )
                     )
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                    .padding(18.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -929,30 +818,41 @@ private fun InicioTabContent(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(
                             modifier = Modifier
-                                .size(32.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(AppTheme.colors.cyan.copy(alpha = 0.15f)),
+                                .size(36.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(AppTheme.colors.cyan.copy(alpha = 0.2f)),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                imageVector = Icons.Default.DateRange,
+                                imageVector = Icons.Default.NotificationsActive,
                                 contentDescription = null,
                                 tint = AppTheme.colors.cyan,
-                                modifier = Modifier.size(18.dp)
+                                modifier = Modifier.size(19.dp)
                             )
                         }
-                        Spacer(modifier = Modifier.width(10.dp))
+                        Spacer(modifier = Modifier.width(12.dp))
                         Column {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = "AUDITORÍA SEMANAL",
+                                    color = AppTheme.colors.cyan,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    letterSpacing = 1.sp
+                                )
+                                Spacer(modifier = Modifier.width(5.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .size(6.dp)
+                                        .clip(CircleShape)
+                                        .background(EmeraldBright)
+                                )
+                            }
                             Text(
-                                text = "Reporte Semanal de Gastos",
+                                text = "Reporte & Ritmo de Gasto",
                                 color = TextPrimary,
                                 fontSize = 14.sp,
-                                fontWeight = FontWeight.ExtraBold
-                            )
-                            Text(
-                                text = "Últimos 7 días • Ritmo saludable",
-                                color = TextSecondary,
-                                fontSize = 11.sp
+                                fontWeight = FontWeight.Black
                             )
                         }
                     }
@@ -967,27 +867,27 @@ private fun InicioTabContent(
                                 promedioDiario = promedioDiario
                             )
                         },
-                        color = AppTheme.colors.cyan.copy(alpha = 0.18f),
-                        shape = RoundedCornerShape(10.dp),
-                        border = BorderStroke(1.dp, AppTheme.colors.cyan.copy(alpha = 0.45f)),
-                        modifier = Modifier.pressScale(0.94f)
+                        color = AppTheme.colors.cyan.copy(alpha = 0.22f),
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(1.dp, AppTheme.colors.cyan.copy(alpha = 0.55f)),
+                        modifier = Modifier.pressScale(0.92f)
                     ) {
                         Row(
-                            modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp),
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
-                                imageVector = Icons.Default.NotificationsActive,
+                                imageVector = Icons.Default.Campaign,
                                 contentDescription = null,
                                 tint = AppTheme.colors.cyan,
-                                modifier = Modifier.size(13.dp)
+                                modifier = Modifier.size(14.dp)
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = "Notificar",
+                                text = "Notificar Push",
                                 color = AppTheme.colors.cyan,
                                 fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.ExtraBold
                             )
                         }
                     }
@@ -1045,18 +945,33 @@ private fun InicioTabContent(
                     }
 
                     Surface(
-                        modifier = Modifier.weight(1f),
+                        onClick = { onSelectCategory(topCategoriaSemana) },
+                        modifier = Modifier
+                            .weight(1f)
+                            .pressScale(0.95f),
                         color = CardElevated,
                         shape = RoundedCornerShape(12.dp),
-                        border = BorderStroke(1.dp, SubtleBorder)
+                        border = BorderStroke(1.dp, AppTheme.colors.cyan.copy(alpha = 0.35f))
                     ) {
                         Column(modifier = Modifier.padding(10.dp)) {
-                            Text(
-                                text = "Mayor Rubro",
-                                color = TextSecondary,
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Medium
-                            )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Mayor Rubro",
+                                    color = TextSecondary,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                                Text(
+                                    text = "Auditar →",
+                                    color = AppTheme.colors.cyan,
+                                    fontSize = 8.5.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
                             Spacer(modifier = Modifier.height(2.dp))
                             Text(
                                 text = topCategoriaSemana,
@@ -1117,6 +1032,12 @@ private fun InicioTabContent(
                 onClick = onOpenCfo
             )
         }
+
+        // 2.1 Gastos por Categoría Interactivos con Auditoría Inteligente
+        InteractiveCategoriasSection(
+            uiState = uiState,
+            onSelectCategoria = onSelectCategory
+        )
 
         // 3. Mis Cuentas y Fondos Colanta
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -2332,7 +2253,9 @@ private fun MasTabContent(
     onSelectSubTab: (Int) -> Unit,
     onSendCfoPrompt: (String) -> Unit,
     onScanGmail: () -> Unit,
-    onSendEmailAudit: () -> Unit
+    onSendEmailAudit: () -> Unit,
+    onSelectMonth: (String) -> Unit = {},
+    onSelectCategoria: (String) -> Unit = {}
 ) {
     Column(
         modifier = Modifier
@@ -2374,12 +2297,18 @@ private fun MasTabContent(
         }
 
         when (subTab) {
-            0 -> EstadisticasSection(uiState = uiState)
+            0 -> EstadisticasSection(
+                uiState = uiState,
+                onSelectCategoria = onSelectCategoria
+            )
             1 -> CfoIaSection(
                 mensajes = uiState.mensajesCfo,
                 onSendPrompt = onSendCfoPrompt
             )
-            2 -> ColantaYAnualSection(uiState = uiState)
+            2 -> ColantaYAnualSection(
+                uiState = uiState,
+                onSelectMonth = onSelectMonth
+            )
             3 -> AjustesSection(
                 isScanning = uiState.isScanningGmail,
                 onScanGmail = onScanGmail,
@@ -2528,57 +2457,199 @@ private fun CfoIaSection(
 }
 
 @Composable
-private fun ColantaYAnualSection(uiState: DashboardUiState) {
+private fun ColantaYAnualSection(
+    uiState: DashboardUiState,
+    onSelectMonth: (String) -> Unit = {}
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Patrimonio en Fondos Cooperativa Colanta
+        // 1. Patrimonio Reservado en Cooperativa Colanta (Appetite Vault Card)
         Surface(
             color = CardBackground,
-            shape = RoundedCornerShape(20.dp),
-            border = BorderStroke(1.dp, AmberGold.copy(alpha = 0.45f)),
+            shape = RoundedCornerShape(24.dp),
+            border = BorderStroke(1.2.dp, AmberGold.copy(alpha = 0.5f)),
             modifier = Modifier.fillMaxWidth()
         ) {
-            Column(modifier = Modifier.padding(18.dp)) {
-                Text(
-                    text = "PATRIMONIO RESERVADO EN COOPERATIVA COLANTA",
-                    color = AmberGold,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.ExtraBold
-                )
-                Spacer(modifier = Modifier.height(4.dp))
+            Column(
+                modifier = Modifier
+                    .background(
+                        Brush.verticalGradient(
+                            colors = if (AppTheme.colors.isDark) {
+                                listOf(Color(0xFF1E1710), Color(0xFF0F131C))
+                            } else {
+                                listOf(Color(0xFFFFFBEB), Color(0xFFF8FAFC))
+                            }
+                        )
+                    )
+                    .padding(20.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(AmberGold.copy(alpha = 0.2f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(text = "🏦", fontSize = 18.sp)
+                        }
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column {
+                            Text(
+                                text = "PATRIMONIO & FONDOS COOPERATIVOS",
+                                color = AmberGold,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                letterSpacing = 1.sp
+                            )
+                            Text(
+                                text = "Cooperativa Colanta 2026",
+                                color = TextSecondary,
+                                fontSize = 11.sp
+                            )
+                        }
+                    }
+
+                    Surface(
+                        color = AmberGold.copy(alpha = 0.16f),
+                        shape = RoundedCornerShape(8.dp),
+                        border = BorderStroke(1.dp, AmberGold.copy(alpha = 0.35f))
+                    ) {
+                        Text(
+                            text = "4 Fondos",
+                            color = AmberGold,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+
                 Text(
                     text = "$ ${MainViewModel.formatearNumero(uiState.totalFondosColanta)} COP",
                     color = TextPrimary,
-                    fontSize = 26.sp,
-                    fontWeight = FontWeight.Black
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = (-0.5).sp
                 )
-                Spacer(modifier = Modifier.height(14.dp))
-                FondoRow("🎄 Ahorro Navideño (Se entrega 1 Dic)", uiState.ahorroNavideno, AmberGold)
-                FondoRow("🤝 Aportes Sociales Cooperativos", uiState.aportesCooperativos, CyanNeon)
-                FondoRow("📈 Ahorro Ordinario Acumulado", uiState.ahorroOrdinario, EmeraldBright)
-                FondoRow("🛡️ Otros Fondos y Reservas", uiState.otrosAhorros, TextSecondary)
+
+                Text(
+                    text = "Capital protegido con rentabilidad y ahorro quincenal contractual",
+                    color = TextSecondary,
+                    fontSize = 11.5.sp,
+                    modifier = Modifier.padding(top = 2.dp)
+                )
+
+                Spacer(modifier = Modifier.height(18.dp))
+
+                // Grilla 2x2 de Fondos Colanta
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    FondoBentoCard(
+                        modifier = Modifier.weight(1f),
+                        emoji = "🎄",
+                        titulo = "Ahorro Navideño",
+                        monto = uiState.ahorroNavideno,
+                        tag = "Entrega: 1 Dic",
+                        color = AmberGold,
+                        progreso = 0.91f
+                    )
+                    FondoBentoCard(
+                        modifier = Modifier.weight(1f),
+                        emoji = "🤝",
+                        titulo = "Aportes Sociales",
+                        monto = uiState.aportesCooperativos,
+                        tag = "Capital Social",
+                        color = CyanNeon,
+                        progreso = 0.85f
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    FondoBentoCard(
+                        modifier = Modifier.weight(1f),
+                        emoji = "📈",
+                        titulo = "Ahorro Ordinario",
+                        monto = uiState.ahorroOrdinario,
+                        tag = "Capitalizable",
+                        color = EmeraldBright,
+                        progreso = 0.70f
+                    )
+                    FondoBentoCard(
+                        modifier = Modifier.weight(1f),
+                        emoji = "🛡️",
+                        titulo = "Otras Reservas",
+                        monto = uiState.otrosAhorros,
+                        tag = "Fondo Auxilio",
+                        color = VioletAccent,
+                        progreso = 0.50f
+                    )
+                }
             }
         }
 
-        // Evolución Anual 2026
+        // 2. Trayectoria Anual Consolidada (Enero a Diciembre)
         Surface(
             color = CardBackground,
-            shape = RoundedCornerShape(20.dp),
+            shape = RoundedCornerShape(24.dp),
             border = BorderStroke(1.dp, SubtleBorder),
             modifier = Modifier.fillMaxWidth()
         ) {
-            Column(modifier = Modifier.padding(18.dp)) {
-                Text(
-                    text = "TRAYECTORIA ANUAL 2026 (CONSOLIDADO)",
-                    color = CyanNeon,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.ExtraBold
-                )
-                Spacer(modifier = Modifier.height(10.dp))
+            Column(modifier = Modifier.padding(20.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            text = "DESEMPEÑO ANUAL 2026",
+                            color = CyanNeon,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = 1.sp
+                        )
+                        Text(
+                            text = "Consolidado fiscal mes a mes (Ene - Dic)",
+                            color = TextSecondary,
+                            fontSize = 11.5.sp
+                        )
+                    }
+                    Surface(
+                        color = EmeraldBright.copy(alpha = 0.15f),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text(
+                            text = "${uiState.tasaAhorroAnual}% Ahorro Global",
+                            color = EmeraldBright,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // KPI Pills
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -2591,48 +2662,224 @@ private fun ColantaYAnualSection(uiState: DashboardUiState) {
                     )
                     MiniKpiPill(
                         modifier = Modifier.weight(1f),
+                        label = "Gastos 2026",
+                        value = "$${MainViewModel.formatearNumero(uiState.totalGastosAnual)}",
+                        valueColor = RoseSoft
+                    )
+                    MiniKpiPill(
+                        modifier = Modifier.weight(1f),
                         label = "Superávit Neto",
                         value = "$${MainViewModel.formatearNumero(uiState.superavitAnual)}",
                         valueColor = CyanNeon
                     )
                 }
 
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(18.dp))
 
+                Text(
+                    text = "Desglose por Mes (Toca para auditar)",
+                    color = TextPrimary,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Cards de cada mes
                 uiState.resumenAnual.forEach { mes ->
-                    Column(modifier = Modifier.padding(vertical = 6.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text(
-                                text = mes.nombre,
-                                color = TextPrimary,
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = "Ahorro: $${MainViewModel.formatearNumero(mes.ahorro)} (${mes.tasaAhorro}%)",
-                                color = EmeraldBright,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.SemiBold
-                            )
+                    val esMesActivo = mes.key.equals(uiState.mesActivo, ignoreCase = true)
+                    val cardBorder = if (esMesActivo) CyanNeon else SubtleBorder
+                    val cardBg = if (esMesActivo) CardElevated else CardElevated.copy(alpha = 0.5f)
+
+                    val statusBadgeText = when (mes.key) {
+                        "enero" -> "🏆 Récord Ahorro"
+                        "marzo" -> "⭐ Ingreso Extra"
+                        "junio" -> "🎁 Mes de Prima"
+                        "agosto" -> "🚀 Alto Superávit"
+                        "octubre" -> "⚡ Activo en Vivo"
+                        else -> "${mes.tasaAhorro}% ahorro"
+                    }
+                    val statusBadgeColor = when (mes.key) {
+                        "enero", "agosto" -> EmeraldBright
+                        "marzo", "junio" -> AmberGold
+                        "octubre" -> CyanNeon
+                        else -> TextSecondary
+                    }
+
+                    Surface(
+                        onClick = { onSelectMonth(mes.key) },
+                        color = cardBg,
+                        shape = RoundedCornerShape(16.dp),
+                        border = BorderStroke(1.dp, cardBorder),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 5.dp)
+                            .pressScale(0.97f)
+                    ) {
+                        Column(modifier = Modifier.padding(14.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(28.dp)
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(
+                                                if (esMesActivo) CyanNeon.copy(alpha = 0.25f)
+                                                else CardBackground
+                                            ),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = mes.nombre.take(3).uppercase(),
+                                            color = if (esMesActivo) CyanNeon else TextSecondary,
+                                            fontSize = 10.sp,
+                                            fontWeight = FontWeight.Black
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Text(
+                                        text = mes.nombre,
+                                        color = TextPrimary,
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Surface(
+                                        color = statusBadgeColor.copy(alpha = 0.15f),
+                                        shape = RoundedCornerShape(6.dp)
+                                    ) {
+                                        Text(
+                                            text = statusBadgeText,
+                                            color = statusBadgeColor,
+                                            fontSize = 9.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                        )
+                                    }
+                                }
+
+                                Text(
+                                    text = "+$ ${MainViewModel.formatearNumero(mes.ahorro)} COP",
+                                    color = EmeraldBright,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Black
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            // Métricas Ingresos vs Gastos
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = "Ingresos: $${MainViewModel.formatearNumero(mes.ingresos)}",
+                                    color = TextSecondary,
+                                    fontSize = 11.sp
+                                )
+                                Text(
+                                    text = "Gastos: $${MainViewModel.formatearNumero(mes.gastos)}",
+                                    color = RoseSoft,
+                                    fontSize = 11.sp
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(6.dp))
+
+                            // Barra de progreso dual / semáforo
+                            val ahorroFrac = (mes.tasaAhorro.toFloat() / 100f).coerceIn(0.04f, 1f)
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(6.dp)
+                                    .clip(RoundedCornerShape(3.dp))
+                                    .background(RoseSoft.copy(alpha = 0.25f))
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth(ahorroFrac)
+                                        .height(6.dp)
+                                        .clip(RoundedCornerShape(3.dp))
+                                        .background(
+                                            if (mes.tasaAhorro >= 30) EmeraldBright else CyanNeon
+                                        )
+                                )
+                            }
                         }
-                        Spacer(modifier = Modifier.height(4.dp))
-                        LinearProgressIndicator(
-                            progress = { (mes.tasaAhorro / 100f).coerceIn(0.05f, 1f) },
-                            color = if (mes.tasaAhorro >= 30) EmeraldBright else CyanNeon,
-                            trackColor = CardElevated,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(6.dp)
-                                .clip(RoundedCornerShape(4.dp))
-                        )
                     }
                 }
             }
         }
         Spacer(modifier = Modifier.height(20.dp))
+    }
+}
+
+@Composable
+private fun FondoBentoCard(
+    modifier: Modifier = Modifier,
+    emoji: String,
+    titulo: String,
+    monto: Long,
+    tag: String,
+    color: Color,
+    progreso: Float
+) {
+    Surface(
+        color = CardElevated,
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(1.dp, color.copy(alpha = 0.35f)),
+        modifier = modifier
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(text = emoji, fontSize = 16.sp)
+                Surface(
+                    color = color.copy(alpha = 0.15f),
+                    shape = RoundedCornerShape(4.dp)
+                ) {
+                    Text(
+                        text = tag,
+                        color = color,
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp)
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = titulo,
+                color = TextSecondary,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Medium
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = "$${MainViewModel.formatearNumero(monto)}",
+                color = TextPrimary,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Black
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            LinearProgressIndicator(
+                progress = { progreso },
+                color = color,
+                trackColor = CardBackground,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(4.dp)
+                    .clip(RoundedCornerShape(2.dp))
+            )
+        }
     }
 }
 
@@ -3158,19 +3405,853 @@ private fun DetalleMovimientoModal(
     )
 }
 
-private fun iconoPorCategoria(cat: String): String {
+@Composable
+private fun PremiumMonthSelector(
+    uiState: DashboardUiState,
+    onSelectMonth: (String) -> Unit
+) {
+    val meses = listOf(
+        "enero" to "Ene", "febrero" to "Feb", "marzo" to "Mar", "abril" to "Abr",
+        "mayo" to "May", "junio" to "Jun", "julio" to "Jul", "agosto" to "Ago",
+        "septiembre" to "Sep", "octubre" to "Oct", "noviembre" to "Nov", "diciembre" to "Dic"
+    )
+    val mesActualKey = uiState.mesActivo.lowercase(Locale.ROOT)
+    val esMesHistorico = mesActualKey != "octubre"
+
+    Surface(
+        shape = RoundedCornerShape(22.dp),
+        color = CardBackground,
+        border = BorderStroke(
+            1.dp,
+            if (esMesHistorico) AmberGold.copy(alpha = 0.45f) else AppTheme.colors.cyan.copy(alpha = 0.25f)
+        ),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier
+                .background(
+                    Brush.verticalGradient(
+                        colors = if (AppTheme.colors.isDark) {
+                            listOf(Color(0xFF131B2A), Color(0xFF0C1019))
+                        } else {
+                            listOf(Color(0xFFFFFFFF), Color(0xFFF1F5F9))
+                        }
+                    )
+                )
+                .padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            // Fila Superior: Título con Badge y Botón de Retorno
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(30.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(
+                                if (esMesHistorico) AmberGold.copy(alpha = 0.2f)
+                                else AppTheme.colors.cyan.copy(alpha = 0.2f)
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = if (esMesHistorico) Icons.Default.History else Icons.Default.CalendarToday,
+                            contentDescription = null,
+                            tint = if (esMesHistorico) AmberGold else AppTheme.colors.cyan,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Column {
+                        Text(
+                            text = if (esMesHistorico) "AUDITORÍA HISTÓRICA" else "PERÍODO FISCAL 2026",
+                            color = if (esMesHistorico) AmberGold else AppTheme.colors.cyan,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = 1.sp
+                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = "${uiState.mesActivo.replaceFirstChar { it.uppercase() }} 2026",
+                                color = TextPrimary,
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Black
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Box(
+                                modifier = Modifier
+                                    .size(6.dp)
+                                    .clip(CircleShape)
+                                    .background(if (esMesHistorico) AmberGold else EmeraldBright)
+                            )
+                        }
+                    }
+                }
+
+                if (esMesHistorico) {
+                    Surface(
+                        onClick = { onSelectMonth("octubre") },
+                        color = AmberGold.copy(alpha = 0.18f),
+                        shape = RoundedCornerShape(10.dp),
+                        border = BorderStroke(1.dp, AmberGold.copy(alpha = 0.45f)),
+                        modifier = Modifier.pressScale(0.92f)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Restore,
+                                contentDescription = null,
+                                tint = AmberGold,
+                                modifier = Modifier.size(12.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "Volver a Actual ↺",
+                                color = AmberGold,
+                                fontSize = 10.5.sp,
+                                fontWeight = FontWeight.ExtraBold
+                            )
+                        }
+                    }
+                } else {
+                    Surface(
+                        color = EmeraldBright.copy(alpha = 0.15f),
+                        shape = RoundedCornerShape(10.dp),
+                        border = BorderStroke(1.dp, EmeraldBright.copy(alpha = 0.35f))
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(6.dp)
+                                    .clip(CircleShape)
+                                    .background(EmeraldBright)
+                            )
+                            Spacer(modifier = Modifier.width(5.dp))
+                            Text(
+                                text = "En Vivo",
+                                color = EmeraldBright,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Barra horizontal de cápsulas de los 12 meses (Aesthetic Dribbble / Appetite)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                meses.forEach { (key, abrev) ->
+                    val isSelected = mesActualKey.equals(key, ignoreCase = true)
+                    val isOctoberLive = key == "octubre"
+
+                    Surface(
+                        onClick = { onSelectMonth(key) },
+                        color = if (isSelected) {
+                            if (isOctoberLive) AppTheme.colors.cyan.copy(alpha = 0.28f)
+                            else AmberGold.copy(alpha = 0.28f)
+                        } else CardElevated,
+                        shape = RoundedCornerShape(14.dp),
+                        border = BorderStroke(
+                            1.dp,
+                            if (isSelected) {
+                                if (isOctoberLive) AppTheme.colors.cyan else AmberGold
+                            } else if (isOctoberLive) {
+                                AppTheme.colors.cyan.copy(alpha = 0.35f)
+                            } else {
+                                SubtleBorder
+                            }
+                        ),
+                        modifier = Modifier.pressScale(0.92f)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 13.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            if (isOctoberLive && !isSelected) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(5.dp)
+                                        .clip(CircleShape)
+                                        .background(AppTheme.colors.cyan)
+                                )
+                                Spacer(modifier = Modifier.width(5.dp))
+                            }
+                            Text(
+                                text = abrev.uppercase(),
+                                color = if (isSelected) {
+                                    if (isOctoberLive) AppTheme.colors.cyan else AmberGold
+                                } else if (isOctoberLive) {
+                                    AppTheme.colors.cyan
+                                } else {
+                                    TextSecondary
+                                },
+                                fontSize = 11.5.sp,
+                                fontWeight = if (isSelected) FontWeight.Black else FontWeight.SemiBold
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Banner contextual si se está explorando un mes anterior histórico
+            if (esMesHistorico) {
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = AmberGold.copy(alpha = 0.12f),
+                    border = BorderStroke(1.dp, AmberGold.copy(alpha = 0.35f)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(text = "📊", fontSize = 13.sp)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Histórico de ${uiState.mesActivo.replaceFirstChar { it.uppercase() }}: Ingresos +$${MainViewModel.formatearNumero(uiState.ingresosMes)} | Gastos -$${MainViewModel.formatearNumero(uiState.gastosMes)} | Caja $${MainViewModel.formatearNumero(uiState.disponibleReal)} COP",
+                            color = TextPrimary,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun InteractiveCategoriasSection(
+    uiState: DashboardUiState,
+    onSelectCategoria: (String) -> Unit
+) {
+    val gastosMovs = remember(uiState.movimientos, uiState.mesActivo) {
+        uiState.movimientos.filter {
+            it.tipo.equals("Gasto", ignoreCase = true) &&
+            (it.mes.isBlank() || it.mes.equals(uiState.mesActivo, ignoreCase = true))
+        }
+    }
+
+    val categoriasFrecuentes = listOf(
+        "Alimentación" to "🍔",
+        "Moto" to "🏍️",
+        "Servicios" to "💡",
+        "Vivienda" to "🏠",
+        "Deudas" to "💳",
+        "Compras" to "🛍️"
+    )
+
+    Surface(
+        shape = RoundedCornerShape(22.dp),
+        color = CardBackground,
+        border = BorderStroke(1.dp, SubtleBorder),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.padding(18.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = "Gastos por Categoría (${uiState.mesActivo.replaceFirstChar { it.uppercase() }})",
+                        color = TextPrimary,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.ExtraBold
+                    )
+                    Text(
+                        text = "Toca para auditar repuestos moto, vivienda y fijos",
+                        color = TextSecondary,
+                        fontSize = 11.sp
+                    )
+                }
+                Surface(
+                    color = AppTheme.colors.cyan.copy(alpha = 0.12f),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text(
+                        text = "Auditoría IA",
+                        color = AppTheme.colors.cyan,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            val rows = categoriasFrecuentes.chunked(3)
+            rows.forEachIndexed { rIdx, rowItems ->
+                if (rIdx > 0) Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    rowItems.forEach { (catName, emoji) ->
+                        val montoCat = gastosMovs.filter { m ->
+                            val cM = m.categoria.lowercase(Locale.ROOT)
+                            val cS = catName.lowercase(Locale.ROOT)
+                            cM == cS || (cS == "moto" && (cM.contains("moto") || cM.contains("transp") || cM.contains("gasolina"))) ||
+                                    (cS == "alimentación" && (cM.contains("alimenta") || cM.contains("comida") || cM.contains("rest"))) ||
+                                    (cS == "servicios" && (cM.contains("servicio") || cM.contains("epm"))) ||
+                                    (cS == "vivienda" && (cM.contains("vivienda") || cM.contains("arriendo") || cM.contains("hogar"))) ||
+                                    (cS == "deudas" && (cM.contains("deuda") || cM.contains("prestamo")))
+                        }.sumOf { it.valor }
+
+                        val fijosCatCount = uiState.fijos.count { f ->
+                            val cF = f.categoria.lowercase(Locale.ROOT)
+                            val cS = catName.lowercase(Locale.ROOT)
+                            cF.contains(cS) || cS.contains(cF)
+                        }
+
+                        Surface(
+                            onClick = { onSelectCategoria(catName) },
+                            color = CardElevated,
+                            shape = RoundedCornerShape(14.dp),
+                            border = BorderStroke(1.dp, SubtleBorder),
+                            modifier = Modifier
+                                .weight(1f)
+                                .pressScale(0.95f)
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(10.dp),
+                                horizontalAlignment = Alignment.Start
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(text = emoji, fontSize = 16.sp)
+                                    if (fijosCatCount > 0) {
+                                        Surface(
+                                            color = AmberGold.copy(alpha = 0.15f),
+                                            shape = RoundedCornerShape(4.dp)
+                                        ) {
+                                            Text(
+                                                text = "Fijos",
+                                                color = AmberGold,
+                                                fontSize = 8.5.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    text = catName,
+                                    color = TextPrimary,
+                                    fontSize = 11.5.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = if (montoCat > 0) "$${MainViewModel.formatearNumero(montoCat)}" else if (fijosCatCount > 0) "En fijos" else "$0",
+                                    color = if (montoCat > 0) RoseSoft else TextSecondary,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Black
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DetalleCategoriaModal(
+    categoria: String,
+    uiState: DashboardUiState,
+    onDismiss: () -> Unit,
+    onClickMovimiento: (MovimientoItem) -> Unit = {}
+) {
+    val catKey = categoria.lowercase(Locale.ROOT)
+
+    val movsCat = remember(uiState.movimientos, categoria, uiState.mesActivo) {
+        uiState.movimientos.filter { m ->
+            val coincideMes = m.mes.isBlank() || m.mes.equals(uiState.mesActivo, ignoreCase = true)
+            if (!coincideMes) return@filter false
+            val cM = m.categoria.lowercase(Locale.ROOT)
+            cM == catKey ||
+                    (catKey == "moto" && (cM.contains("moto") || cM.contains("transp") || cM.contains("gasolina"))) ||
+                    (catKey == "alimentación" && (cM.contains("alimenta") || cM.contains("comida") || cM.contains("rest"))) ||
+                    (catKey == "servicios" && (cM.contains("servicio") || cM.contains("epm") || cM.contains("agua") || cM.contains("luz"))) ||
+                    (catKey == "vivienda" && (cM.contains("vivienda") || cM.contains("arriendo") || cM.contains("hogar") || cM.contains("casa"))) ||
+                    (catKey == "deudas" && (cM.contains("deuda") || cM.contains("prestamo") || cM.contains("credito") || cM.contains("banco"))) ||
+                    (catKey == "compras" && (cM.contains("compra") || cM.contains("ropa") || cM.contains("moda")))
+        }
+    }
+
+    val fijosCat = remember(uiState.fijos, categoria) {
+        uiState.fijos.filter { f ->
+            val cF = f.categoria.lowercase(Locale.ROOT)
+            val conc = f.concepto.lowercase(Locale.ROOT)
+            cF.contains(catKey) || catKey.contains(cF) ||
+                    (catKey == "moto" && (cF.contains("moto") || conc.contains("moto") || conc.contains("gasolina") || conc.contains("parqueadero"))) ||
+                    (catKey == "vivienda" && (cF.contains("vivienda") || conc.contains("arriendo") || conc.contains("hogar"))) ||
+                    (catKey == "servicios" && (cF.contains("servicio") || conc.contains("epm") || conc.contains("energia") || conc.contains("internet"))) ||
+                    (catKey == "deudas" && (cF.contains("deuda") || conc.contains("prestamo") || conc.contains("credito")))
+        }
+    }
+
+    val totalGastosCat = remember(movsCat) {
+        movsCat.filter { it.tipo.equals("Gasto", ignoreCase = true) }.sumOf { it.valor }
+    }
+    val totalGastosMes = uiState.gastosMes.coerceAtLeast(1L)
+    val pctMes = ((totalGastosCat.toDouble() / totalGastosMes.toDouble()) * 100).toInt()
+
+    val mayorGastoItem = remember(movsCat) {
+        movsCat.filter { it.tipo.equals("Gasto", ignoreCase = true) }.maxByOrNull { it.valor }
+    }
+    val promedioGasto = if (movsCat.isNotEmpty()) totalGastosCat / movsCat.size.coerceAtLeast(1) else 0L
+
+    val diagnosticoNarrativo = remember(categoria, totalGastosCat, mayorGastoItem, fijosCat) {
+        when {
+            catKey.contains("moto") || catKey.contains("transp") -> {
+                val mayorTexto = if (mayorGastoItem != null) "Tu mayor egreso fue **${mayorGastoItem.descripcion}** por **$${MainViewModel.formatearNumero(mayorGastoItem.valor)} COP** (${mayorGastoItem.cuenta})." else "Sin desembolsos imprevistos registrados."
+                "🏍️ **Auditoría de Movilidad & Moto:**\nHas destinado recursos a piezas de reemplazo mecánico, mantenimiento preventivo (lavadas), combustible y parqueaderos de trabajo. $mayorTexto\n• **Recomendación Pro:** Mantener el seguimiento de repuestos y afinación protege la vida útil de la moto sin generar picos de gasto inesperados en tu disponible."
+            }
+            catKey.contains("vivienda") || catKey.contains("arriendo") || catKey.contains("hogar") -> {
+                val totalFijosVivienda = fijosCat.sumOf { it.cuota }
+                "🏠 **Auditoría de Vivienda & Hogar:**\nConsolidado de canon de arrendamiento y adquisición de partes o mejoras locativas para la vivienda. Representa tu compromiso esencial de habitabilidad con una cuota mensual programada de **$${MainViewModel.formatearNumero(totalFijosVivienda)} COP** en gastos fijos.\n• **Estado:** Mantener este rubro al día garantiza tu estabilidad y bienestar sin comprometer fondos de ahorro."
+            }
+            catKey.contains("alimenta") || catKey.contains("comida") -> {
+                val mayorTexto = if (mayorGastoItem != null) "Mayor consumo: **${mayorGastoItem.descripcion}** ($${MainViewModel.formatearNumero(mayorGastoItem.valor)} COP)." else ""
+                "🍔 **Auditoría de Nutrición & Alimentación:**\nConsumos distribuidos entre la provisión principal de mercado quincenal y almuerzos corporativos en la planta Medellín de Colanta. $mayorTexto\n• **Optimización:** Almorzar en el casino de Colanta (~$11.500 COP) te permite un ahorro superior al 45% respecto a restaurantes externos, manteniendo tu costo por comida en niveles altamente eficientes."
+            }
+            catKey.contains("servicio") || catKey.contains("epm") -> {
+                "💡 **Auditoría de Servicios Públicos:**\nCobertura de energía eléctrica con EPM, agua, gas e internet residencial. Todos los servicios esenciales están al día y sin cobros por mora o reconexión.\n• **Control:** Tu consumo se mantiene estable en el rango presupuestado del mes."
+            }
+            catKey.contains("deuda") || catKey.contains("prestamo") || catKey.contains("credito") -> {
+                val totalCuotas = fijosCat.sumOf { it.cuota }
+                "💳 **Auditoría de Desendeudamiento & Pasivos:**\nAbonos a obligaciones bancarias y préstamos personales. Tu compromiso programado mensual es de **$${MainViewModel.formatearNumero(totalCuotas)} COP**.\n• **Impacto Positivo:** Cada cuota cancelada reduce el pasivo total y libera flujo de caja libre para potenciar tus fondos en Cooperativa Colanta."
+            }
+            else -> {
+                val mayorTexto = if (mayorGastoItem != null) "Mayor compra: **${mayorGastoItem.descripcion}** ($${MainViewModel.formatearNumero(mayorGastoItem.valor)} COP)." else ""
+                "📊 **Auditoría Financiera de $categoria:**\nRegistras ${movsCat.size} movimientos en ${uiState.mesActivo} con un desembolso total de **$${MainViewModel.formatearNumero(totalGastosCat)} COP** (promedio $${MainViewModel.formatearNumero(promedioGasto)} COP por movimiento). $mayorTexto Representa el $pctMes% de tus egresos mensuales."
+            }
+        }
+    }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = CardBackground,
+        dragHandle = {
+            Box(
+                modifier = Modifier
+                    .padding(vertical = 10.dp)
+                    .width(42.dp)
+                    .height(4.dp)
+                    .clip(RoundedCornerShape(2.dp))
+                    .background(TextSecondary.copy(alpha = 0.4f))
+            )
+        }
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight(0.85f)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp, vertical = 6.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // Header del Modal con Icono Gigante y Nombre
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(46.dp)
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(AppTheme.colors.cyan.copy(alpha = 0.2f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(text = iconoPorCategoria(categoria), fontSize = 24.sp)
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            text = categoria.uppercase(),
+                            color = AppTheme.colors.cyan,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = 1.sp
+                        )
+                        Text(
+                            text = "Auditoría & Desglose",
+                            color = TextPrimary,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Black
+                        )
+                    }
+                }
+
+                Surface(
+                    onClick = onDismiss,
+                    shape = CircleShape,
+                    color = CardElevated,
+                    modifier = Modifier.size(34.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Cerrar",
+                            tint = TextSecondary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
+            }
+
+            // Card Principal de KPIs de la Categoría
+            Surface(
+                shape = RoundedCornerShape(20.dp),
+                color = CardElevated,
+                border = BorderStroke(1.dp, SubtleBorder),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = "TOTAL GASTADO EN ${uiState.mesActivo.uppercase()}",
+                        color = TextSecondary,
+                        fontSize = 10.5.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "$ ${MainViewModel.formatearNumero(totalGastosCat)} COP",
+                        color = TextPrimary,
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = (-0.5).sp
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        MiniKpiPill(
+                            modifier = Modifier.weight(1f),
+                            label = "% del Gasto Mes",
+                            value = "$pctMes%",
+                            valueColor = if (pctMes >= 30) RoseSoft else AppTheme.colors.cyan
+                        )
+                        MiniKpiPill(
+                            modifier = Modifier.weight(1f),
+                            label = "Movimientos",
+                            value = "${movsCat.size} regs",
+                            valueColor = TextPrimary
+                        )
+                        MiniKpiPill(
+                            modifier = Modifier.weight(1f),
+                            label = "Fijos Asociados",
+                            value = "${fijosCat.size} items",
+                            valueColor = AmberGold
+                        )
+                    }
+                }
+            }
+
+            // Diagnóstico Financiero Inteligente (Smart CFO)
+            Surface(
+                shape = RoundedCornerShape(20.dp),
+                color = if (AppTheme.colors.isDark) Color(0xFF161B2A) else Color(0xFFF1F5F9),
+                border = BorderStroke(1.2.dp, AppTheme.colors.cyan.copy(alpha = 0.4f)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.AutoAwesome,
+                            contentDescription = null,
+                            tint = AppTheme.colors.cyan,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Text(
+                            text = "DIAGNÓSTICO & ANÁLISIS DETALLADO",
+                            color = AppTheme.colors.cyan,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = 0.8.sp
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Text(
+                        text = diagnosticoNarrativo,
+                        color = TextPrimary,
+                        fontSize = 12.5.sp,
+                        lineHeight = 18.sp
+                    )
+                }
+            }
+
+            // Mayor Gasto Destacado
+            if (mayorGastoItem != null) {
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = CardElevated,
+                    border = BorderStroke(1.dp, RoseSoft.copy(alpha = 0.35f)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(RoseSoft.copy(alpha = 0.2f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(text = "👑", fontSize = 16.sp)
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "MAYOR GASTO REGISTRADO",
+                                color = RoseSoft,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.ExtraBold
+                            )
+                            Text(
+                                text = mayorGastoItem.descripcion,
+                                color = TextPrimary,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Text(
+                                text = "${mayorGastoItem.fecha} • Cuenta: ${mayorGastoItem.cuenta}",
+                                color = TextSecondary,
+                                fontSize = 11.sp
+                            )
+                        }
+                        Text(
+                            text = "-$ ${MainViewModel.formatearNumero(mayorGastoItem.valor)}",
+                            color = RoseSoft,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Black
+                        )
+                    }
+                }
+            }
+
+            // Compromisos Fijos de esta Categoría
+            if (fijosCat.isNotEmpty()) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Compromisos Fijos de $categoria",
+                            color = TextPrimary,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "${fijosCat.size} programados",
+                            color = AmberGold,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+
+                    fijosCat.forEach { fijo ->
+                        Surface(
+                            shape = RoundedCornerShape(14.dp),
+                            color = CardElevated,
+                            border = BorderStroke(1.dp, SubtleBorder),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column {
+                                    Text(
+                                        text = fijo.concepto,
+                                        color = TextPrimary,
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Text(
+                                        text = "Vence día ${fijo.dia} • Q${fijo.quincena} • ${fijo.medioPago}",
+                                        color = TextSecondary,
+                                        fontSize = 11.sp
+                                    )
+                                }
+                                Column(horizontalAlignment = Alignment.End) {
+                                    Text(
+                                        text = "$ ${MainViewModel.formatearNumero(fijo.cuota)} COP",
+                                        color = TextPrimary,
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Black
+                                    )
+                                    Surface(
+                                        color = if (fijo.estaPagado) EmeraldBright.copy(alpha = 0.15f) else AmberGold.copy(alpha = 0.15f),
+                                        shape = RoundedCornerShape(4.dp)
+                                    ) {
+                                        Text(
+                                            text = if (fijo.estaPagado) "PAGADO" else "PENDIENTE",
+                                            color = if (fijo.estaPagado) EmeraldBright else AmberGold,
+                                            fontSize = 9.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Historial Detallado de Transacciones en esta Categoría
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = "Movimientos Registrados (${movsCat.size})",
+                    color = TextPrimary,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold
+                )
+
+                if (movsCat.isEmpty()) {
+                    Surface(
+                        shape = RoundedCornerShape(14.dp),
+                        color = CardElevated,
+                        border = BorderStroke(1.dp, SubtleBorder),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(20.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "Sin egresos manuales en $categoria este mes",
+                                color = TextSecondary,
+                                fontSize = 12.sp,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
+                } else {
+                    movsCat.forEach { mov ->
+                        Surface(
+                            onClick = { onClickMovimiento(mov) },
+                            shape = RoundedCornerShape(14.dp),
+                            color = CardElevated,
+                            border = BorderStroke(1.dp, SubtleBorder),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .pressScale(0.97f)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(
+                                    modifier = Modifier.weight(1f),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(34.dp)
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(
+                                                if (mov.tipo.equals("Gasto", ignoreCase = true)) RoseSoft.copy(alpha = 0.15f)
+                                                else EmeraldBright.copy(alpha = 0.15f)
+                                            ),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(text = iconoPorCategoria(mov.categoria), fontSize = 15.sp)
+                                    }
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Column {
+                                        Text(
+                                            text = mov.descripcion,
+                                            color = TextPrimary,
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                        Text(
+                                            text = "${mov.fecha} • ${mov.cuenta} (${mov.metodo})",
+                                            color = TextSecondary,
+                                            fontSize = 11.sp
+                                        )
+                                    }
+                                }
+
+                                Text(
+                                    text = "${if (mov.tipo.equals("Gasto", ignoreCase = true)) "-" else "+"}$ ${MainViewModel.formatearNumero(mov.valor)}",
+                                    color = if (mov.tipo.equals("Gasto", ignoreCase = true)) RoseSoft else EmeraldBright,
+                                    fontSize = 13.5.sp,
+                                    fontWeight = FontWeight.Black
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+        }
+    }
+}
+
+fun iconoPorCategoria(cat: String): String {
     val c = cat.lowercase(Locale.ROOT)
     return when {
-        c.contains("alimenta") || c.contains("comida") || c.contains("rest") -> "🍽️"
+        c.contains("alimenta") || c.contains("comida") || c.contains("rest") -> "🍔"
         c.contains("moto") || c.contains("gasolina") -> "🏍️"
-        c.contains("servicio") || c.contains("epm") || c.contains("agua") -> "⚡"
-        c.contains("vivienda") || c.contains("arriendo") -> "🏠"
+        c.contains("servicio") || c.contains("epm") || c.contains("agua") -> "💡"
+        c.contains("vivienda") || c.contains("arriendo") || c.contains("hogar") -> "🏠"
+        c.contains("deuda") || c.contains("prestamo") || c.contains("credito") -> "💳"
         c.contains("compra") || c.contains("ropa") -> "🛍️"
         c.contains("transporte") || c.contains("taxi") || c.contains("parqueadero") -> "🚗"
-        c.contains("antojo") || c.contains("hormiga") || c.contains("dulce") -> "🍫"
-        c.contains("salud") -> "💊"
+        c.contains("antojo") || c.contains("hormiga") || c.contains("dulce") -> "🐜"
+        c.contains("salud") || c.contains("med") -> "💊"
         c.contains("entretenimiento") || c.contains("suscrip") || c.contains("spotify") -> "🎮"
         c.contains("salario") || c.contains("nomina") || c.contains("nómina") -> "💰"
-        else -> "💳"
+        c.contains("colanta") || c.contains("fondo") || c.contains("ahorro") -> "🏦"
+        else -> "🏷️"
     }
 }

@@ -20,8 +20,8 @@ import java.util.Locale
 object NotificationHelper {
 
     const val CHANNEL_ID = "pardo_finanzas_channel"
-    const val CHANNEL_NAME = "Alertas PardoFinanzas"
-    const val CHANNEL_DESC = "Facturas procesadas, pagos detectados y vencimientos"
+    const val CHANNEL_NAME = "Finanzas Marlon • Alertas Inteligentes"
+    const val CHANNEL_DESC = "Alertas de facturas DIAN procesadas, pagos detectados, gastos y reportes semanales"
 
     fun init(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -29,9 +29,9 @@ object NotificationHelper {
             val channel = NotificationChannel(CHANNEL_ID, CHANNEL_NAME, importance).apply {
                 description = CHANNEL_DESC
                 enableVibration(true)
-                vibrationPattern = longArrayOf(0, 220, 120, 220)
+                vibrationPattern = longArrayOf(0, 180, 100, 240)
                 enableLights(true)
-                lightColor = Color.CYAN
+                lightColor = Color.parseColor("#06B6D4")
                 setShowBadge(true)
             }
             val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -75,7 +75,7 @@ object NotificationHelper {
         context: Context,
         title: String,
         message: String,
-        subText: String = "PardoFinanzas en Vivo",
+        subText: String = "Marlon Finanzas Hub",
         bigText: String? = null,
         notificationId: Int = (System.currentTimeMillis() % 10000).toInt()
     ): Boolean {
@@ -100,11 +100,12 @@ object NotificationHelper {
                     .bigText(fullBigText)
             )
             .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_EVENT)
             .setAutoCancel(true)
             .setColor(Color.parseColor("#06B6D4"))
             .setColorized(true)
             .setSound(defaultSound)
-            .setVibrate(longArrayOf(0, 220, 120, 220))
+            .setVibrate(longArrayOf(0, 180, 100, 240))
             .setContentIntent(getPendingIntent(context))
 
         return try {
@@ -126,19 +127,20 @@ object NotificationHelper {
         cantidad: Int = 1
     ) {
         val montoStr = if (monto != null && monto > 0L) "$${formatCop(monto)} COP" else "Importe extractado"
-        val title = if (cantidad > 1) "🧾 $cantidad Facturas .ZIP Procesadas" else "🧾 Factura Procesada: $comercio"
+        val title = if (cantidad > 1) "🧾 $cantidad Facturas DIAN (.ZIP) Procesadas" else "🧾 Factura DIAN Procesada: $comercio"
         val shortMsg = if (cantidad > 1) {
-            "Se descomprimieron y registraron $cantidad facturas nuevas en Google Sheets."
+            "Se normalizaron y registraron $cantidad facturas nuevas en Google Sheets."
         } else {
-            "Factura de $comercio por $montoStr procesada y guardada."
+            "Factura de $comercio por $montoStr normalizada y guardada en Sheets."
         }
 
         val bigMsg = """
-            🧾 Factura Electrónica (.ZIP) Normalizada
-            • Comercio / Emisor: $comercio
-            • Valor Registrado: $montoStr
-            • Hoja Sheets: Fila 5 de MOVIMIENTOS
-            • Bandeja de Entrada: Queda sin marcar como visto y se moverá a FINANZAS apenas la leas.
+            🧾 Factura Electrónica Normalizada (.ZIP / DIAN)
+            • Emisor / Comercio: $comercio
+            • Valor Total: $montoStr
+            • Hoja Google Sheets: Fila 5 de MOVIMIENTOS
+            • Archivo Gmail: Etiquetada en FINANZAS y leída sin marcar visto.
+            • Estado: Impacto reflejado en tu disponible en tiempo real.
         """.trimIndent()
 
         showNotification(
@@ -161,21 +163,21 @@ object NotificationHelper {
         cuenta: String
     ) {
         val valorStr = formatCop(valor)
-        val title = "💳 Pago Detectado: $comercio"
+        val title = "💳 Pago Verificado: $comercio"
         val shortMsg = "Salida de $$valorStr COP debitada de $cuenta."
         val bigMsg = """
             💳 Movimiento Confirmado en Tiempo Real
-            • Comercio: $comercio
-            • Monto: $$valorStr COP
+            • Comercio / Beneficiario: $comercio
+            • Monto Debitado: $$valorStr COP
             • Medio / Cuenta: $cuenta
-            • Estado: Sincronizado en tu Google Sheets y descontado del disponible.
+            • Estado: Sincronizado en vivo con Google Sheets y descontado del disponible.
         """.trimIndent()
 
         showNotification(
             context = context,
             title = title,
             message = shortMsg,
-            subText = "Billetera & Cuentas",
+            subText = "Billetera & Tarjeta Virtual",
             bigText = bigMsg,
             notificationId = (System.currentTimeMillis() % 10000).toInt()
         )
@@ -194,13 +196,13 @@ object NotificationHelper {
         val valorStr = formatCop(valor)
         val esIngreso = tipo.contains("Ingreso", ignoreCase = true)
         val emoji = if (esIngreso) "💰" else "💸"
-        val title = "$emoji $tipo: $$valorStr COP"
+        val title = "$emoji $tipo Registrado: $$valorStr COP"
         val shortMsg = "$descripcion • Cuenta: $cuenta"
         val bigMsg = """
-            $emoji $tipo Registrado con Éxito
+            $emoji $tipo Confirmado con Éxito
             • Concepto: $descripcion
             • Valor: $$valorStr COP
-            • Cuenta: $cuenta
+            • Cuenta Origen: $cuenta
             • Nube: Sincronizado en vivo en MOVIMIENTOS de Google Sheets.
         """.trimIndent()
 
@@ -221,11 +223,18 @@ object NotificationHelper {
         val valorStr = formatCop(valor)
         val title = "✅ Compromiso Fijo Pagado: $concepto"
         val msg = "Abono de $$valorStr COP registrado en CONTROL FIJOS de Google Sheets."
+        val bigMsg = """
+            ✅ Compromiso Fijo Pagado
+            • Concepto: $concepto
+            • Monto Cubierto: $$valorStr COP
+            • Estado: Marcado como Pagado en Google Sheets.
+        """.trimIndent()
         showNotification(
             context = context,
             title = title,
             message = msg,
-            subText = "Gastos Fijos",
+            subText = "Gastos Fijos Marlon",
+            bigText = bigMsg,
             notificationId = 4001
         )
     }
@@ -241,20 +250,20 @@ object NotificationHelper {
     ): Boolean {
         val totalFmt = formatCop(totalSemana)
         val promFmt = formatCop(promedioDiario)
-        val title = "📊 Reporte Semanal: $$totalFmt COP gastados"
-        val message = "Esta semana gastaste $$totalFmt COP. Mayor gasto en $topCategoria (~$$promFmt COP/día)."
+        val title = "📊 Balance Semanal: $$totalFmt COP gastados"
+        val message = "Esta semana gastaste $$totalFmt COP. Mayor consumo en $topCategoria (~$$promFmt COP/día)."
         val bigText = """
-            📊 Resumen Semanal de Finanzas
-            • Total Gastado: $$totalFmt COP
-            • Ritmo Diario: ~$$promFmt COP / día
-            • Categoría Principal: $topCategoria
-            • Estado: Tu balance en vivo y fijos están sincronizados.
+            📊 Diagnóstico Semanal de Finanzas
+            • Total Gastado (7 Días): $$totalFmt COP
+            • Ritmo Diario Promedio: ~$$promFmt COP / día
+            • Categoría de Mayor Consumo: $topCategoria
+            • Estado de Caja: Balance en vivo y gastos fijos sincronizados al 100%.
         """.trimIndent()
         return showNotification(
             context = context,
             title = title,
             message = message,
-            subText = "Reporte Semanal",
+            subText = "Auditoría Semanal",
             bigText = bigText,
             notificationId = 5003
         )
@@ -282,7 +291,7 @@ object NotificationHelper {
     fun sendTestFacturaNotification(context: Context): Boolean {
         return showNotification(
             context = context,
-            title = "🧾 Factura Procesada: EPM Medellín (.ZIP)",
+            title = "🧾 Factura DIAN Procesada: EPM Medellín (.ZIP)",
             message = "Factura de servicios públicos por $197.000 COP procesada con éxito.",
             subText = "Motor DIAN / Gmail",
             bigText = """
@@ -302,9 +311,9 @@ object NotificationHelper {
     fun sendTestPagoNotification(context: Context): Boolean {
         return showNotification(
             context = context,
-            title = "💳 Pago Detectado: Éxito Colombia",
+            title = "💳 Pago Verificado: Éxito Colombia",
             message = "Pago de $68.500 COP realizado con Nequi Visa Débito.",
-            subText = "Billetera & Cuentas",
+            subText = "Billetera & Tarjeta Virtual",
             bigText = """
                 💳 Transacción Detectada en Datáfono
                 • Establecimiento: Éxito Colombia
@@ -319,10 +328,11 @@ object NotificationHelper {
     fun sendTestNotification(context: Context): Boolean {
         return showNotification(
             context = context,
-            title = "🔔 PardoFinanzas Alertas Activas",
-            message = "¡Tus notificaciones financieras están funcionando al 100%! Recibirás avisos de facturas Gmail y registros.",
+            title = "🔔 Marlon Finanzas Alertas Activas",
+            message = "¡Tus notificaciones financieras están activas al 100%! Recibirás avisos de facturas Gmail y registros.",
             subText = "Notificaciones Activas",
             notificationId = 1001
         )
     }
 }
+

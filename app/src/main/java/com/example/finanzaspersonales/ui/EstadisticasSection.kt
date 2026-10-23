@@ -25,12 +25,18 @@ import com.example.finanzaspersonales.viewmodel.DashboardUiState
 import com.example.finanzaspersonales.viewmodel.MainViewModel
 
 @Composable
-fun EstadisticasSection(uiState: DashboardUiState) {
+fun EstadisticasSection(
+    uiState: DashboardUiState,
+    onSelectCategoria: (String) -> Unit = {}
+) {
     val scrollState = rememberScrollState()
 
-    // Cálculo dinámico de gastos por categoría
-    val gastosMovs = remember(uiState.movimientos) {
-        uiState.movimientos.filter { it.tipo.equals("Gasto", ignoreCase = true) }
+    // Cálculo dinámico de gastos por categoría del mes activo
+    val gastosMovs = remember(uiState.movimientos, uiState.mesActivo) {
+        uiState.movimientos.filter {
+            it.tipo.equals("Gasto", ignoreCase = true) &&
+            (it.mes.isBlank() || it.mes.equals(uiState.mesActivo, ignoreCase = true))
+        }
     }
 
     val categoriasMap = remember(gastosMovs) {
@@ -104,16 +110,17 @@ fun EstadisticasSection(uiState: DashboardUiState) {
         // 1. Banner Inteligente de Alerta de Consumo ("Gastando mucho en esto")
         if (mayorGasto != null) {
             val esGastoCritico = mayorGastoPct >= 35
-            val alertBorder = if (esGastoCritico) AppTheme.colors.amber else AppTheme.colors.cyan
-            val alertBg = if (esGastoCritico) AppTheme.colors.amber.copy(alpha = 0.12f) else AppTheme.colors.cyan.copy(alpha = 0.10f)
+            val alertBorder = if (esGastoCritico) AppTheme.colors.rose else AppTheme.colors.cyan
+            val alertBg = if (esGastoCritico) AppTheme.colors.rose.copy(alpha = 0.12f) else AppTheme.colors.cyan.copy(alpha = 0.10f)
 
             Surface(
+                onClick = { onSelectCategoria(mayorGasto.first) },
                 color = alertBg,
                 shape = RoundedCornerShape(18.dp),
                 border = BorderStroke(1.dp, alertBorder.copy(alpha = 0.45f)),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .pressScale(0.98f)
+                    .pressScale(0.97f)
             ) {
                 Row(
                     modifier = Modifier.padding(16.dp),
@@ -487,17 +494,37 @@ fun EstadisticasSection(uiState: DashboardUiState) {
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(modifier = Modifier.padding(18.dp)) {
-                Text(
-                    text = "Gastos por Categoría (${uiState.mesActivo.replaceFirstChar { it.uppercase() }})",
-                    color = AppTheme.colors.textPrimary,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.ExtraBold
-                )
-                Text(
-                    text = "Distribución y semáforo de consumo",
-                    color = AppTheme.colors.textSecondary,
-                    fontSize = 11.sp
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            text = "Gastos por Categoría (${uiState.mesActivo.replaceFirstChar { it.uppercase() }})",
+                            color = AppTheme.colors.textPrimary,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.ExtraBold
+                        )
+                        Text(
+                            text = "Toca cualquier categoría para ver auditoría y detalle",
+                            color = AppTheme.colors.textSecondary,
+                            fontSize = 11.sp
+                        )
+                    }
+                    Surface(
+                        color = AppTheme.colors.cyan.copy(alpha = 0.12f),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text(
+                            text = "Interactivo",
+                            color = AppTheme.colors.cyan,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
+                        )
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(14.dp))
 
@@ -517,7 +544,7 @@ fun EstadisticasSection(uiState: DashboardUiState) {
                         AppTheme.colors.emerald
                     )
 
-                    categoriasMap.take(6).forEachIndexed { idx, (cat, monto) ->
+                    categoriasMap.forEachIndexed { idx, (cat, monto) ->
                         val pct = ((monto.toDouble() / totalGastos.toDouble()) * 100).toInt()
                         val color = colors[idx % colors.size]
 
@@ -532,63 +559,100 @@ fun EstadisticasSection(uiState: DashboardUiState) {
                             else -> AppTheme.colors.emeraldBright
                         }
 
-                        Column(modifier = Modifier.padding(vertical = 6.dp)) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(10.dp)
-                                            .clip(CircleShape)
-                                            .background(color)
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        text = cat,
-                                        color = AppTheme.colors.textPrimary,
-                                        fontSize = 13.sp,
-                                        fontWeight = FontWeight.SemiBold
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Surface(
-                                        color = badgeColor.copy(alpha = 0.15f),
-                                        shape = RoundedCornerShape(4.dp)
-                                    ) {
+                        Surface(
+                            onClick = { onSelectCategoria(cat) },
+                            color = AppTheme.colors.cardElevated.copy(alpha = 0.45f),
+                            shape = RoundedCornerShape(14.dp),
+                            border = BorderStroke(1.dp, color.copy(alpha = 0.22f)),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp)
+                                .pressScale(0.96f)
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(28.dp)
+                                                .clip(RoundedCornerShape(8.dp))
+                                                .background(color.copy(alpha = 0.2f)),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(
+                                                text = iconoPorCategoria(cat),
+                                                fontSize = 14.sp
+                                            )
+                                        }
+                                        Spacer(modifier = Modifier.width(10.dp))
+                                        Column {
+                                            Text(
+                                                text = cat,
+                                                color = AppTheme.colors.textPrimary,
+                                                fontSize = 13.sp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Surface(
+                                                    color = badgeColor.copy(alpha = 0.15f),
+                                                    shape = RoundedCornerShape(4.dp)
+                                                ) {
+                                                    Text(
+                                                        text = badgeLabel,
+                                                        color = badgeColor,
+                                                        fontSize = 9.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                                                    )
+                                                }
+                                                Spacer(modifier = Modifier.width(6.dp))
+                                                Text(
+                                                    text = "Ver registros →",
+                                                    color = AppTheme.colors.cyan,
+                                                    fontSize = 10.sp,
+                                                    fontWeight = FontWeight.Medium
+                                                )
+                                            }
+                                        }
+                                    }
+                                    Column(horizontalAlignment = Alignment.End) {
                                         Text(
-                                            text = badgeLabel,
-                                            color = badgeColor,
-                                            fontSize = 9.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                                            text = "$${MainViewModel.formatearNumero(monto)} COP",
+                                            color = AppTheme.colors.textPrimary,
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.Black
+                                        )
+                                        Text(
+                                            text = "$pct% del total",
+                                            color = AppTheme.colors.textSecondary,
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.SemiBold
                                         )
                                     }
                                 }
-                                Text(
-                                    text = "$${MainViewModel.formatearNumero(monto)} ($pct%)",
-                                    color = AppTheme.colors.textSecondary,
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(4.dp))
-                            // Barra de progreso
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(6.dp)
-                                    .clip(RoundedCornerShape(3.dp))
-                                    .background(AppTheme.colors.cardSurfaceLight)
-                            ) {
+
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                // Barra de progreso
                                 Box(
                                     modifier = Modifier
-                                        .fillMaxWidth(pct.toFloat() / 100f)
+                                        .fillMaxWidth()
                                         .height(6.dp)
                                         .clip(RoundedCornerShape(3.dp))
-                                        .background(color)
-                                )
+                                        .background(AppTheme.colors.cardSurfaceLight)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth((pct.toFloat() / 100f).coerceIn(0.04f, 1f))
+                                            .height(6.dp)
+                                            .clip(RoundedCornerShape(3.dp))
+                                            .background(color)
+                                    )
+                                }
                             }
                         }
                     }
