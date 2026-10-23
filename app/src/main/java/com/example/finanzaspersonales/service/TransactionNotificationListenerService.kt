@@ -31,7 +31,7 @@ class TransactionNotificationListenerService : NotificationListenerService() {
 
     override fun onCreate() {
         super.onCreate()
-        Log.i(TAG, "TransactionNotificationListenerService iniciado correctamente")
+        Log.i(TAG, "TransactionNotificationListenerService iniciado correctamente y escuchando")
     }
 
     override fun onDestroy() {
@@ -56,33 +56,59 @@ class TransactionNotificationListenerService : NotificationListenerService() {
         val bigText = extras.getCharSequence("android.bigText")?.toString().orEmpty()
         val contentText = if (bigText.isNotBlank()) bigText else text
 
+        Log.d(TAG, "Notificación detectada: pkg=$packageName | title='$title' | text='$contentText'")
+
         if (!TransactionNotificationParser.isFinancialNotification(packageName, title, contentText)) {
             return
         }
 
-        val parsed = TransactionNotificationParser.parse(packageName, title, contentText) ?: return
-
-        // Control de duplicados: evita registrar dos veces el mismo pago si la app repite notificación
-        val deduplicationKey = "${parsed.cuenta}_${parsed.monto}_${parsed.concepto}_${parsed.tipo}"
-        val nowMs = System.currentTimeMillis()
-        val lastSeen = processedCache[deduplicationKey] ?: 0L
-        if (nowMs - lastSeen < DEDUPLICATION_WINDOW_MS) {
-            Log.d(TAG, "Notificación duplicada ignorada: $deduplicationKey")
+        val parsed = TransactionNotificationParser.parse(packageName, title, contentText)
+        if (parsed == null) {
+            Log.w(TAG, "Notificación financiera pero no se pudo parsear monto o datos: '$title' - '$contentText'")
             return
         }
+
+        // Control de duplicados inteligente:
+        // Evita duplicar cuando Google Wallet y Nequi emiten alerta casi simultánea para el mismo pago
+        val normConcept = parsed.concepto.trim().lowercase(Locale.getDefault())
+        val valorLong = parsed.monto.toLong()
+        val nowMs = System.currentTimeMillis()
+
+        val isDuplicate = processedCache.entries.any { (key, timestamp) ->
+            if (nowMs - timestamp > DEDUPLICATION_WINDOW_MS) return@any false
+            val parts = key.split("|")
+            if (parts.size >= 3) {
+                val cachedAmount = parts[0].toLongOrNull() ?: 0L
+                val cachedConcept = parts[1]
+                val cachedTipo = parts[2]
+
+                cachedAmount == valorLong &&
+                cachedTipo == parsed.tipo &&
+                (cachedConcept == normConcept ||
+                 cachedConcept.contains(normConcept) ||
+                 normConcept.contains(cachedConcept) ||
+                 normConcept.take(7) == cachedConcept.take(7))
+            } else false
+        }
+
+        if (isDuplicate) {
+            Log.d(TAG, "Notificación duplicada omitida (ya registrada por Wallet o Nequi): $valorLong COP | $normConcept")
+            return
+        }
+
+        val deduplicationKey = "$valorLong|$normConcept|${parsed.tipo}"
         processedCache[deduplicationKey] = nowMs
 
-        // Limpiar caché viejo
+        // Limpieza periódica de caché
         if (processedCache.size > 50) {
             val cutoff = nowMs - DEDUPLICATION_WINDOW_MS
             processedCache.entries.removeIf { it.value < cutoff }
         }
 
-        Log.i(TAG, "Pago/Movimiento detectado: ${parsed.tipo} $${parsed.monto} en ${parsed.concepto} (${parsed.cuenta})")
+        Log.i(TAG, "✅ Transacción Verificada: ${parsed.tipo} $$valorLong COP en '${parsed.concepto}' [${parsed.categoria} > ${parsed.subcategoria}] (${parsed.cuenta})")
 
         scope.launch {
             try {
-                val valorLong = parsed.monto.toLong()
                 val ahora = Date()
                 val sdfId = SimpleDateFormat("HHmmss", Locale.US).format(ahora)
                 val nuevoId = "M-AUTO-$sdfId"

@@ -198,7 +198,87 @@ fun AjustesSection(
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // Botones de Prueba de Notificaciones
+                // Estado en vivo del Servicio de Escucha de Notificaciones
+                val isListenerEnabled = NotificationHelper.isNotificationListenerEnabled(context)
+                if (isListenerEnabled) {
+                    Surface(
+                        color = AppTheme.colors.emerald.copy(alpha = 0.12f),
+                        shape = RoundedCornerShape(14.dp),
+                        border = BorderStroke(1.dp, AppTheme.colors.emerald.copy(alpha = 0.35f)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(14.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.CheckCircle,
+                                contentDescription = null,
+                                tint = AppTheme.colors.emeraldBright,
+                                modifier = Modifier.size(22.dp)
+                            )
+                            Column {
+                                Text(
+                                    text = "Detector de Pagos Activo en Vivo",
+                                    color = AppTheme.colors.emeraldBright,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = "Escuchando automáticamente pagos de Nequi, Google Wallet y Tarjetas.",
+                                    color = AppTheme.colors.textSecondary,
+                                    fontSize = 11.sp
+                                )
+                            }
+                        }
+                    }
+                } else {
+                    Surface(
+                        color = AppTheme.colors.amber.copy(alpha = 0.12f),
+                        shape = RoundedCornerShape(14.dp),
+                        border = BorderStroke(1.dp, AppTheme.colors.amber.copy(alpha = 0.4f)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(14.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Warning,
+                                contentDescription = null,
+                                tint = AppTheme.colors.amber,
+                                modifier = Modifier.size(22.dp)
+                            )
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "Permiso de Detección Requerido",
+                                    color = AppTheme.colors.amber,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = "Concede acceso a notificaciones para leer pagos de Nequi y Google Wallet.",
+                                    color = AppTheme.colors.textSecondary,
+                                    fontSize = 11.sp
+                                )
+                            }
+                            Button(
+                                onClick = { NotificationHelper.openNotificationListenerSettings(context) },
+                                colors = ButtonDefaults.buttonColors(containerColor = AppTheme.colors.amber),
+                                shape = RoundedCornerShape(10.dp),
+                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
+                            ) {
+                                Text("Activar", color = Color(0xFF090D14), fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                // Botones de Prueba y Simulación de Notificaciones
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(
                         onClick = {
@@ -226,10 +306,25 @@ fun AjustesSection(
                         )
                     }
 
+                    // Botón para probar detección real de Nequi con el caso exacto de HIDENTAL
                     Button(
                         onClick = {
-                            val sent = NotificationHelper.sendTestPagoNotification(context)
-                            notifStatusMessage = if (sent) "💳 Notificación de Pago Detectado enviada. ¡Revisa tu barra superior!" else "⚠️ Habilita el permiso de notificaciones."
+                            val parsedNequi = com.example.finanzaspersonales.service.TransactionNotificationParser.parse(
+                                packageName = "com.nequi.MobileApp",
+                                title = "Compra exitosa con Tarjeta Nequi",
+                                text = "Pagaste 198.000,00 en HIDENTAL PUNTO CLAVE"
+                            )
+                            if (parsedNequi != null) {
+                                NotificationHelper.notifyPagoDetectado(
+                                    context = context,
+                                    comercio = parsedNequi.concepto,
+                                    valor = parsedNequi.monto.toLong(),
+                                    cuenta = "${parsedNequi.cuenta} (Tarjeta Virtual)"
+                                )
+                                notifStatusMessage = "✅ Nequi detectado con éxito: ${parsedNequi.concepto} • $ 198.000 COP [${parsedNequi.categoria} > ${parsedNequi.subcategoria}]. ¡Mira la barra superior!"
+                            } else {
+                                notifStatusMessage = "❌ Error parseando formato Nequi"
+                            }
                         },
                         modifier = Modifier
                             .fillMaxWidth()
@@ -245,39 +340,50 @@ fun AjustesSection(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Probar Notificación Pago Detectado",
+                            text = "Probar Parser Nequi (HIDENTAL $ 198.000 COP)",
                             color = Color.White,
                             fontWeight = FontWeight.Bold,
                             fontSize = 12.sp
                         )
                     }
 
-                    // Botón para simular detección visual de notificación de pago
+                    // Botón para probar detección de Google Wallet con Tarjeta Nequi
                     Button(
                         onClick = {
-                            val comercio = "Gasolinera Primax Las Palmas"
-                            val monto = 50000L
-                            val cuenta = "Google Wallet (Nequi Visa)"
-                            NotificationHelper.notifyPagoDetectado(context, comercio, monto, cuenta)
-                            notifStatusMessage = "🔔 Notificación de prueba enviada (Solo visual en Android, no afecta Sheets)."
+                            val parsedWallet = com.example.finanzaspersonales.service.TransactionNotificationParser.parse(
+                                packageName = "com.google.android.apps.walletnfcrel",
+                                title = "HIDENTAL PUNTO CLAVE",
+                                text = "$ 198.000 con Tarjeta Nequi Mama"
+                            )
+                            if (parsedWallet != null) {
+                                NotificationHelper.notifyPagoDetectado(
+                                    context = context,
+                                    comercio = parsedWallet.concepto,
+                                    valor = parsedWallet.monto.toLong(),
+                                    cuenta = "${parsedWallet.cuenta} (Google Wallet)"
+                                )
+                                notifStatusMessage = "✅ Google Wallet detectado con éxito: ${parsedWallet.concepto} • $ 198.000 COP [${parsedWallet.categoria} > ${parsedWallet.subcategoria}]. ¡Mira la barra superior!"
+                            } else {
+                                notifStatusMessage = "❌ Error parseando formato Google Wallet"
+                            }
                         },
                         modifier = Modifier
                             .fillMaxWidth()
                             .pressScale(0.96f),
-                        colors = ButtonDefaults.buttonColors(containerColor = AppTheme.colors.amber),
+                        colors = ButtonDefaults.buttonColors(containerColor = AppTheme.colors.violet),
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Default.LocalGasStation,
+                            imageVector = Icons.Default.AccountBalanceWallet,
                             contentDescription = null,
-                            tint = Color(0xFF090D14),
+                            tint = Color.White,
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Simular Pago Gasolinera ($ 50.000 COP)",
-                            color = Color(0xFF090D14),
-                            fontWeight = FontWeight.Black,
+                            text = "Probar Google Wallet (HIDENTAL $ 198.000 COP)",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
                             fontSize = 12.sp
                         )
                     }
@@ -285,14 +391,7 @@ fun AjustesSection(
                     // Botón para abrir configuración de escucha de notificaciones
                     OutlinedButton(
                         onClick = {
-                            try {
-                                val intent = Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS).apply {
-                                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                                }
-                                context.startActivity(intent)
-                            } catch (e: Exception) {
-                                notifStatusMessage = "No se pudo abrir Ajustes de Notificaciones: ${e.message}"
-                            }
+                            NotificationHelper.openNotificationListenerSettings(context)
                         },
                         modifier = Modifier
                             .fillMaxWidth()
@@ -308,7 +407,7 @@ fun AjustesSection(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Acceso a Notificaciones de Tarjeta (Android)",
+                            text = "Ajustes de Notificaciones de Android",
                             color = AppTheme.colors.cyan,
                             fontWeight = FontWeight.Bold,
                             fontSize = 12.sp

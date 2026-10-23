@@ -50,6 +50,45 @@ object NotificationHelper {
         }
     }
 
+    /**
+     * Verifica si el servicio de escucha de notificaciones (TransactionNotificationListenerService)
+     * está activado en los ajustes de seguridad de Android.
+     */
+    fun isNotificationListenerEnabled(context: Context): Boolean {
+        return try {
+            val enabledListeners = NotificationManagerCompat.getEnabledListenerPackages(context)
+            if (enabledListeners.contains(context.packageName)) {
+                true
+            } else {
+                val flat = android.provider.Settings.Secure.getString(
+                    context.contentResolver,
+                    "enabled_notification_listeners"
+                ) ?: ""
+                flat.contains(context.packageName) && flat.contains("TransactionNotificationListenerService")
+            }
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    /**
+     * Abre los ajustes de Acceso a Notificaciones de Android para que el usuario pueda
+     * conceder el permiso al servicio detector de pagos.
+     */
+    fun openNotificationListenerSettings(context: Context) {
+        try {
+            val intent = Intent(android.provider.Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+            context.startActivity(intent)
+        } catch (_: Exception) {
+            val intent = Intent(android.provider.Settings.ACTION_SETTINGS).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+            context.startActivity(intent)
+        }
+    }
+
     private fun getPendingIntent(context: Context): PendingIntent {
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP

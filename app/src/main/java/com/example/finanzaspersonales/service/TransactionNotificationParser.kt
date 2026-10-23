@@ -36,11 +36,25 @@ object TransactionNotificationParser {
     private val OUTGOING_KEYWORDS = listOf(
         "enviaste", "pagaste", "compra", "compraste", "pago de", "retiro",
         "retiraste", "aprobada", "transferencia a", "pasaste", "transferiste",
-        "débito", "debito", "cargo", "pagó", "pago"
+        "débito", "debito", "cargo", "pagó", "pago", "compra exitosa"
     )
 
-    // Regex para montos: "$ 50.000", "$50.000,00", "$12000", "50.000 COP", "COP 50.000"
-    private val AMOUNT_REGEX = Regex("""(?:\$|COP)\s*([0-9]{1,3}(?:\.[0-9]{3})+(?:,[0-9]{1,2})?|[0-9]{4,}(?:,[0-9]{1,2})?|[0-9]{1,3}(?:,[0-9]{3})+(?:\.[0-9]{1,2})?)|([0-9]{1,3}(?:\.[0-9]{3})+)\s*(?:COP|\$)""")
+    // Regex 1: Montos con símbolo $ o COP explícito ($198.000, $ 198.000, 198.000 COP, COP 198.000, etc.)
+    private val AMOUNT_WITH_CURRENCY_REGEX = Regex(
+        """(?:\$|COP)\s*([0-9]{1,3}(?:\.[0-9]{3})+(?:,[0-9]{1,2})?|[0-9]{3,}(?:,[0-9]{1,2})?)|([0-9]{1,3}(?:\.[0-9]{3})+(?:,[0-9]{1,2})?|[0-9]{3,}(?:,[0-9]{1,2})?)\s*(?:COP|\$)""",
+        RegexOption.IGNORE_CASE
+    )
+
+    // Regex 2: Montos directamente tras verbos financieros sin símbolo ("Pagaste 198.000,00", "Enviaste 50.000,00", "Compra por 45.000", etc.)
+    private val AMOUNT_AFTER_VERB_REGEX = Regex(
+        """\b(?:pagaste|enviaste|compraste|recibiste|retiro|retiraste|te transfirieron|te enviaron|abono de|compra por|compra de|por|de|valor|cargo)\s+(?:de\s+)?(?:\$|COP\s*)?([0-9]{1,3}(?:\.[0-9]{3})+(?:,[0-9]{1,2})?|[0-9]{4,}(?:,[0-9]{1,2})?)\b""",
+        RegexOption.IGNORE_CASE
+    )
+
+    // Regex 3: Cualquier número con formato colombiano de miles ("198.000,00" o "198.000")
+    private val AMOUNT_THOUSANDS_REGEX = Regex(
+        """\b([0-9]{1,3}(?:\.[0-9]{3})+(?:,[0-9]{1,2})?)\b"""
+    )
 
     fun isFinancialNotification(packageName: String, title: String, text: String): Boolean {
         if (KNOWN_PACKAGES.containsKey(packageName)) return true
@@ -54,6 +68,11 @@ object TransactionNotificationParser {
                combined.contains("tarjeta") ||
                combined.contains("pago con tarjeta") ||
                combined.contains("compra aprobada") ||
+               combined.contains("compra exitosa") ||
+               combined.contains("pagaste") ||
+               combined.contains("enviaste") ||
+               combined.contains("transacción") ||
+               combined.contains("transaccion") ||
                combined.contains("visa") ||
                combined.contains("mastercard")
     }
@@ -62,14 +81,14 @@ object TransactionNotificationParser {
         val fullText = "$title $text".trim()
         val lowerText = fullText.lowercase(Locale.getDefault())
 
-        // 1. Detectar Cuenta
-        val cuenta = KNOWN_PACKAGES[packageName] ?: when {
-            lowerText.contains("google pay") || lowerText.contains("wallet") -> "Google Wallet"
+        // 1. Detectar Cuenta (Si es Google Wallet pero la tarjeta es Nequi, la cuenta es Nequi)
+        val cuenta = when {
             lowerText.contains("nequi") -> "Nequi"
             lowerText.contains("bancolombia") -> "Bancolombia"
             lowerText.contains("daviplata") -> "Daviplata"
-            lowerText.contains("nu") -> "Nu"
-            else -> "Tarjeta Virtual"
+            lowerText.contains("nu") || lowerText.contains("nubank") -> "Nu"
+            packageName == "com.google.android.apps.walletnfcrel" || lowerText.contains("wallet") -> "Google Wallet"
+            else -> KNOWN_PACKAGES[packageName] ?: "Tarjeta Virtual"
         }
 
         // 2. Extraer Monto
@@ -102,57 +121,92 @@ object TransactionNotificationParser {
         )
     }
 
-    private fun extractAmount(text: String): Double? {
-        val match = AMOUNT_REGEX.find(text) ?: return null
-        val rawNum = (if (match.groupValues[1].isNotEmpty()) match.groupValues[1] else match.groupValues[2])
-            .replace(".", "")
-            .replace(",", ".")
-            .trim()
-        return rawNum.toDoubleOrNull()
+    fun extractAmount(text: String): Double? {
+        // Intento 1: Con $ o COP explícito
+        val m1 = AMOUNT_WITH_CURRENCY_REGEX.find(text)
+        if (m1 != null) {
+            val numStr = if (m1.groupValues[1].isNotEmpty()) m1.groupValues[1] else m1.groupValues[2]
+            cleanAmount(numStr)?.let { return it }
+        }
+
+        // Intento 2: Tras verbo financiero ("Pagaste 198.000,00", etc.)
+        val m2 = AMOUNT_AFTER_VERB_REGEX.find(text)
+        if (m2 != null) {
+            val numStr = m2.groupValues[1]
+            cleanAmount(numStr)?.let { return it }
+        }
+
+        // Intento 3: Cualquier número con separador de miles con punto ("198.000,00")
+        val m3 = AMOUNT_THOUSANDS_REGEX.find(text)
+        if (m3 != null) {
+            val numStr = m3.groupValues[1]
+            cleanAmount(numStr)?.let { return it }
+        }
+
+        return null
     }
 
-    private fun extractConcept(fullText: String, title: String, text: String, cuenta: String): String {
-        // "Pagaste $ 50.000 en Terpel San Diego" -> "Terpel San Diego"
-        // "Compra en Primax por $ 30.000" -> "Primax"
-        val matchEn = Regex("""\ben\s+([A-Za-z0-9ÁÉÍÓÚáéíóúÑñ\s\.\-]+?)(?:\s+con|\s+por|\s*\.|$)""", RegexOption.IGNORE_CASE).find(text)
+    private fun cleanAmount(raw: String): Double? {
+        val sanitized = raw.replace(".", "").replace(",", ".").trim()
+        return sanitized.toDoubleOrNull()
+    }
+
+    fun extractConcept(fullText: String, title: String, text: String, cuenta: String): String {
+        // 1. Patrón "en <Comercio>" (Nequi, Google Wallet, Bancolombia)
+        // Ej: "Pagaste 198.000,00 en HIDENTAL PUNTO CLAVE" -> "HIDENTAL PUNTO CLAVE"
+        val matchEn = Regex("""\ben\s+([A-Za-z0-9ÁÉÍÓÚáéíóúÑñ\s\.\-]{2,40}?)(?:\s+con|\s+por|\s*\.|\s*,\s*|$)""", RegexOption.IGNORE_CASE).find(text)
         if (matchEn != null) {
             val candidate = matchEn.groupValues[1].trim()
-            if (candidate.length in 2..45 && !candidate.contains("$")) {
+            if (candidate.length in 2..40 && !candidate.contains("$") && !candidate.contains("tarjeta", ignoreCase = true)) {
                 return candidate
             }
         }
 
-        val matchA = Regex("""\ba\s+([A-Za-z0-9ÁÉÍÓÚáéíóúÑñ\s\.\-]+?)(?:\s+por|\s*\.|$)""", RegexOption.IGNORE_CASE).find(text)
+        // 2. Patrón "a <Destinatario>" (Transferencias Nequi/Daviplata)
+        val matchA = Regex("""\ba\s+([A-Za-z0-9ÁÉÍÓÚáéíóúÑñ\s\.\-]{2,40}?)(?:\s+con|\s+por|\s+desde|\s*\.|\s*,\s*|$)""", RegexOption.IGNORE_CASE).find(text)
         if (matchA != null) {
             val candidate = matchA.groupValues[1].trim()
-            if (candidate.length in 2..45 && !candidate.contains("$")) {
+            if (candidate.length in 2..40 && !candidate.contains("$") && !candidate.contains("tarjeta", ignoreCase = true)) {
                 return "Transferencia a $candidate"
             }
         }
 
-        val matchDe = Regex("""\bde\s+([A-Za-z0-9ÁÉÍÓÚáéíóúÑñ\s\.\-]+?)(?:\s+por|\s*\.|$)""", RegexOption.IGNORE_CASE).find(text)
+        // 3. Patrón "de <Remitente>" (Recepción de dinero)
+        val matchDe = Regex("""\bde\s+([A-Za-z0-9ÁÉÍÓÚáéíóúÑñ\s\.\-]{2,40}?)(?:\s+con|\s+por|\s*\.|\s*,\s*|$)""", RegexOption.IGNORE_CASE).find(text)
         if (matchDe != null) {
             val candidate = matchDe.groupValues[1].trim()
-            if (candidate.length in 2..45 && !candidate.contains("$")) {
+            if (candidate.length in 2..40 && !candidate.contains("$") && !candidate.contains("cuenta", ignoreCase = true)) {
                 return "Recibido de $candidate"
             }
         }
 
-        // Búsqueda específica de gasolineras si aparecen en el texto
+        // 4. Si el TÍTULO es el Comercio (Estilo Google Wallet: Title="HIDENTAL PUNTO CLAVE", Text="$ 198.000 con Tarjeta Nequi")
+        val genericWords = listOf("google", "wallet", "billetera", "nequi", "bancolombia", "daviplata", "notificaci", "compra", "transferencia", "aviso", "pago")
+        val titleClean = title.trim()
+        if (titleClean.length in 3..45 && !genericWords.any { titleClean.contains(it, ignoreCase = true) }) {
+            return titleClean
+        }
+
+        // 5. Comercio antes del monto al inicio del texto (Ej: "HIDENTAL PUNTO CLAVE $ 198.000")
+        val matchPrefix = Regex("""^([A-Za-z0-9ÁÉÍÓÚáéíóúÑñ\s\.\-]{3,35}?)\s+(?:\$|COP|por\s+\$|por\s+[0-9])""", RegexOption.IGNORE_CASE).find(text)
+        if (matchPrefix != null) {
+            val cand = matchPrefix.groupValues[1].trim()
+            if (cand.length >= 3 && !genericWords.any { cand.contains(it, ignoreCase = true) }) {
+                return cand
+            }
+        }
+
+        // 6. Detección específica de gasolineras si aparecen en cualquier parte del texto
         val gasRegex = Regex("""\b(terpel|primax|biomax|zeuss|texaco|eds|gasolinera|estacion de servicio)\b[A-Za-z0-9ÁÉÍÓÚáéíóúÑñ\s]*""", RegexOption.IGNORE_CASE).find(fullText)
         if (gasRegex != null) {
             val cand = gasRegex.value.trim().take(35)
             if (cand.length >= 3) return cand
         }
 
-        if (title.isNotBlank() && !title.contains(cuenta, ignoreCase = true) && title.length in 3..35) {
-            return title.trim()
-        }
-
         return "Pago con $cuenta"
     }
 
-    private fun categorize(concepto: String, fullLower: String, tipo: String): Pair<String, String> {
+    fun categorize(concepto: String, fullLower: String, tipo: String): Pair<String, String> {
         if (tipo == "Ingreso") {
             return if (fullLower.contains("nomina") || fullLower.contains("sueldo") || fullLower.contains("colanta")) {
                 "Salario" to "Nómina Colanta"
@@ -165,48 +219,56 @@ object TransactionNotificationParser {
 
         return when {
             // Moto & Transporte (Gasolineras, Combustible, Repuestos, Parqueaderos)
-            Regex("""\b(gasolina|tanqueo|tanqueada|terpel|primax|zeuss|biomax|texaco|eds|combustible|estacion de servicio)\b""").containsMatchIn(target) ->
+            Regex("""\b(gasolina|tanqueo|tanqueada|terpel|primax|zeuss|biomax|texaco|eds|combustible|estacion de servicio|brio|petrobras)\b""").containsMatchIn(target) ->
                 "Moto" to "Combustible"
-            Regex("""\b(taller|repuesto|mecanico|aceite|llanta|frenos|soat|revision|tecnomecanica|lavado moto)\b""").containsMatchIn(target) ->
+            Regex("""\b(taller|repuesto|mecanico|aceite|llanta|frenos|soat|revision|tecnomecanica|lavado moto|auteco|yamaha|honda|bajaj|suzuki|akt)\b""").containsMatchIn(target) ->
                 "Moto" to "Mantenimiento"
-            Regex("""\b(parqueadero|parking|peaje)\b""").containsMatchIn(target) ->
+            Regex("""\b(parqueadero|parking|peaje|flypass|copiloto)\b""").containsMatchIn(target) ->
                 "Moto" to "Parqueadero"
 
+            // Salud, Odontología y Farmacia (HIDENTAL, Dentales, Clínicas, Droguerías)
+            Regex("""\b(salud|dental|dent|hidental|odontolog|odontolog[ií]a|diente|dientes|ortodoncia|clinica|cl[ií]nica|hospital|optica|óptica|laboratorio|farmacia|drogueria|droguer[ií]a|pasteur|rebaja|farmatodo|medicamento|medico|médico|eps|sura|colsanitas|sanitas|coomeva|terapia)\b""").containsMatchIn(target) ->
+                "Salud" to "Odontología y Salud"
+
             // Alimentación & Supermercados
-            Regex("""\b(d1|exito|carulla|euro|vaquita|supermercado|mercado|olimpica|jumbo|viveres|tienda)\b""").containsMatchIn(target) ->
+            Regex("""\b(d1|exito|carulla|euro|vaquita|supermercado|mercado|olimpica|jumbo|viveres|tienda|fruver|carniceria|plaza de mercado|isimo|ara)\b""").containsMatchIn(target) ->
                 "Alimentación" to "Mercado"
-            Regex("""\b(restaurante|almuerzo|cena|desayuno|burger|pizza|frisby|kfc|mcdonalds|corrientazo|domicilio|rappi|asadero)\b""").containsMatchIn(target) ->
+            Regex("""\b(restaurante|almuerzo|cena|desayuno|burger|hamburguesa|pizza|frisby|kfc|mcdonalds|corrientazo|domicilio|rappi|asadero|crepes|subway|tacos|sushi|comida rapida|pollo|sandwich|picada|panaderia)\b""").containsMatchIn(target) ->
                 "Alimentación" to "Restaurante"
 
             // Servicios Públicos & Telecomunicaciones
-            Regex("""\b(epm|energia|luz|electricidad)\b""").containsMatchIn(target) ->
+            Regex("""\b(epm|energia|luz|electricidad|prepago agua|prepago energia)\b""").containsMatchIn(target) ->
                 "Servicios" to "EPM Energía"
             Regex("""\b(agua|acueducto|alcantarillado)\b""").containsMatchIn(target) ->
                 "Servicios" to "Agua Domiciliaria"
             Regex("""\b(gas|gas natural|bombona)\b""").containsMatchIn(target) ->
                 "Servicios" to "Gas Domiciliario"
-            Regex("""\b(tigo|claro|movistar|wom|internet|wifi|datos|celular)\b""").containsMatchIn(target) ->
+            Regex("""\b(tigo|claro|movistar|wom|etb|internet|wifi|datos|celular|plan movil)\b""").containsMatchIn(target) ->
                 "Servicios" to "Internet y Telefonía"
 
             // Gastos Hormiga & Antojos
-            Regex("""\b(tinto|cafecito|cafe|pan|buñuelo|empanada|helado|dulce|chocolatina|mecato|snack)\b""").containsMatchIn(target) ->
+            Regex("""\b(tinto|cafecito|cafe|pan|buñuelo|empanada|helado|dulce|chocolatina|mecato|snack|golosina|starbucks|tostao|juan valdez)\b""").containsMatchIn(target) ->
                 "Antojos" to "Gasto hormiga"
 
-            // Salud & Farmacia
-            Regex("""\b(farmacia|drogueria|pasteur|rebaja|farmatodo|medicamento|medico|eps|sura)\b""").containsMatchIn(target) ->
-                "Salud" to "Medicamentos y Salud"
-
             // Suscripciones y Entretenimiento
-            Regex("""\b(spotify|netflix|disney|prime|youtube|cine|cinecolombia|playstation|steam)\b""").containsMatchIn(target) ->
+            Regex("""\b(spotify|netflix|disney|prime|youtube|cine|cinecolombia|playstation|steam|hbo|max|apple|paramount|twitch)\b""").containsMatchIn(target) ->
                 "Entretenimiento" to "Suscripciones"
+            Regex("""\b(bar|discoteca|cerveza|licor|licorera|fiesta|concierto|boleta|teatro|billar)\b""").containsMatchIn(target) ->
+                "Entretenimiento" to "Ocio"
 
-            // Vivienda
-            Regex("""\b(arriendo|alquiler|canon|administracion)\b""").containsMatchIn(target) ->
+            // Vivienda & Hogar
+            Regex("""\b(arriendo|alquiler|canon|administracion|inmobiliaria)\b""").containsMatchIn(target) ->
                 "Vivienda" to "Arriendo"
+            Regex("""\b(homecenter|sodimac|ferreteria|muebles|decoracion|pintura|easy|ikea)\b""").containsMatchIn(target) ->
+                "Vivienda" to "Hogar y Reparaciones"
 
-            // Compras generales
-            Regex("""\b(falabella|zara|koaj|mattelsa|ropa|zapatos|tenis|amazon|mercado libre|temu)\b""").containsMatchIn(target) ->
+            // Compras y Vestuario
+            Regex("""\b(falabella|zara|koaj|mattelsa|ropa|zapatos|tenis|amazon|mercado libre|temu|aliexpress|shein|pull&bear|bershka|arturo calle)\b""").containsMatchIn(target) ->
                 "Compras" to "Compras generales"
+
+            // Transporte Urbano
+            Regex("""\b(uber|didi|cabify|indriver|taxi|metro|metroplus|civica|tarjeta civica|pasaje)\b""").containsMatchIn(target) ->
+                "Transporte" to "Transporte Urbano"
 
             else -> "Alimentación" to "General"
         }
