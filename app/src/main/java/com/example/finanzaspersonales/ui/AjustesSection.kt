@@ -280,6 +280,37 @@ fun AjustesSection(
 
                 // Botones de Prueba y Simulación de Notificaciones
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    // Botón para forzar barrido de notificaciones activas que no se hayan procesado
+                    Button(
+                        onClick = {
+                            val count = com.example.finanzaspersonales.service.TransactionNotificationListenerService.forceScanActiveNotifications(context)
+                            notifStatusMessage = if (count > 0) {
+                                "✅ Se detectaron y registraron $count pagos pendientes desde la barra de notificaciones en Google Sheets."
+                            } else {
+                                "✓ No hay alertas pendientes por procesar en tu barra de estado. Tus finanzas están al día."
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .pressScale(0.96f),
+                        colors = ButtonDefaults.buttonColors(containerColor = AppTheme.colors.amber),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Sync,
+                            contentDescription = null,
+                            tint = Color(0xFF090D14),
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Escanear Notificaciones Activas de Billetera",
+                            color = Color(0xFF090D14),
+                            fontWeight = FontWeight.Black,
+                            fontSize = 12.sp
+                        )
+                    }
+
                     Button(
                         onClick = {
                             val sent = NotificationHelper.sendTestFacturaNotification(context)

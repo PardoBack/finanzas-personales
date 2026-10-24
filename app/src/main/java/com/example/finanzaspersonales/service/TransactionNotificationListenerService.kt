@@ -1,5 +1,6 @@
 package com.example.finanzaspersonales.service
 
+import android.content.Context
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.util.Log
@@ -24,56 +25,102 @@ class TransactionNotificationListenerService : NotificationListenerService() {
     companion object {
         private const val TAG = "PardoNotifListener"
 
+        @Volatile
+        var instance: TransactionNotificationListenerService? = null
+
         // Deduplication cache: key -> timestamp (ms)
         private val processedCache = ConcurrentHashMap<String, Long>()
         private const val DEDUPLICATION_WINDOW_MS = 60_000L // 60 segundos
+
+        /**
+         * Permite forzar un barrido del historial de notificaciones activas desde cualquier parte de la app
+         */
+        fun forceScanActiveNotifications(context: Context): Int {
+            val listener = instance ?: return 0
+            return listener.scanActiveNotifications()
+        }
     }
 
     override fun onCreate() {
         super.onCreate()
-        Log.i(TAG, "TransactionNotificationListenerService iniciado correctamente y escuchando")
+        instance = this
+        Log.i(TAG, "TransactionNotificationListenerService iniciado y activo")
+    }
+
+    override fun onListenerConnected() {
+        super.onListenerConnected()
+        instance = this
+        Log.i(TAG, "onListenerConnected: Servicio conectado al SO. Iniciando barrido de notificaciones activas...")
+        scope.launch {
+            scanActiveNotifications()
+        }
     }
 
     override fun onDestroy() {
         super.onDestroy()
+        if (instance == this) instance = null
         job.cancel()
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
         super.onNotificationPosted(sbn)
         if (sbn == null) return
+        processNotification(sbn)
+    }
 
-        // Ignorar notificaciones del sistema o en curso (llamadas, música, etc.)
-        if (sbn.isOngoing) return
-        val packageName = sbn.packageName ?: return
+    /**
+     * Barre todas las notificaciones actualmente visibles en la barra de estado de Android
+     * para recuperar movimientos de Nequi o Google Wallet que hayan llegado mientras la app estaba cerrada.
+     */
+    fun scanActiveNotifications(): Int {
+        var count = 0
+        try {
+            val activeNotifs = activeNotifications ?: return 0
+            Log.d(TAG, "Escaneando ${activeNotifs.size} notificaciones activas en el sistema...")
+            for (sbn in activeNotifs) {
+                if (processNotification(sbn)) {
+                    count++
+                }
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Error escaneando activeNotifications", e)
+        }
+        return count
+    }
+
+    /**
+     * Procesa una notificación individual. Retorna true si fue un pago financiero nuevo registrado.
+     */
+    private fun processNotification(sbn: StatusBarNotification): Boolean {
+        // Ignorar notificaciones en curso (música, llamadas, etc.)
+        if (sbn.isOngoing) return false
+        val packageName = sbn.packageName ?: return false
 
         // Evitar procesar nuestras propias notificaciones
-        if (packageName == applicationContext.packageName) return
+        if (packageName == applicationContext.packageName) return false
 
-        val extras = sbn.notification?.extras ?: return
+        val extras = sbn.notification?.extras ?: return false
         val title = extras.getCharSequence("android.title")?.toString().orEmpty()
         val text = extras.getCharSequence("android.text")?.toString().orEmpty()
         val bigText = extras.getCharSequence("android.bigText")?.toString().orEmpty()
         val contentText = if (bigText.isNotBlank()) bigText else text
 
-        Log.d(TAG, "Notificación detectada: pkg=$packageName | title='$title' | text='$contentText'")
-
         if (!TransactionNotificationParser.isFinancialNotification(packageName, title, contentText)) {
-            return
+            return false
         }
 
         val parsed = TransactionNotificationParser.parse(packageName, title, contentText)
         if (parsed == null) {
-            Log.w(TAG, "Notificación financiera pero no se pudo parsear monto o datos: '$title' - '$contentText'")
-            return
+            Log.w(TAG, "Notificación financiera pero no se pudo parsear: '$title' - '$contentText'")
+            return false
         }
 
-        // Control de duplicados inteligente:
-        // Evita duplicar cuando Google Wallet y Nequi emiten alerta casi simultánea para el mismo pago
         val normConcept = parsed.concepto.trim().lowercase(Locale.getDefault())
         val valorLong = parsed.monto.toLong()
         val nowMs = System.currentTimeMillis()
 
+        // Control de duplicados inteligente:
+        // Evita duplicar cuando Google Wallet y Nequi emiten alerta casi simultánea para el mismo pago
         val isDuplicate = processedCache.entries.any { (key, timestamp) ->
             if (nowMs - timestamp > DEDUPLICATION_WINDOW_MS) return@any false
             val parts = key.split("|")
@@ -92,8 +139,8 @@ class TransactionNotificationListenerService : NotificationListenerService() {
         }
 
         if (isDuplicate) {
-            Log.d(TAG, "Notificación duplicada omitida (ya registrada por Wallet o Nequi): $valorLong COP | $normConcept")
-            return
+            Log.d(TAG, "Notificación duplicada omitida: $valorLong COP | $normConcept")
+            return false
         }
 
         val deduplicationKey = "$valorLong|$normConcept|${parsed.tipo}"
@@ -161,5 +208,6 @@ class TransactionNotificationListenerService : NotificationListenerService() {
                 Log.e(TAG, "Error procesando pago detectado", e)
             }
         }
+        return true
     }
 }
