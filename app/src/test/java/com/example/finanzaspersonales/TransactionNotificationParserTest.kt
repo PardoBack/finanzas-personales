@@ -88,4 +88,21 @@ class TransactionNotificationParserTest {
         assertEquals("Alimentación", parsed.categoria)
         assertEquals("Mercado", parsed.subcategoria)
     }
+
+    @Test
+    fun testAyCColantaTransferenciaLlave() {
+        val parsed = TransactionNotificationParser.parse(
+            packageName = "com.google.android.apps.messaging",
+            title = "55200",
+            text = "AyC Colanta le informa transferencia por $420,000.00 a llave @3167142613. 23/10/2026 09:36. Inquietudes al 604 3220303 Ahorro y Credito."
+        )
+
+        assertNotNull(parsed)
+        assertEquals(420000.0, parsed!!.monto, 0.01)
+        assertEquals("Gasto", parsed.tipo)
+        assertEquals("Transferencia a Nequi (Llave @3167142613)", parsed.concepto)
+        assertEquals("AyC Colanta", parsed.cuenta)
+        assertEquals("Transferencias", parsed.categoria)
+        assertEquals("Recarga Nequi / Entre Cuentas", parsed.subcategoria)
+    }
 }

@@ -8,7 +8,7 @@ data class ParsedFinancialTransaction(
     val concepto: String,
     val categoria: String,
     val subcategoria: String,
-    val cuenta: String, // "Nequi", "Google Wallet", "Bancolombia", etc.
+    val cuenta: String, // "Nequi", "Google Wallet", "Bancolombia", "AyC Colanta", etc.
     val rawText: String
 )
 
@@ -30,30 +30,31 @@ object TransactionNotificationParser {
 
     private val INCOMING_KEYWORDS = listOf(
         "recibiste", "te transfirieron", "te enviaron", "recepción", "abono",
-        "consignación", "te consignaron", "consignacion", "recepcion"
+        "consignación", "te consignaron", "consignacion", "recepcion", "recepcion transferencia"
     )
 
     private val OUTGOING_KEYWORDS = listOf(
         "enviaste", "pagaste", "compra", "compraste", "pago de", "retiro",
         "retiraste", "aprobada", "transferencia a", "pasaste", "transferiste",
-        "débito", "debito", "cargo", "pagó", "pago", "compra exitosa"
+        "débito", "debito", "cargo", "pagó", "pago", "compra exitosa",
+        "transferencia por"
     )
 
-    // Regex 1: Montos con símbolo $ o COP explícito ($198.000, $ 198.000, 198.000 COP, COP 198.000, etc.)
+    // Regex 1: Montos con símbolo $ o COP explícito ($198.000, $420,000.00, $ 198.000, COP 50.000, etc.)
     private val AMOUNT_WITH_CURRENCY_REGEX = Regex(
-        """(?:\$|COP)\s*([0-9]{1,3}(?:\.[0-9]{3})+(?:,[0-9]{1,2})?|[0-9]{3,}(?:,[0-9]{1,2})?)|([0-9]{1,3}(?:\.[0-9]{3})+(?:,[0-9]{1,2})?|[0-9]{3,}(?:,[0-9]{1,2})?)\s*(?:COP|\$)""",
+        """(?:\$|COP)\s*([0-9]{1,3}(?:[.,][0-9]{3})+(?:[.,][0-9]{1,2})?|[0-9]{3,}(?:[.,][0-9]{1,2})?)|([0-9]{1,3}(?:[.,][0-9]{3})+(?:[.,][0-9]{1,2})?|[0-9]{3,}(?:[.,][0-9]{1,2})?)\s*(?:COP|\$)""",
         RegexOption.IGNORE_CASE
     )
 
-    // Regex 2: Montos directamente tras verbos financieros sin símbolo ("Pagaste 198.000,00", "Enviaste 50.000,00", "Compra por 45.000", etc.)
+    // Regex 2: Montos directamente tras verbos financieros sin símbolo ("Pagaste 198.000,00", "Enviaste 50.000,00", "transferencia por $420,000.00", etc.)
     private val AMOUNT_AFTER_VERB_REGEX = Regex(
-        """\b(?:pagaste|enviaste|compraste|recibiste|retiro|retiraste|te transfirieron|te enviaron|abono de|compra por|compra de|por|de|valor|cargo)\s+(?:de\s+)?(?:\$|COP\s*)?([0-9]{1,3}(?:\.[0-9]{3})+(?:,[0-9]{1,2})?|[0-9]{4,}(?:,[0-9]{1,2})?)\b""",
+        """\b(?:pagaste|enviaste|compraste|recibiste|retiro|retiraste|te transfirieron|te enviaron|abono de|compra por|compra de|transferencia por|por|de|valor|cargo)\s+(?:de\s+)?(?:\$|COP\s*)?([0-9]{1,3}(?:[.,][0-9]{3})+(?:[.,][0-9]{1,2})?|[0-9]{4,}(?:[.,][0-9]{1,2})?)\b""",
         RegexOption.IGNORE_CASE
     )
 
-    // Regex 3: Cualquier número con formato colombiano de miles ("198.000,00" o "198.000")
+    // Regex 3: Cualquier número con formato de miles ("198.000,00", "420,000.00", "198.000")
     private val AMOUNT_THOUSANDS_REGEX = Regex(
-        """\b([0-9]{1,3}(?:\.[0-9]{3})+(?:,[0-9]{1,2})?)\b"""
+        """\b([0-9]{1,3}(?:[.,][0-9]{3})+(?:[.,][0-9]{1,2})?)\b"""
     )
 
     fun isFinancialNotification(packageName: String, title: String, text: String): Boolean {
@@ -74,15 +75,20 @@ object TransactionNotificationParser {
                combined.contains("transacción") ||
                combined.contains("transaccion") ||
                combined.contains("visa") ||
-               combined.contains("mastercard")
+               combined.contains("mastercard") ||
+               combined.contains("ayc colanta") ||
+               combined.contains("colanta le informa") ||
+               combined.contains("ahorro y credito") ||
+               title.contains("55200")
     }
 
     fun parse(packageName: String, title: String, text: String): ParsedFinancialTransaction? {
         val fullText = "$title $text".trim()
         val lowerText = fullText.lowercase(Locale.getDefault())
 
-        // 1. Detectar Cuenta (Si es Google Wallet pero la tarjeta es Nequi, la cuenta es Nequi)
+        // 1. Detectar Cuenta
         val cuenta = when {
+            lowerText.contains("ayc colanta") || lowerText.contains("colanta") || title.contains("55200") -> "AyC Colanta"
             lowerText.contains("nequi") -> "Nequi"
             lowerText.contains("bancolombia") -> "Bancolombia"
             lowerText.contains("daviplata") -> "Daviplata"
@@ -129,14 +135,14 @@ object TransactionNotificationParser {
             cleanAmount(numStr)?.let { return it }
         }
 
-        // Intento 2: Tras verbo financiero ("Pagaste 198.000,00", etc.)
+        // Intento 2: Tras verbo financiero ("transferencia por $420,000.00", "Pagaste 198.000,00", etc.)
         val m2 = AMOUNT_AFTER_VERB_REGEX.find(text)
         if (m2 != null) {
             val numStr = m2.groupValues[1]
             cleanAmount(numStr)?.let { return it }
         }
 
-        // Intento 3: Cualquier número con separador de miles con punto ("198.000,00")
+        // Intento 3: Cualquier número con separador de miles ("198.000,00" o "420,000.00")
         val m3 = AMOUNT_THOUSANDS_REGEX.find(text)
         if (m3 != null) {
             val numStr = m3.groupValues[1]
@@ -147,11 +153,52 @@ object TransactionNotificationParser {
     }
 
     private fun cleanAmount(raw: String): Double? {
-        val sanitized = raw.replace(".", "").replace(",", ".").trim()
+        val trimmed = raw.trim()
+        val sanitized = when {
+            trimmed.contains(',') && trimmed.contains('.') -> {
+                val lastComma = trimmed.lastIndexOf(',')
+                val lastDot = trimmed.lastIndexOf('.')
+                if (lastComma > lastDot) {
+                    // Formato latino: 198.000,00
+                    trimmed.replace(".", "").replace(",", ".")
+                } else {
+                    // Formato anglo/Colanta: 420,000.00
+                    trimmed.replace(",", "")
+                }
+            }
+            trimmed.contains(',') -> {
+                val parts = trimmed.split(',')
+                if (parts.last().length == 2) {
+                    trimmed.replace(',', '.')
+                } else {
+                    trimmed.replace(",", "")
+                }
+            }
+            trimmed.contains('.') -> {
+                val parts = trimmed.split('.')
+                if (parts.size == 2 && parts.last().length == 2) {
+                    trimmed
+                } else {
+                    trimmed.replace(".", "")
+                }
+            }
+            else -> trimmed
+        }
         return sanitized.toDoubleOrNull()
     }
 
     fun extractConcept(fullText: String, title: String, text: String, cuenta: String): String {
+        // 0. Transferencias AyC Colanta a Llave ("AyC Colanta le informa transferencia por $420,000.00 a llave @3167142613")
+        val matchLlave = Regex("""a\s+llave\s+(@[0-9A-Za-z]+|[0-9]{10})""", RegexOption.IGNORE_CASE).find(text)
+        if (matchLlave != null) {
+            val llave = matchLlave.groupValues[1].trim()
+            return if (llave.contains("3167142613")) {
+                "Transferencia a Nequi (Llave @3167142613)"
+            } else {
+                "Transferencia a $llave"
+            }
+        }
+
         // 1. Patrón "en <Comercio>" (Nequi, Google Wallet, Bancolombia)
         // Ej: "Pagaste 198.000,00 en HIDENTAL PUNTO CLAVE" -> "HIDENTAL PUNTO CLAVE"
         val matchEn = Regex("""\ben\s+([A-Za-z0-9ÁÉÍÓÚáéíóúÑñ\s\.\-]{2,40}?)(?:\s+con|\s+por|\s*\.|\s*,\s*|$)""", RegexOption.IGNORE_CASE).find(text)
@@ -181,7 +228,7 @@ object TransactionNotificationParser {
         }
 
         // 4. Si el TÍTULO es el Comercio (Estilo Google Wallet: Title="HIDENTAL PUNTO CLAVE", Text="$ 198.000 con Tarjeta Nequi")
-        val genericWords = listOf("google", "wallet", "billetera", "nequi", "bancolombia", "daviplata", "notificaci", "compra", "transferencia", "aviso", "pago")
+        val genericWords = listOf("google", "wallet", "billetera", "nequi", "bancolombia", "daviplata", "notificaci", "compra", "transferencia", "aviso", "pago", "55200")
         val titleClean = title.trim()
         if (titleClean.length in 3..45 && !genericWords.any { titleClean.contains(it, ignoreCase = true) }) {
             return titleClean
@@ -218,6 +265,10 @@ object TransactionNotificationParser {
         val target = "$concepto $fullLower".lowercase(Locale.getDefault())
 
         return when {
+            // Transferencias entre cuentas propias (AyC Colanta a Nequi)
+            target.contains("transferencia a nequi") || target.contains("3167142613") ->
+                "Transferencias" to "Recarga Nequi / Entre Cuentas"
+
             // Moto & Transporte (Gasolineras, Combustible, Repuestos, Parqueaderos)
             Regex("""\b(gasolina|tanqueo|tanqueada|terpel|primax|zeuss|biomax|texaco|eds|combustible|estacion de servicio|brio|petrobras)\b""").containsMatchIn(target) ->
                 "Moto" to "Combustible"
