@@ -15,11 +15,16 @@ const API_CONFIG = {
 const DEMO_DATA = {
   "ok": true,
   "resumen": {
-    "ingresos": 1700605.0,
-    "gastos": 1448443.0,
-    "ahorros": 236121.0,
-    "disponible": 252162.0,
-    "fijos_pendientes": 1125000,
+    "saldoRealEnCuentas": 3507977.0,
+    "saldoTotalEnCuentas": 3507977.0,
+    "disponibleLibreEnCaja": 883534.0,
+    "disponibleLibreDelMes": 883534.0,
+    "disponible": 883534.0,
+    "flujoNetoMes": 883534.0,
+    "ingresos": 3507977.0,
+    "gastos": 2624443.0,
+    "ahorros": 2400000.0,
+    "fijos_pendientes": 20000.0,
     "mes": "octubre",
     "anio": 2026
   },
@@ -31,17 +36,17 @@ const DEMO_DATA = {
     "Entretenimiento": 24123.0
   },
   "cuentas": {
-    "aycColanta": 180362.0,
-    "nequi": 0,
-    "efectivo": 71800,
-    "total": 252162.0
+    "aycColanta": 1700605.0,
+    "nequi": 1807372.0,
+    "efectivo": 71800.0,
+    "total": 3507977.0
   },
   "ahorrosColanta": {
-    "ordinarioAcumulado": 627000,
-    "navidenoAcumulado": 2280000,
-    "aportesAcumulado": 1032650,
-    "otrosAcumulado": 227770,
-    "totalAcumulado": 4167420
+    "ordinarioAcumulado": 660000,
+    "navidenoAcumulado": 2400000,
+    "aportesAcumulado": 1070217,
+    "otrosAcumulado": 0,
+    "totalAcumulado": 4357987
   },
   "resumenAnual": [
     {
@@ -3745,7 +3750,7 @@ const FinanceAPI = {
     
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 6000);
+      const timeoutId = setTimeout(() => controller.abort(), 25000);
       
       let endpoint = `${webhookUrl}?action=getData&t=${Date.now()}`;
       if (mes) endpoint += `&mes=${encodeURIComponent(mes)}`;

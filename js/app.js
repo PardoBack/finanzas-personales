@@ -628,7 +628,7 @@ const FintechApp = {
       b.classList.toggle("active", month === "all");
     });
 
-    // Recalcular vistas
+    // Recalcular vistas inmediatamente con la vista previa
     this.renderBalances();
     this.renderCharts();
     this.renderAnnualSection();
@@ -639,8 +639,13 @@ const FintechApp = {
 
     this.showToast(`📅 Visualizando: ${month === 'all' ? 'Todo el año 2026' : capitalize(month) + ' ' + year}`, "success");
 
-    // Sincronizar en segundo plano con el backend
-    FinanceAPI.setMonth(month, year);
+    // Sincronizar en segundo plano y cargar datos vivos del nuevo mes
+    try {
+      FinanceAPI.setMonth(month, year);
+      await this.loadData(month, year);
+    } catch (e) {
+      console.warn("Error al cargar mes:", e);
+    }
   },
 
   scrollToSection(viewKey) {
@@ -700,28 +705,21 @@ const FintechApp = {
       }
     });
 
-    // Validar y blindar con el balance consolidado oficial de resumenAnual (hoja ANÁLISIS)
-    const annualMatch = annualData.find(a => String(a.mes).toLowerCase() === active);
-    if (annualMatch) {
-      if (active !== "octubre" && annualMatch.ingresos > 0) {
-        // En cualquier mes pasado cerrado (Enero a Septiembre), la cifra auditada oficial manda
-        ing = annualMatch.ingresos;
-        gas = annualMatch.gastos;
-      } else {
-        // Octubre en curso: proteger contra quincenas duplicadas (> 3.000.000)
-        if (annualMatch.ingresos > 0 && (ing === 0 || ing > 3000000)) {
-          ing = annualMatch.ingresos;
-        }
-        if (annualMatch.gastos > 0 && (gas === 0 || annualMatch.gastos > gas)) {
-          gas = annualMatch.gastos;
-        }
-      }
-    }
-
     const res = (this.state.data && this.state.data.resumen) || {};
-    if (active === String(res.mes || "").toLowerCase()) {
-      if (res.gastos && res.gastos > gas) gas = res.gastos;
-      if (res.ingresos && res.ingresos > 0 && ing === 0) ing = res.ingresos;
+    const annualMatch = annualData.find(a => String(a.mes).toLowerCase() === active);
+
+    // Conexión 1:1 con Google Sheets:
+    // Si el mes consultado coincide con el devuelto por la API en vivo, usamos sus cifras auditadas directas
+    if (active === String(res.mes || "").toLowerCase() && res.ingresos && res.ingresos > 0) {
+      ing = Number(res.ingresos);
+      if (res.gastos && res.gastos > 0) gas = Number(res.gastos);
+    } else if (annualMatch && annualMatch.ingresos > 0) {
+      // Si consultamos un mes histórico en resumenAnual
+      ing = Number(annualMatch.ingresos);
+      gas = Number(annualMatch.gastos);
+    } else if (res.ingresos && res.ingresos > 0 && ing === 0) {
+      ing = Number(res.ingresos);
+      if (res.gastos && res.gastos > 0) gas = Number(res.gastos);
     }
 
     const fallbackCats = active === "octubre"
@@ -1964,113 +1962,7 @@ const FintechApp = {
       this.renderFixedTable();
       this.renderBalances();
       
-    // === NUEVOS MÓDULOS EJECUTIVOS (MARLONHUB V26) ===
-    // A. Actualizar Banner Dinámico de Auditoría Histórica
-    const auditBanner = document.getElementById("audit-historical-banner");
-    if (auditBanner) {
-      if (active !== "octubre" && active !== "all") {
-        auditBanner.style.display = "flex";
-        const titleEl = document.getElementById("audit-historical-title");
-        const subEl = document.getElementById("audit-historical-subtitle");
-        if (titleEl) titleEl.textContent = `Modo Auditoría Histórica: ${capitalize(active)} ${this.state.activeYear}`;
-        if (subEl) subEl.textContent = `Consultando periodo contable auditado. Las cifras se leen de la base histórica de Google Sheets.`;
-        const kIng = document.getElementById("audit-kpi-ingresos");
-        const kGas = document.getElementById("audit-kpi-gastos");
-        const kSup = document.getElementById("audit-kpi-superavit");
-        if (kIng) kIng.textContent = `$${this.formatCOP(monthData.ingresos)}`;
-        if (kGas) kGas.textContent = `$${this.formatCOP(monthData.gastos)}`;
-        const netSurplus = monthData.ingresos - monthData.gastos;
-        if (kSup) {
-          kSup.textContent = `${netSurplus >= 0 ? '+' : ''}$${this.formatCOP(netSurplus)}`;
-          kSup.className = netSurplus >= 0 ? "text-emerald" : "text-rose";
-        }
-      } else {
-        auditBanner.style.display = "none";
-      }
-    }
-
-    // B. Actualizar Matriz Ejecutiva de Salud Financiera
-    const burnRateVal = Math.round((Number(monthData.gastos) || 0) / 30);
-    const elBurnVal = document.getElementById("health-burn-rate-val");
-    const elBurnBar = document.getElementById("health-burn-rate-bar");
-    if (elBurnVal) elBurnVal.textContent = hidden ? "••••••" : `$${this.formatCOP(burnRateVal)}`;
-    if (elBurnBar) {
-      const burnPct = Math.min(100, Math.round((burnRateVal / 60000) * 100));
-      elBurnBar.style.width = `${burnPct}%`;
-    }
-
-    const coverageDays = burnRateVal > 0 ? Math.min(365, Math.round(totalAvail / burnRateVal)) : 0;
-    const elCovDays = document.getElementById("health-coverage-days");
-    const elCovBar = document.getElementById("health-coverage-bar");
-    const elCovSub = document.getElementById("health-coverage-sub");
-    if (elCovDays) elCovDays.textContent = hidden ? "••••" : `${coverageDays} días`;
-    if (elCovBar) elCovBar.style.width = `${Math.min(100, (coverageDays / 30) * 100)}%`;
-    if (elCovSub) {
-      elCovSub.textContent = coverageDays >= 15 ? "[OK] Cubre holgadamente el periodo" : "⚠️ Atención: cobertura reducida";
-    }
-
-    const totalCuotasFijos = fijosList.reduce((acc, f) => acc + Number(f.cuota || 0), 0);
-    const burdenPct = monthData.ingresos > 0 ? Math.round((totalCuotasFijos / monthData.ingresos) * 100) : 0;
-    const elBurdenPct = document.getElementById("health-fixed-burden-pct");
-    const elBurdenBar = document.getElementById("health-fixed-burden-bar");
-    if (elBurdenPct) elBurdenPct.textContent = `${burdenPct}%`;
-    if (elBurdenBar) elBurdenBar.style.width = `${Math.min(100, burdenPct)}%`;
-
-    const remanenteProy = totalAvail - finalFijosPend;
-    const elRemanente = document.getElementById("health-projected-surplus");
-    const elRemBar = document.getElementById("health-projected-bar");
-    if (elRemanente) {
-      elRemanente.textContent = hidden ? "••••••" : `$${this.formatCOP(remanenteProy)}`;
-      elRemanente.className = remanenteProy >= 0 ? "health-val text-cyan" : "health-val text-rose";
-    }
-    if (elRemBar) {
-      elRemBar.style.width = totalAvail > 0 ? `${Math.max(10, Math.min(100, Math.round((remanenteProy / totalAvail) * 100)))}%` : "20%";
-    }
-
-    const patrimonioNeto = totalAvail + totalSavingsColanta;
-    const elNetWorth = document.getElementById("health-net-worth-val");
-    if (elNetWorth) elNetWorth.textContent = hidden ? "••••••" : `$${this.formatCOP(patrimonioNeto)}`;
-
-    // C. Actualizar Inteligencia de Consumo (Mayor Centro de Gasto)
-    const catsMap = monthData.gastosPorCategoria || {};
-    let topCatName = "Alimentación";
-    let topCatVal = 0;
-    for (const [k, v] of Object.entries(catsMap)) {
-      if (Number(v) > topCatVal) {
-        topCatVal = Number(v);
-        topCatName = k;
-      }
-    }
-    const totGastosMes = Number(monthData.gastos) || 1;
-    const topCatPct = Math.round((topCatVal / totGastosMes) * 100);
-
-    const elIntelName = document.getElementById("intel-category-name");
-    const elIntelBadge = document.getElementById("intel-category-badge");
-    const elIntelAmount = document.getElementById("intel-category-amount");
-    const elIntelDesc = document.getElementById("intel-category-desc");
-    if (elIntelName) elIntelName.textContent = `Mayor Centro de Gasto: ${topCatName}`;
-    if (elIntelBadge) {
-      elIntelBadge.textContent = `${topCatPct}% del total`;
-      elIntelBadge.style.color = topCatPct > 35 ? "#FB7185" : "#34D399";
-    }
-    if (elIntelAmount) elIntelAmount.textContent = hidden ? "••••••" : `$${this.formatCOP(topCatVal)} COP`;
-    if (elIntelDesc) {
-      elIntelDesc.textContent = topCatPct > 35
-        ? `⚠️ ${topCatName} absorbe más del 35% de tus egresos de ${monthLabel}. Mantener el monitoreo en compras cotidianas.`
-        : `[OK] Distribución equilibrada. ${topCatName} representa el ${topCatPct}% de los gastos del periodo.`;
-    }
-
-    // D. Actualizar Reglas Quincenales en Gastos Fijos
-    const q1FijosPend = fijosList.filter(f => Number(f.dia || 0) <= 15 && Number(f.cuota || 0) > Number(f.abonado || 0))
-      .reduce((acc, f) => acc + Math.max(0, Number(f.cuota || 0) - Number(f.abonado || 0)), 0);
-    const q2FijosPend = fijosList.filter(f => Number(f.dia || 0) > 15 && Number(f.cuota || 0) > Number(f.abonado || 0))
-      .reduce((acc, f) => acc + Math.max(0, Number(f.cuota || 0) - Number(f.abonado || 0)), 0);
-    const elRuleQ1 = document.getElementById("rule-q1-pend-sum");
-    const elRuleQ2 = document.getElementById("rule-q2-pend-sum");
-    if (elRuleQ1) elRuleQ1.textContent = `$${this.formatCOP(q1FijosPend)} COP`;
-    if (elRuleQ2) elRuleQ2.textContent = `$${this.formatCOP(q2FijosPend)} COP`;
-
-    this.renderLoansWidget();
+    
 
       this.appendBotMsg(`
         <div style="background: rgba(14, 165, 233, 0.08); border-left: 4px solid #0EA5E9; padding: 0.85rem; border-radius: 8px;">
@@ -2623,9 +2515,17 @@ const FintechApp = {
     } catch (e) {}
   },
 
-  async loadData() {
-    const res = await FinanceAPI.fetchFinancialData();
-    this.state.data = res.data;
+  async loadData(targetMonth = null, targetYear = null) {
+    const active = targetMonth || this.state.activeMonth || "octubre";
+    const year = targetYear || this.state.activeYear || 2026;
+    const syncBadge = document.getElementById("sync-status-text");
+    if (syncBadge) syncBadge.textContent = "Conectando...";
+
+    const res = await FinanceAPI.fetchFinancialData(active === "all" ? null : active, year);
+    if (res && res.data) {
+      this.state.data = res.data;
+      if (syncBadge) syncBadge.textContent = res.isLive ? "Sheets En Vivo" : "Sincronizado";
+    }
 
     // Sanitizar caché y reconciliar totales con las cifras auditadas de Octubre 2026
     if (this.state.data) {
@@ -2686,27 +2586,11 @@ const FintechApp = {
     const navSavingsColanta = Number(sav.navidenoAcumulado || 2280000);
 
     if (active === "octubre") {
-      // Mes activo actual en curso (Octubre 2026)
-      const ingOct = Number(monthData.ingresos || res.ingresos || 0);
-      const gasOct = Number(monthData.gastos || res.gastos || 0);
-      accNeq = Number(cuentas.nequi || 0);
+      // Mes activo actual en curso (Octubre 2026 - Conexión 1:1 Sheets)
+      accCol = Number(cuentas.aycColanta !== undefined ? cuentas.aycColanta : 1700605);
+      accNeq = Number(cuentas.nequi !== undefined ? cuentas.nequi : 1807372);
       accEff = Number(cuentas.efectivo !== undefined ? cuentas.efectivo : 71800);
-
-      if (ingOct > 0) {
-        const saldoNetoMes = Math.max(0, ingOct - gasOct);
-        if (cuentas.total && cuentas.total <= ingOct && cuentas.total > 0) {
-          totalAvail = cuentas.total;
-          accCol = (cuentas.aycColanta !== undefined && cuentas.aycColanta <= totalAvail)
-            ? cuentas.aycColanta
-            : Math.max(0, totalAvail - accEff - accNeq);
-        } else {
-          totalAvail = saldoNetoMes;
-          accCol = Math.max(0, totalAvail - accEff - accNeq);
-        }
-      } else {
-        totalAvail = (cuentas.total && cuentas.total < 1000000) ? cuentas.total : accEff;
-        accCol = 0;
-      }
+      totalAvail = Number(res.disponibleLibreEnCaja || res.disponible || 883534);
       masterLabel = "DISPONIBLE REAL EN CAJA (OCTUBRE)";
     } else if (active === "all") {
       // Consolidado de todo el año
@@ -2815,7 +2699,7 @@ const FintechApp = {
     const fijosList = (this.state.data && this.state.data.fijos) || (typeof DEMO_DATA !== "undefined" ? DEMO_DATA.fijos : []);
     const fijosPendientesList = fijosList.filter(f => !String(f.estado || "").includes("Pagado") && Number(f.cuota || 0) > Number(f.abonado || 0));
     const calcFijosPend = fijosPendientesList.reduce((acc, f) => acc + Math.max(0, Number(f.cuota || 0) - Number(f.abonado || 0)), 0);
-    const finalFijosPend = calcFijosPend > 0 ? calcFijosPend : Number(res.fijos_pendientes || 2380000);
+    const finalFijosPend = (res.fijos_pendientes !== undefined && res.fijos_pendientes !== null) ? Number(res.fijos_pendientes) : (calcFijosPend > 0 ? calcFijosPend : 20000);
 
     if (elInc) elInc.textContent = formatVal(monthData.ingresos);
     if (elExp) elExp.textContent = formatVal(monthData.gastos);
@@ -2882,6 +2766,112 @@ const FintechApp = {
     if (elPaceSub) elPaceSub.textContent = `${diasRestantes} días restantes`;
 
     this.renderLoansWidget();
+
+    // === MÓDULOS EJECUTIVOS (MARLONHUB V26) ===
+    // A. Actualizar Banner Dinámico de Auditoría Histórica
+    const auditBanner = document.getElementById("audit-historical-banner");
+    if (auditBanner) {
+      if (active !== "octubre" && active !== "all") {
+        auditBanner.style.display = "flex";
+        const titleEl = document.getElementById("audit-historical-title");
+        const subEl = document.getElementById("audit-historical-subtitle");
+        if (titleEl) titleEl.textContent = `Modo Auditoría Histórica: ${capitalize(active)} ${this.state.activeYear}`;
+        if (subEl) subEl.textContent = `Consultando periodo contable auditado. Las cifras se leen de la base histórica de Google Sheets.`;
+        const kIng = document.getElementById("audit-kpi-ingresos");
+        const kGas = document.getElementById("audit-kpi-gastos");
+        const kSup = document.getElementById("audit-kpi-superavit");
+        if (kIng) kIng.textContent = `$${this.formatCOP(monthData.ingresos)}`;
+        if (kGas) kGas.textContent = `$${this.formatCOP(monthData.gastos)}`;
+        const netSurplus = monthData.ingresos - monthData.gastos;
+        if (kSup) {
+          kSup.textContent = `${netSurplus >= 0 ? '+' : ''}$${this.formatCOP(netSurplus)}`;
+          kSup.className = netSurplus >= 0 ? "text-emerald" : "text-rose";
+        }
+      } else {
+        auditBanner.style.display = "none";
+      }
+    }
+
+    // B. Actualizar Matriz Ejecutiva de Salud Financiera
+    const burnRateVal = Math.round((Number(monthData.gastos) || 0) / 30);
+    const elBurnVal = document.getElementById("health-burn-rate-val");
+    const elBurnBar = document.getElementById("health-burn-rate-bar");
+    if (elBurnVal) elBurnVal.textContent = hidden ? "••••••" : `$${this.formatCOP(burnRateVal)}`;
+    if (elBurnBar) {
+      const burnPct = Math.min(100, Math.round((burnRateVal / 60000) * 100));
+      elBurnBar.style.width = `${burnPct}%`;
+    }
+
+    const coverageDays = burnRateVal > 0 ? Math.min(365, Math.round(totalAvail / burnRateVal)) : 0;
+    const elCovDays = document.getElementById("health-coverage-days");
+    const elCovBar = document.getElementById("health-coverage-bar");
+    const elCovSub = document.getElementById("health-coverage-sub");
+    if (elCovDays) elCovDays.textContent = hidden ? "••••" : `${coverageDays} días`;
+    if (elCovBar) elCovBar.style.width = `${Math.min(100, (coverageDays / 30) * 100)}%`;
+    if (elCovSub) {
+      elCovSub.textContent = coverageDays >= 15 ? "[OK] Cubre holgadamente el periodo" : "⚠️ Atención: cobertura reducida";
+    }
+
+    const totalCuotasFijos = fijosList.reduce((acc, f) => acc + Number(f.cuota || 0), 0);
+    const burdenPct = monthData.ingresos > 0 ? Math.round((totalCuotasFijos / monthData.ingresos) * 100) : 0;
+    const elBurdenPct = document.getElementById("health-fixed-burden-pct");
+    const elBurdenBar = document.getElementById("health-fixed-burden-bar");
+    if (elBurdenPct) elBurdenPct.textContent = `${burdenPct}%`;
+    if (elBurdenBar) elBurdenBar.style.width = `${Math.min(100, burdenPct)}%`;
+
+    const remanenteProy = totalAvail - finalFijosPend;
+    const elRemanente = document.getElementById("health-projected-surplus");
+    const elRemBar = document.getElementById("health-projected-bar");
+    if (elRemanente) {
+      elRemanente.textContent = hidden ? "••••••" : `$${this.formatCOP(remanenteProy)}`;
+      elRemanente.className = remanenteProy >= 0 ? "health-val text-cyan" : "health-val text-rose";
+    }
+    if (elRemBar) {
+      elRemBar.style.width = totalAvail > 0 ? `${Math.max(10, Math.min(100, Math.round((remanenteProy / totalAvail) * 100)))}%` : "20%";
+    }
+
+    const patrimonioNeto = totalAvail + totalSavingsColanta;
+    const elNetWorth = document.getElementById("health-net-worth-val");
+    if (elNetWorth) elNetWorth.textContent = hidden ? "••••••" : `$${this.formatCOP(patrimonioNeto)}`;
+
+    // C. Actualizar Inteligencia de Consumo (Mayor Centro de Gasto)
+    const catsMap = monthData.gastosPorCategoria || {};
+    let topCatName = "Alimentación";
+    let topCatVal = 0;
+    for (const [k, v] of Object.entries(catsMap)) {
+      if (Number(v) > topCatVal) {
+        topCatVal = Number(v);
+        topCatName = k;
+      }
+    }
+    const totGastosMes = Number(monthData.gastos) || 1;
+    const topCatPct = Math.round((topCatVal / totGastosMes) * 100);
+
+    const elIntelName = document.getElementById("intel-category-name");
+    const elIntelBadge = document.getElementById("intel-category-badge");
+    const elIntelAmount = document.getElementById("intel-category-amount");
+    const elIntelDesc = document.getElementById("intel-category-desc");
+    if (elIntelName) elIntelName.textContent = `Mayor Centro de Gasto: ${topCatName}`;
+    if (elIntelBadge) {
+      elIntelBadge.textContent = `${topCatPct}% del total`;
+      elIntelBadge.style.color = topCatPct > 35 ? "#FB7185" : "#34D399";
+    }
+    if (elIntelAmount) elIntelAmount.textContent = hidden ? "••••••" : `$${this.formatCOP(topCatVal)} COP`;
+    if (elIntelDesc) {
+      elIntelDesc.textContent = topCatPct > 35
+        ? `⚠️ ${topCatName} absorbe más del 35% de tus egresos de ${monthLabel}. Mantener el monitoreo en compras cotidianas.`
+        : `[OK] Distribución equilibrada. ${topCatName} representa el ${topCatPct}% de los gastos del periodo.`;
+    }
+
+    // D. Actualizar Reglas Quincenales en Gastos Fijos
+    const q1FijosPend = fijosList.filter(f => Number(f.dia || 0) <= 15 && Number(f.cuota || 0) > Number(f.abonado || 0))
+      .reduce((acc, f) => acc + Math.max(0, Number(f.cuota || 0) - Number(f.abonado || 0)), 0);
+    const q2FijosPend = fijosList.filter(f => Number(f.dia || 0) > 15 && Number(f.cuota || 0) > Number(f.abonado || 0))
+      .reduce((acc, f) => acc + Math.max(0, Number(f.cuota || 0) - Number(f.abonado || 0)), 0);
+    const elRuleQ1 = document.getElementById("rule-q1-pend-sum");
+    const elRuleQ2 = document.getElementById("rule-q2-pend-sum");
+    if (elRuleQ1) elRuleQ1.textContent = `$${this.formatCOP(q1FijosPend)} COP`;
+    if (elRuleQ2) elRuleQ2.textContent = `$${this.formatCOP(q2FijosPend)} COP`;
   },
 
   renderLoansWidget() {
@@ -3984,7 +3974,12 @@ const FintechApp = {
     const q1Total = fijos.filter(f => Number(f.dia || 0) <= 15).reduce((acc, f) => acc + Number(f.cuota || 0), 0);
     const q2Total = fijos.filter(f => Number(f.dia || 0) > 15).reduce((acc, f) => acc + Number(f.cuota || 0), 0);
     const totalCuotas = q1Total + q2Total;
-    const totalAbonado = fijos.reduce((acc, f) => acc + Number(f.abonado || 0), 0);
+    const totalAbonado = fijos.reduce((acc, f) => {
+      const isPaid = String(f.estado || "").toLowerCase().includes("pagad");
+      const cuota = Number(f.cuota || 0);
+      const ab = Number(f.abonado || 0);
+      return acc + (isPaid ? cuota : ab);
+    }, 0);
     const totalPendiente = Math.max(0, totalCuotas - totalAbonado);
 
     const elQ1 = document.getElementById("q1-fixed-amount");
@@ -4027,12 +4022,12 @@ const FintechApp = {
       const cuota = Number(f.cuota || 0);
       const abonado = Number(f.abonado || 0);
       const saldo = Math.max(0, cuota - abonado);
-      const isPaid = abonado >= cuota && cuota > 0;
+      const isPaid = (abonado >= cuota && cuota > 0) || String(f.estado || '').toLowerCase().includes('pagad');
 
       let statusPill = `<span class="pill-status status-pending"><i class="fa-solid fa-circle-exclamation"></i> Pendiente</span>`;
       if (isPaid) {
         statusPill = `<span class="pill-status status-paid"><i class="fa-solid fa-circle-check"></i> Pagado</span>`;
-      } else if (abonado > 0) {
+      } else if (abonado > 0 || String(f.estado || '').toLowerCase().includes('abono')) {
         statusPill = `<span class="pill-status status-partial"><i class="fa-solid fa-clock-rotate-left"></i> Abono</span>`;
       }
 
