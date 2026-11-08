@@ -220,6 +220,30 @@
         </div>
 
           <!-- Tarjeta de Patrimonio Líquido Maestro -->
+          <!-- BANNER DINÁMICO DE AUDITORÍA HISTÓRICA (Alineado con Reglas MarlonHub) -->
+        <div class="audit-historical-banner" id="audit-historical-banner" style="display: none;">
+          <div class="audit-banner-left">
+            <div class="audit-badge-pulse"><i class="fa-solid fa-clock-rotate-left"></i> AUDITORÍA HISTÓRICA</div>
+            <div class="audit-banner-text">
+              <h4 id="audit-historical-title">Modo Auditoría: Mostrando Cifras de Octubre 2026</h4>
+              <p id="audit-historical-subtitle">Estás visualizando un periodo contable auditado. La base de datos protege los históricos sin alterar balances vivos.</p>
+            </div>
+          </div>
+          <div class="audit-banner-right">
+            <div class="audit-stats-pill" id="audit-historical-kpis">
+              <span>Ingresos: <strong id="audit-kpi-ingresos">$0</strong></span>
+              <span class="pill-dot">•</span>
+              <span>Gastos: <strong id="audit-kpi-gastos">$0</strong></span>
+              <span class="pill-dot">•</span>
+              <span>Superávit: <strong id="audit-kpi-superavit" class="text-emerald">$0</strong></span>
+            </div>
+            <button type="button" class="btn-return-current-month" id="btn-return-current-month" title="Volver al mes activo en curso">
+              <i class="fa-solid fa-rotate-left"></i>
+              <span>Volver a Mes Actual</span>
+            </button>
+          </div>
+        </div>
+
           <section class="wallet-cockpit-section" id="section-wallet">
           <div class="cockpit-grid">
             
@@ -508,6 +532,147 @@
               <div class="widget-meta">
                 <span class="meta-tag tag-purple"><i class="fa-solid fa-gift"></i> Entrega 1 Dic</span>
                 <span class="meta-sub" id="kpi-sub-savings-total">Total Fondos: $4.17M</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+<!-- =========================================================
+             MATRIZ FINANCIERA EJECUTIVA: RATIOS DE SALUD, BURN RATE & COBERTURA
+             ========================================================= -->
+        <section class="financial-health-cockpit" id="section-financial-health">
+          <div class="cockpit-section-header">
+            <div class="section-title-group">
+              <span class="badge-sub-cockpit"><i class="fa-solid fa-heart-pulse" style="color:var(--rose);"></i> RATIOS DE SALUD PRO</span>
+              <h3 class="section-title-sm">Salud Financiera, Burn Rate y Cobertura de Caja</h3>
+            </div>
+            <span class="health-live-status-pill" id="health-status-badge">
+              <i class="fa-solid fa-shield-halved"></i>
+              <span id="health-status-text">Salud Financiera Óptima</span>
+            </span>
+          </div>
+
+          <div class="health-metrics-grid">
+            <!-- Card 1: Gasto Diario & Ritmo de Consumo -->
+            <div class="health-card" id="card-health-burn-rate">
+              <div class="health-card-top">
+                <div class="health-icon-box icon-rose"><i class="fa-solid fa-fire-flame-curved"></i></div>
+                <span class="health-card-tag tag-rose">Burn Rate Real</span>
+              </div>
+              <div class="health-card-body">
+                <span class="health-label">Gasto Diario Promedio</span>
+                <div class="health-val-row">
+                  <strong class="health-val" id="health-burn-rate-val">$48.281</strong>
+                  <span class="health-unit">/ día</span>
+                </div>
+                <div class="health-progress-wrap">
+                  <div class="health-progress-bar bar-rose" id="health-burn-rate-bar" style="width: 48%;"></div>
+                </div>
+                <div class="health-card-sub" id="health-burn-rate-sub">Meta sugerida: &lt;$55.000 / día</div>
+              </div>
+            </div>
+
+            <!-- Card 2: Días de Cobertura de Liquidez -->
+            <div class="health-card" id="card-health-coverage">
+              <div class="health-card-top">
+                <div class="health-icon-box icon-emerald"><i class="fa-solid fa-shield-heart"></i></div>
+                <span class="health-card-tag tag-emerald">Respaldo en Caja</span>
+              </div>
+              <div class="health-card-body">
+                <span class="health-label">Días de Cobertura</span>
+                <div class="health-val-row">
+                  <strong class="health-val text-emerald" id="health-coverage-days">14 días</strong>
+                  <span class="health-unit">de liquidez</span>
+                </div>
+                <div class="health-progress-wrap">
+                  <div class="health-progress-bar bar-emerald" id="health-coverage-bar" style="width: 70%;"></div>
+                </div>
+                <div class="health-card-sub" id="health-coverage-sub">Cubre hasta nómina Q2</div>
+              </div>
+            </div>
+
+            <!-- Card 3: Carga de Fijos sobre Ingreso -->
+            <div class="health-card" id="card-health-fixed-burden">
+              <div class="health-card-top">
+                <div class="health-icon-box icon-amber"><i class="fa-solid fa-percent"></i></div>
+                <span class="health-card-tag tag-amber">Carga Fija</span>
+              </div>
+              <div class="health-card-body">
+                <span class="health-label">Fijos sobre Ingresos</span>
+                <div class="health-val-row">
+                  <strong class="health-val text-amber" id="health-fixed-burden-pct">43%</strong>
+                  <span class="health-unit">del ingreso</span>
+                </div>
+                <div class="health-progress-wrap">
+                  <div class="health-progress-bar bar-amber" id="health-fixed-burden-bar" style="width: 43%;"></div>
+                </div>
+                <div class="health-card-sub" id="health-fixed-burden-sub">Rango saludable (&lt;50%)</div>
+              </div>
+            </div>
+
+            <!-- Card 4: Remanente Proyectado al Fin de Mes -->
+            <div class="health-card" id="card-health-projected-surplus">
+              <div class="health-card-top">
+                <div class="health-icon-box icon-cyan"><i class="fa-solid fa-calendar-check"></i></div>
+                <span class="health-card-tag tag-cyan">Cierre Proyectado</span>
+              </div>
+              <div class="health-card-body">
+                <span class="health-label">Remanente Fin de Mes</span>
+                <div class="health-val-row">
+                  <strong class="health-val text-cyan" id="health-projected-surplus">$252.162</strong>
+                  <span class="health-unit">COP</span>
+                </div>
+                <div class="health-progress-wrap">
+                  <div class="health-progress-bar bar-cyan" id="health-projected-bar" style="width: 60%;"></div>
+                </div>
+                <div class="health-card-sub" id="health-projected-sub">Superávit tras cumplir fijos</div>
+              </div>
+            </div>
+
+            <!-- Card 5: Patrimonio Neto Líquido Consolidado -->
+            <div class="health-card" id="card-health-net-worth">
+              <div class="health-card-top">
+                <div class="health-icon-box icon-purple"><i class="fa-solid fa-vault"></i></div>
+                <span class="health-card-tag tag-purple">Patrimonio Total</span>
+              </div>
+              <div class="health-card-body">
+                <span class="health-label">Caja + Fondos Colanta</span>
+                <div class="health-val-row">
+                  <strong class="health-val text-purple" id="health-net-worth-val">$4.419.582</strong>
+                  <span class="health-unit">COP</span>
+                </div>
+                <div class="health-progress-wrap">
+                  <div class="health-progress-bar bar-purple" id="health-net-worth-bar" style="width: 85%;"></div>
+                </div>
+                <div class="health-card-sub" id="health-net-worth-sub">Incluye Fondos Navideño y Aportes</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- TARJETA DE INTELIGENCIA DE CONSUMO: MAYOR CENTRO DE GASTO -->
+        <section class="spending-intelligence-banner" id="spending-intelligence-banner">
+          <div class="spending-intel-card">
+            <div class="intel-left">
+              <div class="intel-badge-icon" id="intel-category-icon"><i class="fa-solid fa-utensils"></i></div>
+              <div class="intel-texts">
+                <div class="intel-title-row">
+                  <h4 id="intel-category-name">Mayor Centro de Gasto: Alimentación</h4>
+                  <span class="intel-alert-badge" id="intel-category-badge">46% del total</span>
+                </div>
+                <p class="intel-desc" id="intel-category-desc">
+                  Este rubro absorbe el mayor porcentaje de tus salidas este mes. Mantener el monitoreo en compras de supermercado y restaurantes.
+                </p>
+              </div>
+            </div>
+            <div class="intel-right">
+              <div class="intel-kpi-sub">
+                <span class="intel-kpi-lbl">Total Acumulado Rubro</span>
+                <strong class="intel-kpi-num" id="intel-category-amount">$662.116 COP</strong>
+              </div>
+              <div class="intel-kpi-sub">
+                <span class="intel-kpi-lbl">Regla Quincenal Colanta</span>
+                <strong class="intel-kpi-badge"><i class="fa-solid fa-circle-info"></i> Q1 Día 15 • Q2 Día 30</strong>
               </div>
             </div>
           </div>
@@ -1104,6 +1269,22 @@
               </div>
             </div>
 
+            <!-- BANNER DE REGLA QUINCENAL INTELIGENTE (COLANTA Q1 VS Q2) -->
+            <div class="fixed-quincenal-rules-card" id="fixed-quincenal-rules-card">
+              <div class="rules-card-icon"><i class="fa-solid fa-arrows-split-up-and-left text-cyan"></i></div>
+              <div class="rules-card-content">
+                <h4>Asignación Quincenal Inteligente (Regla Oficial MarlonHub)</h4>
+                <p>
+                  <strong>Quincena 1 (Día 15):</strong> Se paga con la nómina Q1 (~$1.700.000). Cubre servicios básicos (EPM, Internet, Alimentación Q1).<br>
+                  <strong>Quincena 2 (Día 30):</strong> Se paga con la nómina Q2 (~$1.800.000). Cubre arriendo, parqueadero y el remanente libre se transfiere al mes siguiente.
+                </p>
+              </div>
+              <div class="rules-card-pills">
+                <span class="rule-pill pill-q1"><i class="fa-solid fa-calendar-check"></i> Q1 Día 15: <strong id="rule-q1-pend-sum">$1.332.000 COP</strong></span>
+                <span class="rule-pill pill-q2"><i class="fa-solid fa-calendar-day"></i> Q2 Día 30: <strong id="rule-q2-pend-sum">$1.225.000 COP</strong></span>
+              </div>
+            </div>
+
             <div class="table-card-wrapper">
               <table class="fintech-table" id="table-fixed">
                 <thead>
@@ -1435,6 +1616,73 @@
           </div>
 
           <!-- Matriz Comparativa Mes a Mes -->
+          <!-- GRID BENTO TRIMESTRAL 2026 (Q1, Q2, Q3, Q4) -->
+          <div class="quarterly-performance-grid" id="annual-quarterly-grid">
+            <!-- Q1 -->
+            <div class="quarter-card" id="card-quarter-q1">
+              <div class="quarter-card-header">
+                <span class="quarter-badge">Q1 2026 (Ene - Mar)</span>
+                <span class="quarter-status-tag tag-emerald">Superávit Alto</span>
+              </div>
+              <div class="quarter-amount-row">
+                <strong class="quarter-amount text-emerald" id="q1-quarter-surplus">+$3.61M</strong>
+                <span class="quarter-sub-pct" id="q1-quarter-pct">35.8% ahorro</span>
+              </div>
+              <div class="quarter-breakdown">
+                <div class="q-break-item"><span>Ingresos:</span> <strong id="q1-quarter-income">$10.08M</strong></div>
+                <div class="q-break-item"><span>Gastos:</span> <strong id="q1-quarter-expense">$6.47M</strong></div>
+              </div>
+            </div>
+
+            <!-- Q2 -->
+            <div class="quarter-card" id="card-quarter-q2">
+              <div class="quarter-card-header">
+                <span class="quarter-badge">Q2 2026 (Abr - Jun)</span>
+                <span class="quarter-status-tag tag-cyan">Incluye Prima</span>
+              </div>
+              <div class="quarter-amount-row">
+                <strong class="quarter-amount text-cyan" id="q2-quarter-surplus">+$2.26M</strong>
+                <span class="quarter-sub-pct" id="q2-quarter-pct">18.6% ahorro</span>
+              </div>
+              <div class="quarter-breakdown">
+                <div class="q-break-item"><span>Ingresos:</span> <strong id="q2-quarter-income">$12.11M</strong></div>
+                <div class="q-break-item"><span>Gastos:</span> <strong id="q2-quarter-expense">$9.85M</strong></div>
+              </div>
+            </div>
+
+            <!-- Q3 -->
+            <div class="quarter-card" id="card-quarter-q3">
+              <div class="quarter-card-header">
+                <span class="quarter-badge">Q3 2026 (Jul - Sep)</span>
+                <span class="quarter-status-tag tag-purple">Estabilidad</span>
+              </div>
+              <div class="quarter-amount-row">
+                <strong class="quarter-amount text-purple" id="q3-quarter-surplus">+$1.78M</strong>
+                <span class="quarter-sub-pct" id="q3-quarter-pct">18.6% ahorro</span>
+              </div>
+              <div class="quarter-breakdown">
+                <div class="q-break-item"><span>Ingresos:</span> <strong id="q3-quarter-income">$9.56M</strong></div>
+                <div class="q-break-item"><span>Gastos:</span> <strong id="q3-quarter-expense">$7.78M</strong></div>
+              </div>
+            </div>
+
+            <!-- Q4 -->
+            <div class="quarter-card" id="card-quarter-q4">
+              <div class="quarter-card-header">
+                <span class="quarter-badge">Q4 2026 (Oct - Dic)</span>
+                <span class="quarter-status-tag tag-amber">En Curso</span>
+              </div>
+              <div class="quarter-amount-row">
+                <strong class="quarter-amount text-amber" id="q4-quarter-surplus">+$3.11M</strong>
+                <span class="quarter-sub-pct" id="q4-quarter-pct">Proyectado + Navideño</span>
+              </div>
+              <div class="quarter-breakdown">
+                <div class="q-break-item"><span>Fondo Navideño:</span> <strong class="text-amber">$2.28M (1 Dic)</strong></div>
+                <div class="q-break-item"><span>Octubre:</span> <strong id="q4-quarter-oct">$252k disponible</strong></div>
+              </div>
+            </div>
+          </div>
+
           <div class="annual-matrix-card" style="margin-top:1.25rem;">
             <div class="matrix-header">
               <h4><i class="fa-solid fa-calendar-days" style="color:#60A5FA;"></i> Detalle y Comparativa Mes a Mes</h4>

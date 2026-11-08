@@ -7673,3 +7673,542 @@ textarea:focus {
 }
 
 
+
+
+/* =========================================================
+   ENHANCEMENTS: AUDITORÍA HISTÓRICA, SALUD FINANCIERA & TRIMESTRES
+   ========================================================= */
+
+/* Banner de Auditoría Histórica */
+.audit-historical-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1.25rem;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(15, 23, 42, 0.95));
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  border-radius: 18px;
+  padding: 1.15rem 1.5rem;
+  margin-bottom: 1.75rem;
+  box-shadow: 0 8px 24px rgba(245, 158, 11, 0.12);
+  animation: fadeIn 0.3s ease;
+}
+
+.audit-banner-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.audit-badge-pulse {
+  background: rgba(245, 158, 11, 0.2);
+  color: #FBBF24;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  padding: 0.4rem 0.85rem;
+  border-radius: 10px;
+  font-size: 0.76rem;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.audit-banner-text h4 {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #F8FAFC;
+  margin-bottom: 0.2rem;
+}
+
+.audit-banner-text p {
+  font-size: 0.8rem;
+  color: #CBD5E1;
+  margin: 0;
+}
+
+.audit-banner-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-shrink: 0;
+}
+
+.audit-stats-pill {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0.45rem 1rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  color: #94A3B8;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.audit-stats-pill strong {
+  color: #F8FAFC;
+}
+
+.btn-return-current-month {
+  background: linear-gradient(135deg, #06B6D4, #0284C7);
+  color: #FFFFFF;
+  border: none;
+  padding: 0.55rem 1.15rem;
+  border-radius: 12px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  box-shadow: 0 4px 14px rgba(6, 182, 212, 0.35);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-return-current-month:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(6, 182, 212, 0.45);
+}
+
+/* Matriz Ejecutiva de Salud Financiera */
+.financial-health-cockpit {
+  margin-bottom: 2.25rem;
+}
+
+.cockpit-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.15rem;
+}
+
+.badge-sub-cockpit {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--text-muted);
+  letter-spacing: 0.8px;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.2rem;
+}
+
+.section-title-sm {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #F8FAFC;
+}
+
+.health-live-status-pill {
+  background: rgba(16, 185, 129, 0.12);
+  color: #10B981;
+  border: 1px solid rgba(16, 185, 129, 0.28);
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.health-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 1.1rem;
+}
+
+.health-card {
+  background: var(--bg-card);
+  backdrop-filter: var(--blur-glass);
+  border: 1px solid var(--border-glass);
+  border-radius: 18px;
+  padding: 1.25rem;
+  box-shadow: var(--shadow-card);
+  transition: var(--transition);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.health-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--border-glass-light);
+  background: var(--bg-card-hover);
+}
+
+.health-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.85rem;
+}
+
+.health-icon-box {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+}
+.health-icon-box.icon-rose { background: rgba(244, 63, 94, 0.14); color: #FB7185; }
+.health-icon-box.icon-emerald { background: rgba(16, 185, 129, 0.14); color: #34D399; }
+.health-icon-box.icon-amber { background: rgba(245, 158, 11, 0.14); color: #FBBF24; }
+.health-icon-box.icon-cyan { background: rgba(6, 182, 212, 0.14); color: #22D3EE; }
+.health-icon-box.icon-purple { background: rgba(168, 85, 247, 0.14); color: #C084FC; }
+
+.health-card-tag {
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 0.2rem 0.55rem;
+  border-radius: 6px;
+  letter-spacing: 0.3px;
+}
+.tag-rose { background: rgba(244, 63, 94, 0.12); color: #FB7185; }
+.tag-emerald { background: rgba(16, 185, 129, 0.12); color: #34D399; }
+.tag-amber { background: rgba(245, 158, 11, 0.12); color: #FBBF24; }
+.tag-cyan { background: rgba(6, 182, 212, 0.12); color: #22D3EE; }
+.tag-purple { background: rgba(168, 85, 247, 0.12); color: #C084FC; }
+
+.health-label {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  display: block;
+  margin-bottom: 0.3rem;
+}
+
+.health-val-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
+}
+
+.health-val {
+  font-family: var(--font-heading);
+  font-size: 1.55rem;
+  font-weight: 800;
+  color: #F8FAFC;
+}
+
+.health-unit {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.health-progress-wrap {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.health-progress-bar {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.5s ease;
+}
+.bar-rose { background: linear-gradient(90deg, #F43F5E, #FB7185); }
+.bar-emerald { background: linear-gradient(90deg, #10B981, #34D399); }
+.bar-amber { background: linear-gradient(90deg, #F59E0B, #FBBF24); }
+.bar-cyan { background: linear-gradient(90deg, #06B6D4, #38BDF8); }
+.bar-purple { background: linear-gradient(90deg, #8B5CF6, #A855F7); }
+
+.health-card-sub {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+/* Tarjeta de Inteligencia de Consumo */
+.spending-intelligence-banner {
+  margin-bottom: 2.25rem;
+}
+
+.spending-intel-card {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.75));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  padding: 1.35rem 1.6rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1.5rem;
+  box-shadow: var(--shadow-card);
+}
+
+.intel-left {
+  display: flex;
+  align-items: center;
+  gap: 1.15rem;
+  flex: 1;
+}
+
+.intel-badge-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  background: rgba(244, 63, 94, 0.15);
+  color: #FB7185;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.intel-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-bottom: 0.3rem;
+}
+
+.intel-title-row h4 {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #F8FAFC;
+  margin: 0;
+}
+
+.intel-alert-badge {
+  background: rgba(244, 63, 94, 0.15);
+  color: #FB7185;
+  border: 1px solid rgba(244, 63, 94, 0.3);
+  padding: 0.18rem 0.55rem;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.intel-desc {
+  font-size: 0.82rem;
+  color: #94A3B8;
+  margin: 0;
+  line-height: 1.45;
+}
+
+.intel-right {
+  display: flex;
+  gap: 1.5rem;
+  flex-shrink: 0;
+}
+
+.intel-kpi-sub {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.intel-kpi-lbl {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.intel-kpi-num {
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #FB7185;
+}
+
+.intel-kpi-badge {
+  background: rgba(6, 182, 212, 0.12);
+  color: #22D3EE;
+  border: 1px solid rgba(6, 182, 212, 0.3);
+  padding: 0.35rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* Reglas Quincenales en Gastos Fijos */
+.fixed-quincenal-rules-card {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.7));
+  border: 1px solid rgba(6, 182, 212, 0.25);
+  border-radius: 18px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+}
+
+.rules-card-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(6, 182, 212, 0.14);
+  color: #06B6D4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.rules-card-content h4 {
+  font-size: 0.98rem;
+  font-weight: 800;
+  color: #F8FAFC;
+  margin-bottom: 0.3rem;
+}
+
+.rules-card-content p {
+  font-size: 0.8rem;
+  color: #94A3B8;
+  margin: 0;
+  line-height: 1.45;
+}
+
+.rules-card-pills {
+  display: flex;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+.rule-pill {
+  padding: 0.5rem 0.85rem;
+  border-radius: 10px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+.rule-pill.pill-q1 {
+  background: rgba(59, 130, 246, 0.12);
+  color: #60A5FA;
+  border: 1px solid rgba(59, 130, 246, 0.25);
+}
+.rule-pill.pill-q1 strong { color: #93C5FD; }
+.rule-pill.pill-q2 {
+  background: rgba(168, 85, 247, 0.12);
+  color: #C084FC;
+  border: 1px solid rgba(168, 85, 247, 0.25);
+}
+.rule-pill.pill-q2 strong { color: #E9D5FF; }
+
+/* Grid Bento Trimestral 2026 */
+.quarterly-performance-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 1.15rem;
+  margin-bottom: 2rem;
+}
+
+.quarter-card {
+  background: var(--bg-card);
+  backdrop-filter: var(--blur-glass);
+  border: 1px solid var(--border-glass);
+  border-radius: 18px;
+  padding: 1.25rem;
+  box-shadow: var(--shadow-card);
+  transition: var(--transition);
+}
+
+.quarter-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--border-glass-light);
+  background: var(--bg-card-hover);
+}
+
+.quarter-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.quarter-badge {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #F8FAFC;
+}
+
+.quarter-status-tag {
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 0.2rem 0.55rem;
+  border-radius: 6px;
+}
+
+.quarter-amount-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.85rem;
+}
+
+.quarter-amount {
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  font-weight: 800;
+}
+
+.quarter-sub-pct {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.quarter-breakdown {
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding-top: 0.65rem;
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+
+.q-break-item strong {
+  color: #E2E8F0;
+  font-weight: 700;
+}
+
+/* Responsividad para móviles */
+@media (max-width: 768px) {
+  .audit-historical-banner {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.85rem;
+    padding: 1rem;
+  }
+  .audit-banner-right {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .audit-stats-pill {
+    justify-content: space-around;
+  }
+  .spending-intel-card {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 1.15rem;
+  }
+  .intel-right {
+    flex-direction: row;
+    justify-content: space-between;
+  }
+  .fixed-quincenal-rules-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .rules-card-pills {
+    flex-direction: column;
+  }
+}

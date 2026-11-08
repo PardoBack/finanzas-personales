@@ -42,6 +42,10 @@ const FintechApp = {
     this.bindPWAInstall();
     this.bindNavigation();
     this.bindMonthSelector();
+    document.getElementById("btn-return-current-month")?.addEventListener("click", () => {
+      this.haptic(15);
+      this.changeActiveMonth("octubre", 2026);
+    });
     this.bindPrivacyToggle();
     this.bindChatCFO();
     this.initSpeechRecognition();
@@ -930,6 +934,50 @@ const FintechApp = {
       elAiColanta.textContent = `$${this.formatCOP(data.ahorrosColanta.totalAcumulado || 4167420)} COP`;
     }
     // Ejecutar análisis inteligente de hábitos (Temu, Dulces, Moto, Comida)
+    // 4. Actualizar Grid Trimestral Bento (Q1..Q4)
+    if (annual && annual.length >= 3) {
+      const q1 = annual.slice(0, 3);
+      const q2 = annual.slice(3, 6);
+      const q3 = annual.slice(6, 9);
+
+      const sumQ = (arr) => ({
+        ing: arr.reduce((acc, m) => acc + (Number(m.ingresos) || 0), 0),
+        gas: arr.reduce((acc, m) => acc + (Number(m.gastos) || 0), 0),
+        aho: arr.reduce((acc, m) => acc + (Number(m.ahorro) || 0), 0)
+      });
+
+      const dataQ1 = sumQ(q1);
+      const dataQ2 = sumQ(q2);
+      const dataQ3 = sumQ(q3);
+
+      const elQ1Sur = document.getElementById("q1-quarter-surplus");
+      const elQ1Inc = document.getElementById("q1-quarter-income");
+      const elQ1Gas = document.getElementById("q1-quarter-expense");
+      const elQ1Pct = document.getElementById("q1-quarter-pct");
+      if (elQ1Sur) elQ1Sur.textContent = "+$" + (dataQ1.aho / 1000000).toFixed(2) + "M";
+      if (elQ1Inc) elQ1Inc.textContent = "$" + (dataQ1.ing / 1000000).toFixed(2) + "M";
+      if (elQ1Gas) elQ1Gas.textContent = "$" + (dataQ1.gas / 1000000).toFixed(2) + "M";
+      if (elQ1Pct && dataQ1.ing > 0) elQ1Pct.textContent = Math.round((dataQ1.aho / dataQ1.ing) * 100) + "% ahorro";
+
+      const elQ2Sur = document.getElementById("q2-quarter-surplus");
+      const elQ2Inc = document.getElementById("q2-quarter-income");
+      const elQ2Gas = document.getElementById("q2-quarter-expense");
+      const elQ2Pct = document.getElementById("q2-quarter-pct");
+      if (elQ2Sur) elQ2Sur.textContent = "+$" + (dataQ2.aho / 1000000).toFixed(2) + "M";
+      if (elQ2Inc) elQ2Inc.textContent = "$" + (dataQ2.ing / 1000000).toFixed(2) + "M";
+      if (elQ2Gas) elQ2Gas.textContent = "$" + (dataQ2.gas / 1000000).toFixed(2) + "M";
+      if (elQ2Pct && dataQ2.ing > 0) elQ2Pct.textContent = Math.round((dataQ2.aho / dataQ2.ing) * 100) + "% ahorro";
+
+      const elQ3Sur = document.getElementById("q3-quarter-surplus");
+      const elQ3Inc = document.getElementById("q3-quarter-income");
+      const elQ3Gas = document.getElementById("q3-quarter-expense");
+      const elQ3Pct = document.getElementById("q3-quarter-pct");
+      if (elQ3Sur) elQ3Sur.textContent = "+$" + (dataQ3.aho / 1000000).toFixed(2) + "M";
+      if (elQ3Inc) elQ3Inc.textContent = "$" + (dataQ3.ing / 1000000).toFixed(2) + "M";
+      if (elQ3Gas) elQ3Gas.textContent = "$" + (dataQ3.gas / 1000000).toFixed(2) + "M";
+      if (elQ3Pct && dataQ3.ing > 0) elQ3Pct.textContent = Math.round((dataQ3.aho / dataQ3.ing) * 100) + "% ahorro";
+    }
+
     this.runAnnualAIHabitsAnalysis();
 
     // Botón Analizar Hábitos con IA (Interactivo)
@@ -1915,7 +1963,114 @@ const FintechApp = {
 
       this.renderFixedTable();
       this.renderBalances();
-      this.renderLoansWidget();
+      
+    // === NUEVOS MÓDULOS EJECUTIVOS (MARLONHUB V26) ===
+    // A. Actualizar Banner Dinámico de Auditoría Histórica
+    const auditBanner = document.getElementById("audit-historical-banner");
+    if (auditBanner) {
+      if (active !== "octubre" && active !== "all") {
+        auditBanner.style.display = "flex";
+        const titleEl = document.getElementById("audit-historical-title");
+        const subEl = document.getElementById("audit-historical-subtitle");
+        if (titleEl) titleEl.textContent = `Modo Auditoría Histórica: ${capitalize(active)} ${this.state.activeYear}`;
+        if (subEl) subEl.textContent = `Consultando periodo contable auditado. Las cifras se leen de la base histórica de Google Sheets.`;
+        const kIng = document.getElementById("audit-kpi-ingresos");
+        const kGas = document.getElementById("audit-kpi-gastos");
+        const kSup = document.getElementById("audit-kpi-superavit");
+        if (kIng) kIng.textContent = `$${this.formatCOP(monthData.ingresos)}`;
+        if (kGas) kGas.textContent = `$${this.formatCOP(monthData.gastos)}`;
+        const netSurplus = monthData.ingresos - monthData.gastos;
+        if (kSup) {
+          kSup.textContent = `${netSurplus >= 0 ? '+' : ''}$${this.formatCOP(netSurplus)}`;
+          kSup.className = netSurplus >= 0 ? "text-emerald" : "text-rose";
+        }
+      } else {
+        auditBanner.style.display = "none";
+      }
+    }
+
+    // B. Actualizar Matriz Ejecutiva de Salud Financiera
+    const burnRateVal = Math.round((Number(monthData.gastos) || 0) / 30);
+    const elBurnVal = document.getElementById("health-burn-rate-val");
+    const elBurnBar = document.getElementById("health-burn-rate-bar");
+    if (elBurnVal) elBurnVal.textContent = hidden ? "••••••" : `$${this.formatCOP(burnRateVal)}`;
+    if (elBurnBar) {
+      const burnPct = Math.min(100, Math.round((burnRateVal / 60000) * 100));
+      elBurnBar.style.width = `${burnPct}%`;
+    }
+
+    const coverageDays = burnRateVal > 0 ? Math.min(365, Math.round(totalAvail / burnRateVal)) : 0;
+    const elCovDays = document.getElementById("health-coverage-days");
+    const elCovBar = document.getElementById("health-coverage-bar");
+    const elCovSub = document.getElementById("health-coverage-sub");
+    if (elCovDays) elCovDays.textContent = hidden ? "••••" : `${coverageDays} días`;
+    if (elCovBar) elCovBar.style.width = `${Math.min(100, (coverageDays / 30) * 100)}%`;
+    if (elCovSub) {
+      elCovSub.textContent = coverageDays >= 15 ? "[OK] Cubre holgadamente el periodo" : "⚠️ Atención: cobertura reducida";
+    }
+
+    const totalCuotasFijos = fijosList.reduce((acc, f) => acc + Number(f.cuota || 0), 0);
+    const burdenPct = monthData.ingresos > 0 ? Math.round((totalCuotasFijos / monthData.ingresos) * 100) : 0;
+    const elBurdenPct = document.getElementById("health-fixed-burden-pct");
+    const elBurdenBar = document.getElementById("health-fixed-burden-bar");
+    if (elBurdenPct) elBurdenPct.textContent = `${burdenPct}%`;
+    if (elBurdenBar) elBurdenBar.style.width = `${Math.min(100, burdenPct)}%`;
+
+    const remanenteProy = totalAvail - finalFijosPend;
+    const elRemanente = document.getElementById("health-projected-surplus");
+    const elRemBar = document.getElementById("health-projected-bar");
+    if (elRemanente) {
+      elRemanente.textContent = hidden ? "••••••" : `$${this.formatCOP(remanenteProy)}`;
+      elRemanente.className = remanenteProy >= 0 ? "health-val text-cyan" : "health-val text-rose";
+    }
+    if (elRemBar) {
+      elRemBar.style.width = totalAvail > 0 ? `${Math.max(10, Math.min(100, Math.round((remanenteProy / totalAvail) * 100)))}%` : "20%";
+    }
+
+    const patrimonioNeto = totalAvail + totalSavingsColanta;
+    const elNetWorth = document.getElementById("health-net-worth-val");
+    if (elNetWorth) elNetWorth.textContent = hidden ? "••••••" : `$${this.formatCOP(patrimonioNeto)}`;
+
+    // C. Actualizar Inteligencia de Consumo (Mayor Centro de Gasto)
+    const catsMap = monthData.gastosPorCategoria || {};
+    let topCatName = "Alimentación";
+    let topCatVal = 0;
+    for (const [k, v] of Object.entries(catsMap)) {
+      if (Number(v) > topCatVal) {
+        topCatVal = Number(v);
+        topCatName = k;
+      }
+    }
+    const totGastosMes = Number(monthData.gastos) || 1;
+    const topCatPct = Math.round((topCatVal / totGastosMes) * 100);
+
+    const elIntelName = document.getElementById("intel-category-name");
+    const elIntelBadge = document.getElementById("intel-category-badge");
+    const elIntelAmount = document.getElementById("intel-category-amount");
+    const elIntelDesc = document.getElementById("intel-category-desc");
+    if (elIntelName) elIntelName.textContent = `Mayor Centro de Gasto: ${topCatName}`;
+    if (elIntelBadge) {
+      elIntelBadge.textContent = `${topCatPct}% del total`;
+      elIntelBadge.style.color = topCatPct > 35 ? "#FB7185" : "#34D399";
+    }
+    if (elIntelAmount) elIntelAmount.textContent = hidden ? "••••••" : `$${this.formatCOP(topCatVal)} COP`;
+    if (elIntelDesc) {
+      elIntelDesc.textContent = topCatPct > 35
+        ? `⚠️ ${topCatName} absorbe más del 35% de tus egresos de ${monthLabel}. Mantener el monitoreo en compras cotidianas.`
+        : `[OK] Distribución equilibrada. ${topCatName} representa el ${topCatPct}% de los gastos del periodo.`;
+    }
+
+    // D. Actualizar Reglas Quincenales en Gastos Fijos
+    const q1FijosPend = fijosList.filter(f => Number(f.dia || 0) <= 15 && Number(f.cuota || 0) > Number(f.abonado || 0))
+      .reduce((acc, f) => acc + Math.max(0, Number(f.cuota || 0) - Number(f.abonado || 0)), 0);
+    const q2FijosPend = fijosList.filter(f => Number(f.dia || 0) > 15 && Number(f.cuota || 0) > Number(f.abonado || 0))
+      .reduce((acc, f) => acc + Math.max(0, Number(f.cuota || 0) - Number(f.abonado || 0)), 0);
+    const elRuleQ1 = document.getElementById("rule-q1-pend-sum");
+    const elRuleQ2 = document.getElementById("rule-q2-pend-sum");
+    if (elRuleQ1) elRuleQ1.textContent = `$${this.formatCOP(q1FijosPend)} COP`;
+    if (elRuleQ2) elRuleQ2.textContent = `$${this.formatCOP(q2FijosPend)} COP`;
+
+    this.renderLoansWidget();
 
       this.appendBotMsg(`
         <div style="background: rgba(14, 165, 233, 0.08); border-left: 4px solid #0EA5E9; padding: 0.85rem; border-radius: 8px;">
